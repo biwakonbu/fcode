@@ -2,6 +2,7 @@ module TuiPoC.Program
 
 open Terminal.Gui
 open TuiPoC.ColorSchemes
+open TuiPoC.KeyBindings
 
 [<EntryPoint>]
 let main _argv =
@@ -104,21 +105,14 @@ let main _argv =
 
     // Create focus management for panes
     let focusablePanes = [| convo; dev1; dev2; dev3; qa1; qa2; ux; timeline |]
-    let mutable currentFocusIndex = 0
-
-    // Add key handling for focus navigation
+    
+    // Create Emacs key handler
+    let emacsKeyHandler = new EmacsKeyHandler(focusablePanes)
+    
+    // Add Emacs-style key handling
     let keyHandler = System.Action<View.KeyEventEventArgs>(fun args ->
-        match args.KeyEvent.Key with
-        | Key.Tab when args.KeyEvent.IsCtrl ->
-            // Ctrl+Tab: cycle through panes
-            currentFocusIndex <- (currentFocusIndex + 1) % focusablePanes.Length
-            focusablePanes.[currentFocusIndex].SetFocus()
-            args.Handled <- true
-        | Key.C when args.KeyEvent.IsCtrl ->
-            // Ctrl+C: toggle conversation pane visibility  
-            convo.Visible <- not convo.Visible
-            args.Handled <- true
-        | _ -> ())
+        let handled = emacsKeyHandler.HandleKey(args.KeyEvent)
+        args.Handled <- handled)
 
     // Override key processing
     top.add_KeyDown keyHandler

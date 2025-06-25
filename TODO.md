@@ -27,13 +27,32 @@
 
 ## 2. 緊急修正タスク (即座対応)
 
-- [ ] **終了機能実装**
+- [x] **終了機能実装**
   - アプリケーションが正常終了できない問題の修正
   - Escキーまたは適切な終了キーバインドの追加
   - Application.RequestStop()の適切な呼び出し
 
-## 3. 次期開発タスク (機能実装着手前)
+## 3. 次期開発タスク - Claude Code統合 (高優先度)
 
+### 3.1 エージェントペイン Claude Code統合
+- [ ] **各ペインでのClaude Code起動機能**
+  - dev1/dev2/dev3ペイン: ペイン内でClaude Code CLIセッションを起動
+  - qa1/qa2ペイン: QA専用のClaude Codeセッション管理
+  - uxペイン: UX観点でのClaude Code統合
+  - pmペイン: プロジェクト管理視点でのClaude Code活用
+
+- [ ] **Claude Code CLI統合方式の実装**
+  - `System.Diagnostics.Process`による外部プロセス管理
+  - 各ペインごとの独立したClaude Codeセッション
+  - 標準入出力のTUIペインへのリダイレクト
+  - プロセス終了時のリソースクリーンアップ
+
+- [ ] **ペイン間でのコンテキスト共有機能**
+  - 会話ログの相互参照機能
+  - ファイル変更の他ペインへの通知
+  - 作業状況の可視化とブロードキャスト
+
+### 3.2 基盤機能実装
 - [ ] **設定ファイル仕様策定**
   - 位置: `~/.config/claude-tui/config.toml`
   - 保存項目: Claude Code CLI のパス、デフォルトレイアウト preset など
@@ -41,6 +60,41 @@
   - `System.Diagnostics.Process` でラップ or 標準入出力を TUI へストリーム転送
 - [ ] **テスト方針のブレークダウン**
   - PRD 3.「QA 方針」に沿ってヒューリスティックテスト観点を洗い出す
+
+## 4. Claude Code統合 - 技術実装詳細
+
+### 4.1 エージェントペイン起動方式
+**各ペインでのClaude Code起動アプローチ:**
+
+1. **キーバインド追加**
+   - `Ctrl+X C` → 現在のペインでClaude Code起動
+   - `Ctrl+X K` → 現在のペインのClaude Codeセッション終了
+
+2. **プロセス管理**
+   ```fsharp
+   // Claude Codeプロセス管理用モジュール
+   module ClaudeCodeProcess
+   let startSession (paneId: string) (workingDir: string) -> Process
+   let stopSession (process: Process) -> unit
+   let sendInput (process: Process) (input: string) -> unit
+   ```
+
+3. **ペイン別役割定義**
+   - **dev1-3**: 開発作業用 - ファイル編集、リファクタリング、バグ修正
+   - **qa1-2**: QA作業用 - テスト作成、品質確認、レビュー
+   - **ux**: UX改善用 - UI/UX改善提案、ユーザビリティ検証
+   - **pm**: プロジェクト管理用 - タスク管理、進捗確認、ドキュメント更新
+
+### 4.2 実装優先順位
+1. **Phase 1**: 単一ペインでのClaude Code起動 (dev1ペインから開始)
+2. **Phase 2**: 複数ペイン同時セッション管理
+3. **Phase 3**: ペイン間コンテキスト共有・連携機能
+
+### 4.3 技術課題
+- [ ] Terminal.Gui内での外部プロセスの標準I/O統合
+- [ ] F#での非同期プロセス管理
+- [ ] ペイン描画の競合状態回避
+- [ ] Claude Code CLI認証情報の適切な引き継ぎ
 
 ---
 

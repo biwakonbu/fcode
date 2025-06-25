@@ -2,6 +2,8 @@ module TuiPoC.KeyBindings
 
 open Terminal.Gui
 open System
+open TuiPoC.Logger
+open TuiPoC.ClaudeCodeProcess
 
 // キーバインドアクション定義
 type KeyAction =
@@ -12,6 +14,8 @@ type KeyAction =
     | FocusPane of int
     | Refresh
     | ShowHelp
+    | StartClaudeCode
+    | StopClaudeCode
 
 // キーシーケンス状態管理
 type KeySequenceState = {
@@ -39,6 +43,10 @@ let emacsKeyBindings = [
     // ヘルプ表示 (Ctrl+X H)
     ([Key.CtrlMask ||| Key.X; Key.H], ShowHelp)
     
+    // Claude Code制御 (Ctrl+X S / Ctrl+X K)
+    ([Key.CtrlMask ||| Key.X; Key.S], StartClaudeCode)
+    ([Key.CtrlMask ||| Key.X; Key.K], StopClaudeCode)
+    
     // 数字キーによるダイレクト移動 (Ctrl+X 0-7)
     ([Key.CtrlMask ||| Key.X; Key.D0], FocusPane 0)
     ([Key.CtrlMask ||| Key.X; Key.D1], FocusPane 1)
@@ -64,6 +72,10 @@ Emacs風キーバインド:
   Ctrl+X O       : 次のペインに移動
   Ctrl+X Ctrl+O  : 前のペインに移動
   Ctrl+X C       : 会話ペイン表示切替
+
+Claude Code制御:
+  Ctrl+X S       : 現在ペインでClaude Code起動
+  Ctrl+X K       : 現在ペインのClaude Code終了
 
 ダイレクト移動:
   Ctrl+X 0-7     : 指定ペインに直接移動
@@ -93,6 +105,8 @@ type EmacsKeyHandler(focusablePanes: FrameView[]) =
     let executeAction action =
         match action with
         | Exit ->
+            // 全てのClaude Codeセッションをクリーンアップしてから終了
+            sessionManager.CleanupAllSessions()
             Application.RequestStop()
         | NextPane ->
             currentPaneIndex <- (currentPaneIndex + 1) % focusablePanes.Length
@@ -111,6 +125,60 @@ type EmacsKeyHandler(focusablePanes: FrameView[]) =
             Application.Refresh()
         | ShowHelp ->
             showHelpDialog()
+        | StartClaudeCode ->
+            logInfo "KeyBindings" $"StartClaudeCode action triggered - currentPaneIndex: {currentPaneIndex}"
+            let paneId = 
+                match currentPaneIndex with
+                | 1 -> "dev1" | 2 -> "dev2" | 3 -> "dev3"
+                | 4 -> "qa1" | 5 -> "qa2" | 6 -> "ux"
+                | 7 -> "pm" | _ -> "unknown"
+            
+            logDebug "KeyBindings" $"Mapped paneIndex {currentPaneIndex} to paneId: {paneId}"
+            
+            if paneId <> "unknown" && currentPaneIndex > 0 then
+                let currentPane = focusablePanes.[currentPaneIndex]
+                let textViews = 
+                    currentPane.Subviews 
+                    |> Seq.choose (function
+                        | :? TextView as tv -> Some tv
+                        | _ -> None) 
+                    |> Seq.toList
+                
+                match textViews with
+                | textView :: _ ->
+                    try
+                        let workingDir = System.Environment.CurrentDirectory
+                        let success = sessionManager.StartSession(paneId, workingDir, textView)
+                        if success then
+                            MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインでClaude Codeを再起動しました", "OK") |> ignore
+                        else
+                            MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインでClaude Code起動に失敗しました", "OK") |> ignore
+                    with
+                    | ex ->
+                        MessageBox.ErrorQuery("Error", $"操作エラー: {ex.Message}", "OK") |> ignore
+                | [] ->
+                    MessageBox.Query(50, 10, "Claude Code", "このペインはClaude Code対応していません", "OK") |> ignore
+            else
+                MessageBox.Query(50, 10, "Claude Code", "会話ペインではClaude Codeは起動できません", "OK") |> ignore
+        | StopClaudeCode ->
+            let paneId = 
+                match currentPaneIndex with
+                | 1 -> "dev1" | 2 -> "dev2" | 3 -> "dev3"
+                | 4 -> "qa1" | 5 -> "qa2" | 6 -> "ux"
+                | 7 -> "pm" | _ -> "unknown"
+            
+            if paneId <> "unknown" && currentPaneIndex > 0 then
+                try
+                    let success = sessionManager.StopSession(paneId)
+                    if success then
+                        MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインのClaude Codeを終了しました", "OK") |> ignore
+                    else
+                        MessageBox.Query(50, 10, "Claude Code", "アクティブなセッションがありません", "OK") |> ignore
+                with
+                | ex ->
+                    MessageBox.ErrorQuery("Error", $"停止操作エラー: {ex.Message}", "OK") |> ignore
+            else
+                MessageBox.Query(50, 10, "Claude Code", "会話ペインではClaude Code操作はできません", "OK") |> ignore
     
     // マルチキーシーケンス検索
     let findMultiKeyBinding (firstKey: Key) (secondKey: Key) =

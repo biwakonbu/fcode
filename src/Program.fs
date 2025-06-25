@@ -12,7 +12,7 @@ let main _argv =
     let top = Application.Top
 
     // --- Conversation Pane -------------------------------------------------
-    let conversationWidth = 20 // columns  
+    let conversationWidth = 60 // columns  
     let convo = new FrameView("会話")
     convo.X <- 0
     convo.Y <- 0
@@ -28,12 +28,11 @@ let main _argv =
 
     // ----------------------------------------------------------------------
     // Right-hand container – holds all other panes
-    let right = new FrameView()
+    let right = new View()
     right.X <- Pos.Right convo
     right.Y <- 0
     right.Width <- Dim.Fill()
     right.Height <- Dim.Fill()
-    // invisible wrapper - no border
 
     // Helper function to create a pane with a given title
     let makePane title =

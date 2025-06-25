@@ -152,14 +152,14 @@ type ProcessSupervisor(config: SupervisorConfig) =
             processInfo.Environment.Add("FCODE_PANE_ID", paneId)
             processInfo.Environment.Add("FCODE_IPC_SOCKET", getSocketPath paneId)
             
-            let process = Process.Start(processInfo)
+            let proc = Process.Start(processInfo)
             
-            if process = null then
+            if proc = null then
                 logError "Supervisor" $"Failed to start process for pane: {paneId}"
                 None
             else
-                logInfo "Supervisor" $"Process started for pane {paneId} with PID: {process.Id}"
-                Some process
+                logInfo "Supervisor" $"Process started for pane {paneId} with PID: {proc.Id}"
+                Some proc
                 
         with
         | ex ->
@@ -170,9 +170,9 @@ type ProcessSupervisor(config: SupervisorConfig) =
     let getHealthMetrics (worker: WorkerProcess) =
         try
             match worker.Process with
-            | Some proc when not proc.HasExited ->
+            | Some workerProc when not workerProc.HasExited ->
                 let uptime = DateTime.Now - worker.StartTime
-                let memoryMB = float proc.WorkingSet64 / 1024.0 / 1024.0
+                let memoryMB = float workerProc.WorkingSet64 / 1024.0 / 1024.0
                 
                 {
                     ProcessUptime = uptime
@@ -222,15 +222,15 @@ type ProcessSupervisor(config: SupervisorConfig) =
             logInfo "Supervisor" $"Stopping worker process for pane: {worker.PaneId}"
             
             match worker.Process with
-            | Some proc when not proc.HasExited ->
+            | Some workerProc when not workerProc.HasExited ->
                 // グレースフル終了を試行
-                proc.CloseMainWindow() |> ignore
+                workerProc.CloseMainWindow() |> ignore
                 
                 // 5秒待機後、強制終了
-                if not (proc.WaitForExit(5000)) then
+                if not (workerProc.WaitForExit(5000)) then
                     logWarning "Supervisor" $"Force killing process for pane: {worker.PaneId}"
-                    proc.Kill()
-                    proc.WaitForExit()
+                    workerProc.Kill()
+                    workerProc.WaitForExit()
                 
                 logInfo "Supervisor" $"Process stopped for pane: {worker.PaneId}"
             | _ ->
@@ -253,11 +253,11 @@ type ProcessSupervisor(config: SupervisorConfig) =
                 // 新しいプロセスを起動
                 let workingDir = Environment.CurrentDirectory // TODO: 適切な作業ディレクトリを設定
                 match startWorkerProcess paneId workingDir with
-                | Some newProcess ->
+                | Some newProc ->
                     let updatedWorker = 
                         { worker with 
-                            Process = Some newProcess
-                            ProcessId = Some newProcess.Id
+                            Process = Some newProc
+                            ProcessId = Some newProc.Id
                             Status = Starting
                             RestartCount = worker.RestartCount + 1
                             StartTime = DateTime.Now
@@ -328,7 +328,7 @@ type ProcessSupervisor(config: SupervisorConfig) =
         if not isRunning then
             isRunning <- true
             logInfo "Supervisor" "Process supervisor started"
-            Task.Run(monitoringLoop) |> ignore
+            Task.Run(Func<Task>(fun () -> monitoringLoop())) |> ignore
     
     member _.StopSupervisor() =
         if isRunning then
@@ -346,15 +346,15 @@ type ProcessSupervisor(config: SupervisorConfig) =
             logInfo "Supervisor" $"Starting worker for pane: {paneId}"
             
             match startWorkerProcess paneId workingDir with
-            | Some process ->
+            | Some workerProc ->
                 let worker = {
                     PaneId = paneId
-                    ProcessId = Some process.Id
+                    ProcessId = Some workerProc.Id
                     Status = Starting
                     LastHeartbeat = DateTime.Now
                     RestartCount = 0
                     SessionId = Guid.NewGuid().ToString()
-                    Process = Some process
+                    Process = Some workerProc
                     HealthMetrics = {
                         ProcessUptime = TimeSpan.Zero
                         MemoryUsageMB = 0.0

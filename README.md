@@ -56,21 +56,64 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 
 ### ✅ 実装済み
 - マルチペインレイアウト表示（8ペイン構成）
-- ロール別カラースキーム（dev/qa/ux/pm別配色）
+- UI改善（会話ペイン60列幅、統一カラースキーム、二重枠解消）
 - Emacsキーバインドシステム：
   - `Ctrl+X Ctrl+C`: アプリケーション終了
   - `Ctrl+X O`: 次のペインに移動
   - `Ctrl+X Ctrl+O`: 前のペインに移動
   - `Ctrl+X C`: 会話ペイン表示切替
+  - `Ctrl+X S`: 現在ペインでClaude Code起動/再起動
+  - `Ctrl+X K`: 現在ペインのClaude Code終了
   - `Ctrl+X 0-7`: 指定ペインに直接移動
   - `Ctrl+L`: 画面リフレッシュ
   - `Ctrl+X H`: キーバインドヘルプ表示
-- 包括的単体テスト（21テスト、カバレッジ100%）
+- Claude Code統合基盤（各エージェントペインでの自動起動）
+- 包括的ログシステム（詳細なデバッグ情報出力）
+- 包括的単体テスト（29テストケース、カバレッジ100%）
 
-### 🚧 未実装
-- Claude Code CLI統合
-- プロセス間通信・AI支援機能
-- 実際のコンテンツ表示
+### 🚧 開発中
+- Claude Code CLI統合の安定化
+- プロセス間通信・AI支援機能の最適化
+- ペイン間コンテキスト共有機能
+
+## ログシステム
+
+### ログ出力
+アプリケーションの動作は詳細にログ記録されます：
+
+- **ログ出力先**: `/tmp/fcode-logs/fcode-{timestamp}.log`
+- **ログレベル**: DEBUG, INFO, WARN, ERROR
+- **ログカテゴリ**: Application, UI, AutoStart, SessionManager, KeyBindings
+
+### ログの確認方法
+```bash
+# 最新のログファイルを確認
+ls -lat /tmp/fcode-logs/
+
+# ログをリアルタイム監視
+tail -f /tmp/fcode-logs/fcode-*.log
+
+# エラーのみ抽出
+grep ERROR /tmp/fcode-logs/fcode-*.log
+```
+
+### トラブルシューティング
+
+#### Claude Code自動起動の問題
+現在、TextViewの初期化タイミングの問題により、自動起動が失敗することがあります：
+
+- **症状**: "TextViewが見つかりません" エラー
+- **原因**: UI要素の初期化順序とTerminal.Guiのレンダリングタイミング
+- **対策**: アプリケーション起動後に手動で `Ctrl+X S` で各ペインのClaude Codeを起動
+
+#### ログファイルが見つからない場合
+```bash
+# ログディレクトリの確認
+ls -la /tmp/fcode-logs/
+
+# 権限問題の場合
+chmod 755 /tmp/fcode-logs/
+```
 
 ## 開発情報
 

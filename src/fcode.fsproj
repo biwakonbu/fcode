@@ -5,7 +5,9 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Logger.fs" />
     <Compile Include="ColorSchemes.fs" />
+    <Compile Include="ClaudeCodeProcess.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

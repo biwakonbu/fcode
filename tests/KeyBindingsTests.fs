@@ -3,6 +3,7 @@ module fcode.Tests.KeyBindingsTests
 open NUnit.Framework
 open Terminal.Gui
 open TuiPoC.KeyBindings
+open TuiPoC.ClaudeCodeProcess
 open System
 
 [<TestFixture>]
@@ -13,6 +14,9 @@ type KeyBindingsTests() =
         Application.Init()
         let panes = Array.init 8 (fun i -> new FrameView($"pane{i}"))
         panes
+    
+    let createMockSessionManager() =
+        new SessionManager()
     
     [<SetUp>]
     member _.Setup() =
@@ -64,14 +68,14 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``EmacsKeyHandlerの初期化テスト``() =
         let panes = createMockFrameViews()
-        let handler = new EmacsKeyHandler(panes)
+        let handler = new EmacsKeyHandler(panes, createMockSessionManager())
         
         Assert.That(handler.CurrentPaneIndex, Is.EqualTo(0), "初期ペインインデックスは0であること")
 
     [<Test>]
     member _.``ペインインデックス設定テスト``() =
         let panes = createMockFrameViews()
-        let handler = new EmacsKeyHandler(panes)
+        let handler = new EmacsKeyHandler(panes, createMockSessionManager())
         
         // 有効なインデックス設定
         handler.SetCurrentPaneIndex(3)
@@ -88,7 +92,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``シングルキーバインドテスト``() =
         let panes = createMockFrameViews()
-        let handler = new EmacsKeyHandler(panes)
+        let handler = new EmacsKeyHandler(panes, createMockSessionManager())
         
         // Ctrl+L (Refresh) のテスト
         let refreshKey = KeyEvent(Key.CtrlMask ||| Key.L, KeyModifiers())
@@ -99,7 +103,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``マルチキーシーケンステスト``() =
         let panes = createMockFrameViews()
-        let handler = new EmacsKeyHandler(panes)
+        let handler = new EmacsKeyHandler(panes, createMockSessionManager())
         
         // Ctrl+X の最初のキー
         let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
@@ -117,7 +121,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``キーシーケンスタイムアウトテスト``() =
         let panes = createMockFrameViews()
-        let handler = new EmacsKeyHandler(panes)
+        let handler = new EmacsKeyHandler(panes, createMockSessionManager())
         
         // Ctrl+X を送信
         let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
@@ -133,7 +137,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``ダイレクトペイン移動テスト``() =
         let panes = createMockFrameViews()
-        let handler = new EmacsKeyHandler(panes)
+        let handler = new EmacsKeyHandler(panes, createMockSessionManager())
         
         // Ctrl+X 3 でペイン3に移動
         let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
@@ -148,7 +152,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``前ペイン移動テスト``() =
         let panes = createMockFrameViews()
-        let handler = new EmacsKeyHandler(panes)
+        let handler = new EmacsKeyHandler(panes, createMockSessionManager())
         
         // 初期状態でペイン2に設定
         handler.SetCurrentPaneIndex(2)
@@ -166,7 +170,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``ペイン移動の循環テスト``() =
         let panes = createMockFrameViews()
-        let handler = new EmacsKeyHandler(panes)
+        let handler = new EmacsKeyHandler(panes, createMockSessionManager())
         
         // 最後のペイン(7)に設定
         handler.SetCurrentPaneIndex(7)
@@ -188,3 +192,19 @@ type KeyBindingsTests() =
         handler.HandleKey(fourthKey) |> ignore
         
         Assert.That(handler.CurrentPaneIndex, Is.EqualTo(7), "最初のペインから最後のペインに循環すること")
+
+    [<Test>]
+    member _.``Ctrl-X Ctrl-C終了コマンドテスト``() =
+        let panes = createMockFrameViews()
+        let handler = new EmacsKeyHandler(panes, createMockSessionManager())
+        
+        // Ctrl+X Ctrl+C による終了コマンドをテスト
+        let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
+        let secondKey = KeyEvent(Key.CtrlMask ||| Key.C, KeyModifiers())
+        
+        let firstHandled = handler.HandleKey(firstKey)
+        Assert.That(firstHandled, Is.True, "最初のキー（Ctrl+X）が処理されること")
+        
+        // 2番目のキーでExitアクションが実行される（Application.RequestStop()が呼ばれる）
+        let secondHandled = handler.HandleKey(secondKey)
+        Assert.That(secondHandled, Is.True, "2番目のキー（Ctrl+C）が処理されること")

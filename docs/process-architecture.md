@@ -4,6 +4,8 @@
 
 fcodeは、Claude Codeの不安定性（JSランタイム特性、メモリリーク、ネットワーク依存）に対処するため、tmuxライクなプロセス分離アーキテクチャを採用する。
 
+> **補足:** Claude Code の curses UI を各ペインへ統合する PTY/TUI 詳細設計は [docs/pty-architecture.md](pty-architecture.md) を参照。
+
 ## アーキテクチャ詳細
 
 ### システム構成

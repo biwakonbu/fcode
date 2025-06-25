@@ -1,10 +1,12 @@
 module TuiPoC.Program
 
+open System.Threading.Tasks
 open Terminal.Gui
 open TuiPoC.Logger
 open TuiPoC.ColorSchemes
 open TuiPoC.KeyBindings
 open TuiPoC.ClaudeCodeProcess
+open TuiPoC.UIHelpers
 
 [<EntryPoint>]
 let main _argv =
@@ -141,15 +143,12 @@ let main _argv =
             logInfo "AutoStart" $"Starting Claude Code for pane: {paneId}"
             logDebug "AutoStart" $"Pane {paneId} has {pane.Subviews.Count} subviews"
             
-            // ペイン内のTextViewを取得
             let textViews = 
                 pane.Subviews 
                 |> Seq.mapi (fun i view -> 
                     logDebug "AutoStart" $"Subview {i}: {view.GetType().Name}"
                     view)
-                |> Seq.choose (function
-                    | :? TextView as tv -> Some tv
-                    | _ -> None) 
+                |> Seq.collect findTextViews
                 |> Seq.toList
             
             logDebug "AutoStart" $"Found {textViews.Length} TextViews in pane: {paneId}"
@@ -176,16 +175,17 @@ let main _argv =
                 logError "AutoStart" debugMsg
                 System.Console.WriteLine(debugMsg)
         
-        // 各エージェントペインでClaude Codeを起動
-        logInfo "AutoStart" "Starting Claude Code auto-start process"
-        agentPanes |> List.iter startClaudeCodeForPane
-        logInfo "AutoStart" "Claude Code auto-start process completed"
+        // 各エージェントペインでClaude Codeを起動 (一時的に無効化 - 安定性のため)
+        // logInfo "AutoStart" "Starting Claude Code auto-start process"
+        // agentPanes |> List.iter startClaudeCodeForPane
+        // logInfo "AutoStart" "Claude Code auto-start process completed"
+        logInfo "AutoStart" "Auto-start disabled for stability - use manual start instead"
 
         // Create focus management for panes
         let focusablePanes = [| convo; dev1; dev2; dev3; qa1; qa2; ux; timeline |]
         
         // Create Emacs key handler
-        let emacsKeyHandler = new EmacsKeyHandler(focusablePanes)
+        let emacsKeyHandler = new EmacsKeyHandler(focusablePanes, sessionManager)
         
         // Add Emacs-style key handling
         let keyHandler = System.Action<View.KeyEventEventArgs>(fun args ->
@@ -199,9 +199,28 @@ let main _argv =
         logDebug "Application" "Setting initial focus to conversation pane"
         focusablePanes.[0].SetFocus()
 
+        // Application.Run後の遅延起動を設定
+        let setupDelayedAutoStart() =
+            // Application.RunLoop開始後に安全にClaude Codeを起動
+            Task.Run(fun () ->
+                logInfo "AutoStart" "Starting delayed auto-start after UI initialization"
+                System.Threading.Thread.Sleep(1000) // 1秒待機でUI完全初期化
+                
+                // メインスレッドでUI操作を実行
+                Application.MainLoop.Invoke(fun () ->
+                    logInfo "AutoStart" "Executing delayed Claude Code auto-start"
+                    
+                    // dev1ペインのみで初期テスト
+                    let dev1Session = agentPanes |> List.find (fun (id, _) -> id = "dev1")
+                    startClaudeCodeForPane dev1Session
+                    
+                    logInfo "AutoStart" "Delayed auto-start completed for dev1"))
+            |> ignore
+
         // Run application
         logInfo "Application" "Starting TUI application loop"
-        Application.Run()
+        setupDelayedAutoStart()
+        Application.Run(top)
         logInfo "Application" "TUI application loop ended"
         
         // Cleanup

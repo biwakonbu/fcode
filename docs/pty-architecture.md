@@ -216,23 +216,32 @@ flowchart TB
 > メッセージは **[4-byte length (big-endian)][UTF-8 JSON ペイロード]** のフレーミングで送受信する。すべてのメッセージは下記 `Envelope` でラップされ `version` フィールドにより後方互換性を維持する。
 
 ```fsharp
-/// 全IPCメッセージの共通ラッパ
+/// すべての IPC メッセージは Envelope でラップして送受信する。
+/// 詳細なフレーミング仕様とバージョニングポリシーは 15.1 章を参照。
 /// length-prefix はバイト列レベルの framing で表現し、このレコードは
 /// その内部 JSON オブジェクトを定義する。
-type Envelope<'T> = {
-    version : int // 現行 1
-    payload : 'T  // 実際のコマンド(下記 SessionCommand など)
-}
-```
+///
+///   [4-byte length (big-endian)] [UTF-8 JSON Envelope]
+///
+/// 旧来のコード例で分割されていた Envelope と SessionCommand を
+/// 一体で掲載し、両者の関係を明示する。
 
-```fsharp
-type SessionCommand = 
+type Envelope<'T> = {
+    version : int      // 現行 1
+    payload : 'T       // 実際のコマンド (SessionCommand など)
+}
+
+/// サーバー / クライアント間でやり取りされるコマンド。
+/// ここで定義した値が Envelope<'T>.payload に内包される。
+/// ※ cmd 引数はホワイトリスト検証を行い、Injection を防止すること。
+
+type SessionCommand =
     | CreateSession of name:string * cmd:string
     | AttachSession of name:string
     | DetachSession of name:string
     | ListSessions
-    | SendInput of sessionId:string * input:string
-    | GetOutput of sessionId:string
+    | SendInput  of sessionId:string * input:string
+    | GetOutput  of sessionId:string
 ```
 
 ### 7.2 `SessionManager` (拡張)
@@ -759,3 +768,19 @@ public static extern int ioctl(int fd, ulong request, ref Winsize size);
   }
 }
 ```
+
+## 19. ドキュメント整備ポリシー (Internal)
+
+> **目的:** 設計書の冗長箇所や重複記述を段階的に統合し、将来的な保守コストを低減する。
+
+1. **重複セクション統合**
+   - 15 章以降のレビュー結果や補足説明は、内容が FIX された段階で該当セクション（7 章・10 章など）へ **マージ／反映** する。
+2. **履歴管理**
+   - 統合後も過去の議論を失わないよう、主要な変更は Git の履歴と Pull Request のディスカッションに残す。
+3. **編集フロー**
+   - Markdown ファイルは **PR ベース**でレビューを経てマージする。
+   - セクション間リンク切れ・章番号ズレが発生しないよう、CI で `markdown-link-check` を実行する。
+4. **ステータスラベル**
+   - 章タイトルの末尾に `(Draft)` / `(Stable)` を付与し、読者が完成度を判断できるようにする (例: `## 10. 段階的実装計画 (Stable)`)。
+
+*このセクションは内部向けメモであり、外部公開時には削除または別ドキュメントへ移動する。*

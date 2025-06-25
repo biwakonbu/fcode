@@ -38,9 +38,9 @@ type PtyNetPerformanceTests() =
                 let! sessionResult = manager.CreateSession("yes", [|"test-output-line"|]) |> Async.AwaitTask
                 
                 match sessionResult with
-                | Ok session ->
+                | Result.Ok session ->
                     // 出力読み取り開始
-                    let readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartAsChild
+                    let! readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartChild
                     
                     let stopwatch = Stopwatch.StartNew()
                     let testDurationMs = 1000 // 1秒間テスト
@@ -62,16 +62,16 @@ type PtyNetPerformanceTests() =
                     let linesPerSecond = (float linesCount) * 1000.0 / (float actualDurationMs)
                     
                     logInfo "スループット計測結果" 
-                        ("bytes/sec={bytesPerSecond:F0}, lines/sec={linesPerSecond:F0}, total_bytes={totalBytes}, duration_ms={actualDurationMs}"
+                        ("bytes/sec=" + bytesPerSecond.ToString("F0") + ", lines/sec=" + linesPerSecond.ToString("F0") + ", total_bytes=" + totalBytes.ToString() + ", duration_ms=" + actualDurationMs.ToString())
                     
                     // アサーション
                     Assert.That(bytesPerSecond, Is.GreaterThan(float expectedBytesPerSecond), 
-                        ("スループットが閾値を下回りました: {bytesPerSecond:F0} bytes/s < {expectedBytesPerSecond} bytes/s")
+                        ("スループットが閾値を下回りました: " + bytesPerSecond.ToString("F0") + " bytes/s < " + expectedBytesPerSecond.ToString() + " bytes/s"))
                     
                     Assert.That(totalBytes, Is.GreaterThan(0), "出力データが取得されませんでした")
                     
-                | Error error ->
-                    Assert.Fail(("PTYセッション作成に失敗: {error}")
+                | Result.Error error ->
+                    Assert.Fail("PTYセッション作成に失敗: " + error)
                     
             | None ->
                 Assert.Fail("PTYマネージャーが初期化されていません")
@@ -88,21 +88,21 @@ type PtyNetPerformanceTests() =
                 let! sessionResult = manager.CreateSession("cat", [||]) |> Async.AwaitTask
                 
                 match sessionResult with
-                | Ok session ->
-                    let readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartAsChild
+                | Result.Ok _session ->
+                    let! _readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartChild
                     
                     let latencies = ResizeArray<float>()
                     let testCount = 100
                     
                     for i in 1 .. testCount do
-                        let testInput = ("test-{i}\n"
+                        let testInput = "test-" + i.ToString() + "\n"
                         
                         // レイテンシ計測開始
                         let stopwatch = Stopwatch.StartNew()
                         
                         // 入力送信
                         let inputSent = manager.SendInput(testInput)
-                        Assert.That(inputSent, Is.True, ("入力送信失敗: iteration {i}")
+                        Assert.That(inputSent, Is.True, ("入力送信失敗: iteration " + i.ToString()))
                         
                         // 出力が返ってくるまで待機（最大100ms）
                         let mutable outputReceived = false
@@ -119,7 +119,7 @@ type PtyNetPerformanceTests() =
                         if outputReceived then
                             latencies.Add(float stopwatch.ElapsedMilliseconds)
                         else
-                            logWarning "レイテンシテスト" ("タイムアウト: iteration {i}"
+                            logWarning "レイテンシテスト" ("タイムアウト: iteration " + i.ToString())
                         
                         manager.ClearOutput() // 次のテスト用にクリア
                         do! Task.Delay(10) |> Async.AwaitTask // 少し待機
@@ -132,19 +132,19 @@ type PtyNetPerformanceTests() =
                         let averageLatency = latencies |> Seq.average
                         
                         logInfo "レイテンシ計測結果" 
-                            ("99th_percentile={percentile99:F2}ms, average={averageLatency:F2}ms, samples={latencies.Count}"
+                            ("99th_percentile=" + percentile99.ToString("F2") + "ms, average=" + averageLatency.ToString("F2") + "ms, samples=" + latencies.Count.ToString())
                         
                         // アサーション: 99パーセンタイルが16ms未満
                         Assert.That(percentile99, Is.LessThan(16.0), 
-                            ("99パーセンタイルレイテンシが閾値を超過: {percentile99:F2}ms >= 16ms")
+                            ("99パーセンタイルレイテンシが閾値を超過: " + percentile99.ToString("F2") + "ms >= 16ms"))
                         
                         Assert.That(latencies.Count, Is.GreaterThan(testCount / 2), 
                             "有効なレイテンシサンプルが不足しています")
                     else
                         Assert.Fail("レイテンシデータが取得できませんでした")
                         
-                | Error error ->
-                    Assert.Fail(("PTYセッション作成に失敗: {error}")
+                | Result.Error error ->
+                    Assert.Fail("PTYセッション作成に失敗: " + error)
                     
             | None ->
                 Assert.Fail("PTYマネージャーが初期化されていません")
@@ -163,8 +163,8 @@ type PtyNetPerformanceTests() =
                 let! sessionResult = manager.CreateSession("dd", [|"if=/dev/zero"; "bs=1024"; "count=1024"|]) |> Async.AwaitTask
                 
                 match sessionResult with
-                | Ok session ->
-                    let readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartAsChild
+                | Result.Ok _session ->
+                    let! _readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartChild
                     
                     // 5秒間実行
                     do! Task.Delay(5000) |> Async.AwaitTask
@@ -174,14 +174,14 @@ type PtyNetPerformanceTests() =
                     let memoryIncrease = finalMemory - initialMemory
                     
                     logInfo "メモリ効率テスト結果" 
-                        ("memory_increase={memoryIncrease / 1024L}KB, output_length={output.Length}"
+                        ("memory_increase=" + (memoryIncrease / 1024L).ToString() + "KB, output_length=" + output.Length.ToString())
                     
                     // メモリ使用量が合理的な範囲内であることを確認（10MB未満）
                     Assert.That(memoryIncrease, Is.LessThan(10L * 1024L * 1024L), 
-                        ("メモリ使用量が過大: {memoryIncrease / 1024L / 1024L}MB")
+                        ("メモリ使用量が過大: " + (memoryIncrease / 1024L / 1024L).ToString() + "MB"))
                         
-                | Error error ->
-                    Assert.Fail(("PTYセッション作成に失敗: {error}")
+                | Result.Error error ->
+                    Assert.Fail("PTYセッション作成に失敗: " + error)
                     
             | None ->
                 Assert.Fail("PTYマネージャーが初期化されていません")

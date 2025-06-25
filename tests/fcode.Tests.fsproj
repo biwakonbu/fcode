@@ -16,6 +16,7 @@
     <Compile Include="UIHelpersTests.fs"/>
     <Compile Include="PtyNetPerformanceTests.fs"/>
     <Compile Include="PtyNetSigwinchTests.fs"/>
+    <Compile Include="PtyNetRealWorldTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

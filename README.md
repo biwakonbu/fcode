@@ -23,6 +23,9 @@ dotnet restore src/fcode.fsproj
 
 # アプリケーション実行
 dotnet run --project src/fcode.fsproj
+
+# テスト実行
+dotnet test tests/fcode.Tests.fsproj
 ```
 
 ### 本番用ビルド
@@ -62,6 +65,7 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
   - `Ctrl+X 0-7`: 指定ペインに直接移動
   - `Ctrl+L`: 画面リフレッシュ
   - `Ctrl+X H`: キーバインドヘルプ表示
+- 包括的単体テスト（21テスト、カバレッジ100%）
 
 ### 🚧 未実装
 - Claude Code CLI統合

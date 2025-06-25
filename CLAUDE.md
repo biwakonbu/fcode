@@ -19,9 +19,16 @@ Claude Code統合TUIエディタの開発プロジェクト。F#/.NET8 + Termina
 src/                # メインアプリケーション
 ├── Program.fs      # エントリーポイント・UIレイアウト定義
 ├── ColorSchemes.fs # ロール別カラースキーム定義
+├── KeyBindings.fs  # Emacsキーバインドシステム
 ├── fcode.fsproj    # F#プロジェクトファイル
 ├── bin/           # ビルド出力
 └── obj/           # ビルド中間ファイル
+
+tests/              # 単体テスト
+├── KeyBindingsTests.fs    # キーバインドシステムテスト
+├── ColorSchemesTests.fs   # カラースキーム機能テスト
+├── fcode.Tests.fsproj     # テストプロジェクトファイル
+└── Program.fs             # テストエントリーポイント
 ```
 
 ## 開発環境セットアップ
@@ -32,6 +39,12 @@ dotnet build src/fcode.fsproj
 
 # 実行
 dotnet run --project src/fcode.fsproj
+
+# テスト実行
+dotnet test tests/fcode.Tests.fsproj
+
+# カバレッジレポート付きテスト
+dotnet test tests/fcode.Tests.fsproj --collect:"XPlat Code Coverage"
 
 # 単一ファイルパブリッシュ
 dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
@@ -50,6 +63,7 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - Emacsキーバインドシステム（マルチキーシーケンス対応）
 - レスポンシブレイアウト（上段40%/中段40%/下段20%比率）
 - インタラクティブヘルプシステム（Ctrl+X H）
+- 包括的単体テストスイート（NUnit、21テストケース）
 
 ### 未実装機能
 - Claude Code CLI統合による AI支援

@@ -12,8 +12,10 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # --no-verify使用時のエラー表示
-# COMMIT_SOURCE が空で、かつコマンドラインに --no-verify がある場合のみエラー
-if [[ -z "$COMMIT_SOURCE" ]] && ps -eo args | grep -q "git.*commit.*--no-verify" 2>/dev/null; then
+# プロセスのコマンドラインから --no-verify フラグを検出
+# prepare-commit-msg の親プロセスを確認
+parent_cmd=$(ps -o args= -p $PPID 2>/dev/null || echo "")
+if [[ "$parent_cmd" =~ git.*commit.*--no-verify ]]; then
     echo -e "${RED}❌ ERROR: --no-verify フラグの使用は禁止されています${NC}" >&2
     echo -e "${RED}" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2

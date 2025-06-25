@@ -4,8 +4,7 @@
 
 set -e
 
-# pre-commit が実行されたことを示す環境変数を設定
-export PRE_COMMIT_EXECUTED=1
+# pre-commit フック実行開始
 
 echo "🔍 Pre-commit checks starting..."
 

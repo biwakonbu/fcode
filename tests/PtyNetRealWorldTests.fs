@@ -14,11 +14,11 @@ type PtyNetRealWorldTests() =
     let mutable ptyManager: PtyNetManager option = None
     
     [<SetUp>]
-    member this.Setup() =
+    member _.Setup() =
         ptyManager <- Some(new PtyNetManager())
     
     [<TearDown>]
-    member this.TearDown() =
+    member _.TearDown() =
         match ptyManager with
         | Some manager -> 
             (manager :> IDisposable).Dispose()
@@ -27,7 +27,7 @@ type PtyNetRealWorldTests() =
     
     /// 基本コマンドテスト - ls, echo, date
     [<Test>]
-    member this.BasicCommands_Success() =
+    member _.BasicCommands_Success() =
         async {
             match ptyManager with
             | Some manager ->
@@ -63,7 +63,7 @@ type PtyNetRealWorldTests() =
     
     /// 存在しないコマンドのエラーハンドリングテスト
     [<Test>]
-    member this.NonExistentCommand_ErrorHandling() =
+    member _.NonExistentCommand_ErrorHandling() =
         async {
             match ptyManager with
             | Some manager ->
@@ -92,7 +92,7 @@ type PtyNetRealWorldTests() =
     
     /// 複数セッション同時実行テスト
     [<Test>]
-    member this.MultipleSessionsConcurrent_Isolation() =
+    member _.MultipleSessionsConcurrent_Isolation() =
         async {
             match ptyManager with
             | Some manager1 ->
@@ -136,7 +136,7 @@ type PtyNetRealWorldTests() =
     
     /// 長時間実行コマンドと中断テスト
     [<Test>]
-    member this.LongRunningCommand_EarlyTermination() =
+    member _.LongRunningCommand_EarlyTermination() =
         async {
             match ptyManager with
             | Some manager ->
@@ -172,7 +172,7 @@ type PtyNetRealWorldTests() =
     
     /// セキュリティテスト - コマンドインジェクション耐性
     [<Test>]
-    member this.SecurityTest_CommandInjectionResistance() =
+    member _.SecurityTest_CommandInjectionResistance() =
         async {
             match ptyManager with
             | Some manager ->

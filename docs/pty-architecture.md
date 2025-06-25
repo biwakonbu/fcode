@@ -2,6 +2,8 @@
 
 ## 1. はじめに
 
+> 本プロジェクトは Linux (ネイティブ / WSL2) 環境を正式サポートし、**Windows ネイティブは対象外** です。Windows 対応は将来的な検討対象とし、本設計書の範囲外とします。
+
 本ドキュメントは、fcode が **Claude Code** CLI を各ペインで多重起動する際に不可欠となる **疑似端末 (PTY)** および **TTY** 制御のアーキテクチャを詳述する。**tmux/screen の実証済み手法**を参考に、Terminal.Gui 上の TextView に curses 風 UI を安全かつ効率的に埋め込むことで、ユーザーは Claude Code のリッチな対話インターフェースを損なうことなく利用できる。
 
 > 既存のプロセス分離設計 (docs/process-architecture.md) を補完する詳細設計である。
@@ -20,7 +22,7 @@
 ```
 
 - **Microsoft公式開発・保守** による信頼性
-- **クロスプラットフォーム完全対応** (Linux/macOS/Windows)
+- **クロスプラットフォーム対応** (ライブラリ自体は Linux/macOS/Windows 対応だが、本プロジェクトは Linux/WSL のみを正式サポート)
 - **F#/.NET完全互換**
 - VS Codeの拡張機能で実績あり
 
@@ -609,22 +611,39 @@ type RenderCell = {
     ```
 
 ### 15.2 PTY 操作の不足点
+- **Linux 版 Pty.Net PoC:** Linux 版 Pty.Net に Throughput 低下や SIGWINCH 未対応などの機能差が報告されているため、Phase 1 で PoC を実施し、問題があれば `openpty()` 直接実装へフォールバックする判断基準を設ける。
 - **リサイズ通知:** UI サイズ変更時に `TIOCSWINSZ` ioctl と `SIGWINCH` を送出し、子プロセス側の curses 画面を正しくリサイズさせる。**具体的な P/Invoke シグネチャ例は以下**。
-  ```csharp
-  [StructLayout(LayoutKind.Sequential)]
-  public struct Winsize {
-      public ushort ws_row;
-      public ushort ws_col;
-      public ushort ws_xpixel;
-      public ushort ws_ypixel;
-  }
 
-  [DllImport("libc", SetLastError = true)]
-  public static extern int ioctl(int fd, ulong request, ref Winsize size);
+```csharp
+[StructLayout(LayoutKind.Sequential)]
+public struct Winsize {
+    public ushort ws_row;
+    public ushort ws_col;
+    public ushort ws_xpixel;
+    public ushort ws_ypixel;
+}
 
-  // ioctl(ptyMasterFd, TIOCSWINSZ, ref winsize);
-  ```
-- **ポーリング抽象化:** Linux の `epoll`、macOS の `kqueue`、Windows の IOCP をラップする I/O マルチプレクサ層を定義し、テスタビリティを確保する。
+[DllImport("libc", SetLastError = true)]
+public static extern int ioctl(int fd, ulong request, ref Winsize size);
+
+// ioctl(ptyMasterFd, TIOCSWINSZ, ref winsize);
+```
++```fsharp
++[<Struct; StructLayout(LayoutKind.Sequential)>]
++type Winsize = struct
++    val mutable ws_row: uint16
++    val mutable ws_col: uint16
++    val mutable ws_xpixel: uint16
++    val mutable ws_ypixel: uint16
++end
++
++[<DllImport("libc", SetLastError = true)>]
++extern int ioctl(int fd, uint64 request, byref<Winsize> size)
++
++// 使用例: ioctl(ptyMasterFd, TIOCSWINSZ, &winsize)
++```
+
+- **ポーリング抽象化:** Linux の `epoll`, macOS の `kqueue`, Windows の IOCP をラップする I/O マルチプレクサ層を定義し、テスタビリティを確保する。
 - **SIGHUP 防止:** UI デタッチ時に子プロセスが SIGHUP で落ちないよう **`fork()` 後に `setsid()` で新しいセッションを確立する** ことを `PtyManager` の責務として明確化する。
 
 ### 15.3 Terminal.Gui 制限とフォールバック
@@ -648,6 +667,11 @@ type RenderCell = {
 ### 15.7 スケジュール調整
 - ANSI 解析と差分描画は実装負荷が高いため、Phase 3 を **3→4 週間** に延長し、総工期 **10–11 週間** (プロトコル凍結期間含む) を確保することを推奨する。
 
+### 15.8 パフォーマンス KPI と軽量テレメトリ
+
+- **KPI の策定:** 例として「1 セッション 60fps 相当の更新時に CPU 使用率 < 25% / メモリ使用量 < 300MB」を初期目標に設定し、OpenTelemetry メトリクスと紐づける。
+- **軽量テレメトリ常時 ON:** 詳細トレースは opt-in としつつ、CPU/メモリ等の低コストメトリクスは常時送出する "Low-Overhead" モードをデフォルトとする。
+
 ## 16. 現時点での不安点 (Open Concerns)
 
 以下は、2025-06 時点のレビューで挙がった **未解決または要フォローアップの懸念点** です。実装開始前に解決方針を決定し、スケジュールに反映してください。
@@ -662,6 +686,8 @@ type RenderCell = {
 | 6 | **ログファイル肥大化** | 運用 | `history/{session-id}.log` のローテーション戦略が未確定。ディスク圧迫による障害を防ぐため、上限・世代管理・圧縮方針を確定する。 |
 | 7 | **パフォーマンス計測/可観測性の不足** | 全フェーズ | 現状設計にメトリクス収集・可視化 (Prometheus, OTEL など) の具体策が不足。ボトルネック検出が後手に回るリスク。 |
 | 8 | **Phase 3 の工数見積もり** | スケジュール | ANSI 解析 + 差分描画最適化 + セッション永続化が同一フェーズに集中しており、4 週間でも過密気味。バッファを確保するか並列チーム体制を要検討。 |
+| 9 | **Pty.Net Linux 実装差異のリスク** | Phase 1 | Linux 版 Pty.Net で Throughput 低下や SIGWINCH 未対応など機能差が報告されており、PoC 検証が必須。 |
+| 10 | **パフォーマンス KPI 未定義** | 全フェーズ | CPU 使用率・メモリ使用量など目標値が未定義のため、性能リグレッション検知が困難。早期に定量 KPI を設定する必要がある。 |
 
 > **アクション:** 上記不安点には Jira チケットを発行し、担当者・期日・優先度を明示することを推奨します。
 

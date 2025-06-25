@@ -14,7 +14,7 @@ let main _argv =
         logInfo "Application" "=== fcode TUI Application Starting ==="
         let argsString = System.String.Join(" ", _argv)
         logInfo "Application" $"Command line args: {argsString}"
-        
+
         // Initialize application
         logDebug "Application" "Initializing Terminal.Gui"
         Application.Init()
@@ -25,14 +25,14 @@ let main _argv =
 
         // --- Conversation Pane -------------------------------------------------
         logDebug "UI" "Creating conversation pane"
-        let conversationWidth = 60 // columns  
+        let conversationWidth = 60 // columns
         let convo = new FrameView("会話")
         convo.X <- 0
         convo.Y <- 0
         convo.Width <- conversationWidth
         convo.Height <- Dim.Fill()
 
-        // Border-less style for the conversation pane (フラット表示) 
+        // Border-less style for the conversation pane (フラット表示)
         convo.Border.Effect3D <- false
         // Remove title bar completely for flat display
         convo.Title <- ""
@@ -55,7 +55,7 @@ let main _argv =
             fv.Border.Effect3D <- false
             // Apply color scheme based on title
             applySchemeByRole fv title
-            
+
             // エージェントペインの場合はTextViewを追加
             if title <> "会話" then
                 logDebug "UI" $"Adding TextView to pane: {title}"
@@ -69,13 +69,13 @@ let main _argv =
                 fv.Add(textView)
                 logInfo "UI" $"TextView added to pane: {title} - Subviews count: {fv.Subviews.Count}"
                 logDebug "UI" $"TextView type: {textView.GetType().Name}"
-            
+
             logDebug "UI" $"Pane created: {title}"
             fv
 
         // Row heights (percentage of right-hand container)
-        let devRowHeight   = Dim.Percent 40.0f // 上段: dev1-3
-        let qaRowHeight    = Dim.Percent 40.0f // 中段: qa1-2, ux
+        let devRowHeight = Dim.Percent 40.0f // 上段: dev1-3
+        let qaRowHeight = Dim.Percent 40.0f // 中段: qa1-2, ux
 
         // ------------------------------------------------------------------
         // Top row – dev1 dev2 dev3
@@ -132,36 +132,41 @@ let main _argv =
 
         // Add top-level panes
         top.Add(convo, right)
-        
+
         // エージェントペインでのClaude Code自動起動
-        let agentPanes = [
-            ("dev1", dev1); ("dev2", dev2); ("dev3", dev3);
-            ("qa1", qa1); ("qa2", qa2); ("ux", ux); ("pm", timeline)
-        ]
-    
+        let agentPanes =
+            [ ("dev1", dev1)
+              ("dev2", dev2)
+              ("dev3", dev3)
+              ("qa1", qa1)
+              ("qa2", qa2)
+              ("ux", ux)
+              ("pm", timeline) ]
+
         let startClaudeCodeForPane (paneId: string, pane: FrameView) =
             logInfo "AutoStart" $"Starting Claude Code for pane: {paneId}"
             logDebug "AutoStart" $"Pane {paneId} has {pane.Subviews.Count} subviews"
-            
-            let textViews = 
-                pane.Subviews 
-                |> Seq.mapi (fun i view -> 
+
+            let textViews =
+                pane.Subviews
+                |> Seq.mapi (fun i view ->
                     logDebug "AutoStart" $"Subview {i}: {view.GetType().Name}"
                     view)
                 |> Seq.collect findTextViews
                 |> Seq.toList
-            
+
             logDebug "AutoStart" $"Found {textViews.Length} TextViews in pane: {paneId}"
-            
+
             match textViews with
             | textView :: _ ->
                 logDebug "AutoStart" $"TextView found for pane: {paneId}"
                 textView.Text <- $"[DEBUG] {paneId}ペイン - TextView発見、Claude Code起動開始..."
                 textView.SetNeedsDisplay()
                 Application.Refresh()
-                
+
                 let workingDir = System.Environment.CurrentDirectory
                 let success = sessionManager.StartSession(paneId, workingDir, textView)
+
                 if not success then
                     logError "AutoStart" $"Failed to start Claude Code for pane: {paneId}"
                     textView.Text <- $"[ERROR] {paneId}ペイン - Claude Code起動失敗"
@@ -169,12 +174,12 @@ let main _argv =
                     Application.Refresh()
                 else
                     logInfo "AutoStart" $"Successfully started Claude Code for pane: {paneId}"
-            | [] -> 
+            | [] ->
                 // TextViewが見つからない場合のデバッグ情報
                 let debugMsg = $"[ERROR] {paneId}ペイン - TextViewが見つかりません"
                 logError "AutoStart" debugMsg
                 System.Console.WriteLine(debugMsg)
-        
+
         // 各エージェントペインでClaude Codeを起動 (一時的に無効化 - 安定性のため)
         // logInfo "AutoStart" "Starting Claude Code auto-start process"
         // agentPanes |> List.iter startClaudeCodeForPane
@@ -183,61 +188,63 @@ let main _argv =
 
         // Create focus management for panes
         let focusablePanes = [| convo; dev1; dev2; dev3; qa1; qa2; ux; timeline |]
-        
+
         // Create Emacs key handler
         let emacsKeyHandler = new EmacsKeyHandler(focusablePanes, sessionManager)
-        
+
         // Add Emacs-style key handling
-        let keyHandler = System.Action<View.KeyEventEventArgs>(fun args ->
-            let handled = emacsKeyHandler.HandleKey(args.KeyEvent)
-            args.Handled <- handled)
+        let keyHandler =
+            System.Action<View.KeyEventEventArgs>(fun args ->
+                let handled = emacsKeyHandler.HandleKey(args.KeyEvent)
+                args.Handled <- handled)
 
         // Override key processing
         top.add_KeyDown keyHandler
 
-        // Set initial focus 
+        // Set initial focus
         logDebug "Application" "Setting initial focus to conversation pane"
         focusablePanes.[0].SetFocus()
 
         // Application.Run後の遅延起動を設定
-        let setupDelayedAutoStart() =
+        let setupDelayedAutoStart () =
             // Application.RunLoop開始後に安全にClaude Codeを起動
             Task.Run(fun () ->
                 logInfo "AutoStart" "Starting delayed auto-start after UI initialization"
                 System.Threading.Thread.Sleep(1000) // 1秒待機でUI完全初期化
-                
+
                 // メインスレッドでUI操作を実行
                 Application.MainLoop.Invoke(fun () ->
                     logInfo "AutoStart" "Executing delayed Claude Code auto-start"
-                    
+
                     // dev1ペインのみで初期テスト
                     let dev1Session = agentPanes |> List.find (fun (id, _) -> id = "dev1")
                     startClaudeCodeForPane dev1Session
-                    
+
                     logInfo "AutoStart" "Delayed auto-start completed for dev1"))
             |> ignore
 
         // Run application
         logInfo "Application" "Starting TUI application loop"
-        setupDelayedAutoStart()
+        setupDelayedAutoStart ()
         Application.Run(top)
         logInfo "Application" "TUI application loop ended"
-        
+
         // Cleanup
         logInfo "Application" "Cleaning up Claude Code sessions"
         sessionManager.CleanupAllSessions()
-        
+
         Application.Shutdown()
         logInfo "Application" "Application shutdown completed"
-        
+
         0 // return an integer exit code
-    with
-    | ex ->
+    with ex ->
         logException "Application" "Fatal error in main application" ex
+
         try
             Application.Shutdown()
-        with
-        | _ -> ()
+        with _ ->
+            ()
+
         printfn "FATAL ERROR - Check log file: %s" logger.LogPath
         printfn "Error: %s" ex.Message
-        1 // return error exit code 
+        1 // return error exit code

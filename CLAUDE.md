@@ -16,8 +16,9 @@ Claude Code統合TUIエディタの開発プロジェクト。F#/.NET8 + Termina
 ## プロジェクト構造
 
 ```
-src/TuiPoC/         # メインアプリケーション
+src/                # メインアプリケーション
 ├── Program.fs      # エントリーポイント・UIレイアウト定義
+├── ColorSchemes.fs # ロール別カラースキーム定義
 ├── fcode.fsproj    # F#プロジェクトファイル
 ├── bin/           # ビルド出力
 └── obj/           # ビルド中間ファイル
@@ -27,13 +28,13 @@ src/TuiPoC/         # メインアプリケーション
 
 ```bash
 # ビルド
-dotnet build src/TuiPoC/fcode.fsproj
+dotnet build src/fcode.fsproj
 
 # 実行
-dotnet run --project src/TuiPoC/fcode.fsproj
+dotnet run --project src/fcode.fsproj
 
 # 単一ファイルパブリッシュ
-dotnet publish src/TuiPoC/fcode.fsproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
 ```
 
 ## アーキテクチャ設計

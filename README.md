@@ -19,20 +19,20 @@ Claude Code CLIを統合し、複数のペインで同時にAI支援を受けな
 
 ```bash
 # 依存関係の復元
-dotnet restore src/TuiPoC/fcode.fsproj
+dotnet restore src/fcode.fsproj
 
 # アプリケーション実行
-dotnet run --project src/TuiPoC/fcode.fsproj
+dotnet run --project src/fcode.fsproj
 ```
 
 ### 本番用ビルド
 
 ```bash
 # 単一ファイル実行可能形式でビルド
-dotnet publish src/TuiPoC/fcode.fsproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
 
 # 実行
-./src/TuiPoC/bin/Release/net8.0/linux-x64/publish/fcode
+./src/bin/Release/net8.0/linux-x64/publish/fcode
 ```
 
 ## 機能

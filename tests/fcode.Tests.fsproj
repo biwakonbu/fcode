@@ -14,6 +14,8 @@
     <Compile Include="ProcessSupervisorTests.fs"/>
     <Compile Include="ClaudeCodeProcessTests.fs"/>
     <Compile Include="UIHelpersTests.fs"/>
+    <Compile Include="PtyNetPerformanceTests.fs"/>
+    <Compile Include="PtyNetSigwinchTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

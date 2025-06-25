@@ -47,14 +47,14 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 ### 実装済み機能
 - マルチペイン管理（8ペイン: 会話、dev1-3、qa1-2、ux、PMタイムライン）
 - ロール別カラースキーム（dev/qa/ux/pm別配色）
-- キーバインド操作（Ctrl+Tab: ペイン巡回、Ctrl+C: 会話ペイン表示切替）
+- Emacsキーバインドシステム（マルチキーシーケンス対応）
 - レスポンシブレイアウト（上段40%/中段40%/下段20%比率）
+- インタラクティブヘルプシステム（Ctrl+X H）
 
 ### 未実装機能
 - Claude Code CLI統合による AI支援
 - リアルタイム会話ログ・エクスポート機能
 - ロール・タグベースフィルタリング
-- ダイレクトペイン切替（Ctrl+数字）
 - Broadcast/Request モード切替
 
 ## 重要な実装方針

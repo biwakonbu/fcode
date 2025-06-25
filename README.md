@@ -54,9 +54,14 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 ### ✅ 実装済み
 - マルチペインレイアウト表示（8ペイン構成）
 - ロール別カラースキーム（dev/qa/ux/pm別配色）
-- キーバインド操作：
-  - `Ctrl+Tab`: ペイン間フォーカス移動
-  - `Ctrl+C`: 会話ペイン表示切替
+- Emacsキーバインドシステム：
+  - `Ctrl+X Ctrl+C`: アプリケーション終了
+  - `Ctrl+X O`: 次のペインに移動
+  - `Ctrl+X Ctrl+O`: 前のペインに移動
+  - `Ctrl+X C`: 会話ペイン表示切替
+  - `Ctrl+X 0-7`: 指定ペインに直接移動
+  - `Ctrl+L`: 画面リフレッシュ
+  - `Ctrl+X H`: キーバインドヘルプ表示
 
 ### 🚧 未実装
 - Claude Code CLI統合

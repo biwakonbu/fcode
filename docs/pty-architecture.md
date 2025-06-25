@@ -98,6 +98,8 @@ type PtyManager(logger: ILogger) =
 - **セッション復元**: fcode再起動時に既存セッションを復元
 - **状態保存**: 作業ディレクトリ、環境変数、履歴の保持
 
+> **重要 – PTY制御レイヤの方針**: `SessionServer` および下位モジュールでは **`Pty.Net` の API を第一選択肢**として採用し、`openpty` や `ioctl` などの低レベル P/Invoke 実装は *Pty.Net では解決できない特殊な要件が発生した場合* に限りフォールバックとして使用する。これによりクロスプラットフォーム互換と実装保守性を最大化し、コードベースの複雑性を抑制する。
+
 ---
 
 ## 4. ライブラリ導入による工期短縮
@@ -208,6 +210,19 @@ flowchart TB
 | 状態永続化 | `~/.config/fcode/sessions.json` にセッション一覧を保存 |
 
 **IPC プロトコル (JSON):**
+
+> メッセージは **[4-byte length (big-endian)][UTF-8 JSON ペイロード]** のフレーミングで送受信する。すべてのメッセージは下記 `Envelope` でラップされ `version` フィールドにより後方互換性を維持する。
+
+```fsharp
+/// 全IPCメッセージの共通ラッパ
+/// length-prefix はバイト列レベルの framing で表現し、このレコードは
+/// その内部 JSON オブジェクトを定義する。
+type Envelope<'T> = {
+    version : int // 現行 1
+    payload : 'T  // 実際のコマンド(下記 SessionCommand など)
+}
+```
+
 ```fsharp
 type SessionCommand = 
     | CreateSession of name:string * cmd:string
@@ -218,7 +233,7 @@ type SessionCommand =
     | GetOutput of sessionId:string
 ```
 
-### 5.2 `SessionManager` (拡張)
+### 7.2 `SessionManager` (拡張)
 
 **tmux session management準拠:**
 
@@ -229,7 +244,7 @@ type SessionCommand =
 | 状態保存 | 作業ディレクトリ、環境変数、最後のコマンドを保持 |
 | ゾンビ回収 | 終了したセッションリソースの自動解放 |
 
-### 5.3 `PtyManager` (改良)
+### 7.3 `PtyManager` (改良)
 
 **screen準拠の改良点:**
 
@@ -239,7 +254,7 @@ type SessionCommand =
 | マルチプレクサ | 複数セッションの入出力を効率的にポーリング (`epoll`/`kqueue`) |
 | バックプレッシャ制御 | セッション毎の出力バッファサイズを監視・制限 |
 
-### 5.4 `SessionBridge` (Terminal.Gui連携)
+### 7.4 `SessionBridge` (Terminal.Gui連携)
 
 | 機能 | 詳細 |
 |------|------|
@@ -248,7 +263,7 @@ type SessionCommand =
 | キー透過 | Terminal.GuiのKeyEventをサーバーに転送 |
 | 再接続処理 | サーバー障害時の自動再接続とセッション復元 |
 
-### 5.5 `RenderBuffer` (差分描画最適化)
+### 7.5 `RenderBuffer` (差分描画最適化)
 
 **tmux準拠の効率化:**
 
@@ -283,7 +298,7 @@ type RenderBuffer = {
 }
 ```
 
-### 5.6 フォールバック戦略
+### 7.6 フォールバック戦略
 
 **段階的機能低下:**
 1. **Full PTY Mode**: 完全なcurses UI埋め込み
@@ -292,9 +307,9 @@ type RenderBuffer = {
 
 ---
 
-## 6. セッション永続化の実装
+## 8. セッション永続化の実装
 
-### 6.1 セッション状態の保存
+### 8.1 セッション状態の保存
 
 **保存対象:**
 ```fsharp
@@ -315,7 +330,7 @@ type SessionState = {
 - **出力履歴**: `~/.config/fcode/history/{session-id}.log`
 - **一時状態**: `/tmp/fcode-{user}/sessions/`
 
-### 6.2 復元プロセス
+### 8.2 復元プロセス
 
 ```mermaid
 sequenceDiagram
@@ -339,9 +354,9 @@ sequenceDiagram
 
 ---
 
-## 7. 実装可能性の検証
+## 9. 実装可能性の検証
 
-### 7.1 .NET実装の制約
+### 9.1 .NET実装の制約
 
 **Unix Domain Socket IPC:**
 ```fsharp
@@ -371,7 +386,7 @@ let createPty cols rows =
     | _ -> Error (Marshal.GetLastWin32Error())
 ```
 
-### 7.2 Terminal.Gui制約の回避
+### 9.2 Terminal.Gui制約の回避
 
 **解決策:**
 1. **ANSIエスケープ前処理**: サーバー側でANSIシーケンスを解析し、プレーンテキスト + 属性情報に変換
@@ -394,7 +409,7 @@ type RenderCell = {
 
 ---
 
-## 8. 段階的実装計画
+## 10. 段階的実装計画
 
 ### Phase 1: 基盤実装 (2週間)
 - [ ] `SessionServer` の基本IPC機能
@@ -421,32 +436,32 @@ type RenderCell = {
 
 ---
 
-## 9. リスク軽減策
+## 11. リスク軽減策
 
-### 9.1 複雑性リスク
+### 11.1 複雑性リスク
 **対策**: tmux実装を参考にした実証済みパターンの採用
 - セッション管理ロジックは tmux のオープンソース実装を参照
 - IPC プロトコルは JSON で単純化
 
-### 9.2 性能リスク  
+### 11.2 性能リスク  
 **対策**: 段階的最適化
 - Phase 2 で基本動作確認後、Phase 3 で最適化に集中
 - プロファイリング主導の性能改善
 
-### 9.3 互換性リスク
+### 11.3 互換性リスク
 **対策**: フォールバック戦略の実装
 - PTY失敗時は print-mode に自動切替
 - 段階的機能低下で最低限の機能を保証
 
 ---
 
-## 10. 参考資料
+## 12. 参考資料
 
 - man 7 pty
 - Terminal.Gui ドキュメント
 - Anthropic Claude Code ドキュメント 
 
-## 11. 入力・描画・エラーハンドリング詳細
+## 13. 入力・描画・エラーハンドリング詳細
 
 1. **入力ルート**
    ```mermaid
@@ -496,11 +511,11 @@ type RenderCell = {
 
 ---
 
-## 12. 現状実装とのギャップと改修計画
+## 14. 現状実装とのギャップと改修計画
 
 > **目的:** 新設計と既存コードの差分を明確化し、実装者が迷わず改修に着手できるよう具体的な手順を提示する。本セクションは移行完了後に削除する。
 
-### 12.1 現状コードと設計のマッピング
+### 14.1 現状コードと設計のマッピング
 
 | コンポーネント | 実装状況 | ギャップと課題 |
 | :--- | :--- | :--- |
@@ -511,7 +526,7 @@ type RenderCell = {
 | **描画機構** | ❌ 未実装 | `RenderBuffer`や`IOThrottler`による差分描画の仕組みは存在せず、`StringBuilder`でTextViewを直接更新しているため性能に課題。 |
 | **PTY抽象化** | ❌ 未実装 | `PtyManager`に相当するモジュールは存在しない。 |
 
-### 12.2 優先改修リスト（モジュール単位）
+### 14.2 優先改修リスト（モジュール単位）
 
 1.  **`ClaudeCodeProcess.fs` → `SessionBridge.fs` + `PtyManager.fs` にリファクタリング**
     *   **PtyManager:** `openpty()` (Linux/WSL) をP/Invokeで呼び出し、PTYハンドルを生成・管理する。
@@ -529,7 +544,7 @@ type RenderCell = {
     *   ANSIエスケープシーケンスを解析し、仮想スクリーン（セル配列）の状態を更新する。
     *   `IOThrottler`からの要求に応じ、旧状態との差分のみを計算して返す責務を持つ。
 
-### 12.3 推奨ロードマップ
+### 14.3 推奨ロードマップ
 
 | フェーズ | 主なタスク | 期間目安 |
 | :--- | :--- | :--- |
@@ -537,18 +552,18 @@ type RenderCell = {
 | **Week 2** | `RenderBuffer` + `IOThrottler`による差分描画を導入。`KeyRouter`の分離とテスト。 | 1週間 |
 | **Week 3** | `FailureDetector`の責務分離と`ProcessSupervisor`との連携。CIへの高度なテスト（Fuzz等）追加。 | 1週間 |
 
-### 12.4 実装者への注意事項
+### 14.4 実装者への注意事項
 
 *   **PTY first:** まずは `openpty()` を使ったLinux/WSL対応に集中する。
 *   **Diff is everything:** `TextView`の全量更新はパフォーマンスのボトルネックになるため、`RenderBuffer`による差分更新を徹底する。
 *   **Purity is testability:** `KeyRouter`のように副作用を分離することで、ユニットテストのカバレッジと信頼性が向上する。
 *   **Log everything:** `Serilog`等の非同期ロガーを導入し、MainLoopと競合させずに詳細な診断情報を記録する。
 
-## 13. 実装レビューによる追加課題と推奨対策
+## 15. 実装レビューによる追加課題と推奨対策
 
 本章は 2025-06 レビューのフィードバックを反映し、実装フェーズでの手戻りを最小化するために **非機能要件** と **リスク項目** を明確化する。開発開始前に必ず目を通し、懸念点があれば設計を更新すること。
 
-### 13.1 IPC (Unix Domain Socket) に関する注意点
+### 15.1 IPC (Unix Domain Socket) に関する注意点
 - **同時接続／排他制御:** 複数 UI クライアントが同一 UDS ソケットパスに接続する際、リクエストのシリアライズ方法とロック戦略を実装する (キューイング or Mutex)。
 - **メッセージフレーミング:** JSON をストリーム送信するだけでは区切りが曖昧になる。**`length-prefix` 方式を推奨**し、プロトコル仕様に明記する。
   - **提案プロトコル:** `[4-byte-length (big-endian)][payload (UTF-8 JSON)]`
@@ -567,7 +582,33 @@ type RenderCell = {
   }
   ```
 
-### 13.2 PTY 操作の不足点
+- **プロトコルスキーマ検証:** IPCメッセージの信頼性を高め、クライアントとサーバー間の意図せぬ不整合を防ぐため、**`JsonSchema.Net` ライブラリを用いたスキーマ検証を導入する**。
+  - **方針:** サーバーはメッセージ受信時に、ペイロードが定義されたJSON Schemaに準拠しているか検証する。
+  - **CI連携:** プロトコルスキーマファイル (`ipc-protocol.v1.schema.json`) をリポジトリで管理し、CI上でスキーマとコードの整合性テストを常時実行する。
+  - **スキーマ定義例 (`ipc-protocol.v1.schema.json`):**
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://fcode.dev/ipc-protocol.v1.schema.json",
+      "title": "fcode IPC Protocol v1",
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string",
+          "enum": ["CreateSession", "AttachSession", "ListSessions", "..."]
+        },
+        "version": {
+          "const": 1
+        },
+        "payload": {
+          "type": "object"
+        }
+      },
+      "required": ["command", "version", "payload"]
+    }
+    ```
+
+### 15.2 PTY 操作の不足点
 - **リサイズ通知:** UI サイズ変更時に `TIOCSWINSZ` ioctl と `SIGWINCH` を送出し、子プロセス側の curses 画面を正しくリサイズさせる。**具体的な P/Invoke シグネチャ例は以下**。
   ```csharp
   [StructLayout(LayoutKind.Sequential)]
@@ -586,28 +627,28 @@ type RenderCell = {
 - **ポーリング抽象化:** Linux の `epoll`、macOS の `kqueue`、Windows の IOCP をラップする I/O マルチプレクサ層を定義し、テスタビリティを確保する。
 - **SIGHUP 防止:** UI デタッチ時に子プロセスが SIGHUP で落ちないよう **`fork()` 後に `setsid()` で新しいセッションを確立する** ことを `PtyManager` の責務として明確化する。
 
-### 13.3 Terminal.Gui 制限とフォールバック
+### 15.3 Terminal.Gui 制限とフォールバック
 - **16 色制限:** Terminal.Gui は 16 色までしか扱えないため、ANSI 256 色をマッピングするフォールバックテーブルを準備する。**RGB ユークリッド距離による最近傍探索を推奨**。
 - **メモリ／GC 負荷:** `RenderBuffer` 実装では `ArrayPool<RenderCell>` 再利用やオブジェクトプールを用いてアロケーションを最小化し、140 cps 以上のストリームでも GC スレッドを阻害しないようにする。
 - **ダブルワイド文字対応:** CJK 文字や絵文字が 2 カラム幅を消費することを考慮する。**`System.Text.Rune` と `EastAsianWidth.GetEastAsianWidth()`** を使って書記素クラスタ単位で処理し、`RenderBuffer` 上のセル占有幅を正しく計算する。
 
-### 13.4 セッション永続化における競合と肥大化
+### 15.4 セッション永続化における競合と肥大化
 - **ファイルロック:** `~/.config/fcode/sessions.json` 書き換え時にファイルロック (flock) を行い、レースコンディションを防止する。
 - **ログローテーション:** `history/{session-id}.log` はサイズ上限や世代管理を行い、ディスク圧迫を防ぐ (例: **100 MB で gzip 圧縮、最新 3 世代を保持**)。
 
-### 13.5 セキュリティ
+### 15.5 セキュリティ
 - **コマンドバリデーション:** `CreateSession` で渡される `cmd` をホワイトリスト検証または安全な引用処理し、任意コマンド実行リスクを排除する。**推奨: `cmd` は `"claude"` 固定とし、引数は `string[]` で別途受け取る**ことで Injection を防ぐ。
 - **権限昇格の禁止:** Windows Pseudo Console API など、高権限を要求するパスは採用しない。将来必要な場合は別途 threat model を策定する。
 - **ファイルパーミッション:** `~/.config/fcode/` ディレクトリ以下の状態ファイル (`sessions.json`, ログ) は、**`File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite)` (パーミッション `600`)** を用いて他ユーザからの読み取りを禁止する。
 
-### 13.6 テスト戦略
+### 15.6 テスト戦略
 - **PTY 層:** ゴールデンファイル方式で I/O シーケンスを固定し、CI 上でリグレッションを検出する。
 - **KeyRouter:** 副作用を排除した純粋関数化を徹底し、ユニットテスト 100 % カバレッジを目標とする。
 
-### 13.7 スケジュール調整
+### 15.7 スケジュール調整
 - ANSI 解析と差分描画は実装負荷が高いため、Phase 3 を **3→4 週間** に延長し、総工期 **10–11 週間** (プロトコル凍結期間含む) を確保することを推奨する。
 
-## 14. 現時点での不安点 (Open Concerns)
+## 16. 現時点での不安点 (Open Concerns)
 
 以下は、2025-06 時点のレビューで挙がった **未解決または要フォローアップの懸念点** です。実装開始前に解決方針を決定し、スケジュールに反映してください。
 
@@ -624,10 +665,71 @@ type RenderCell = {
 
 > **アクション:** 上記不安点には Jira チケットを発行し、担当者・期日・優先度を明示することを推奨します。
 
-## 15. オプトインオブザービリティデザイン
+## 17. 可観測性 (Observability) 設計
 
-このセクションは、オプトインオブザービリティの設計に関する詳細を提供します。
+**目的:** パフォーマンスボトルネックの特定、障害の早期発見、システムの振る舞いの理解を促進するため、モダンな可観測性のプラクティスを設計の初期段階から導入する。これは **不安点 #7** への直接的な対策である。
 
-## 16. 外部化設定管理
+**採用技術:** .NETにおける標準的な可観測性ライブラリである **`OpenTelemetry`** を採用する。
 
-このセクションは、外部化設定管理の設計に関する詳細を提供します。
+**主要コンポーネント:**
+| コンポーネント | ライブラリ | 目的 |
+| :--- | :--- | :--- |
+| **トレース** | `System.Diagnostics.ActivitySource` | IPCリクエストの処理、セッション生成など、一連の操作のレイテンシと依存関係を追跡する。 |
+| **メトリクス** | `System.Diagnostics.Meter` | アクティブセッション数、メモリ使用量など、システムの健全性を表す数値を継続的に計測する。 |
+| **ログ** | `Microsoft.Extensions.Logging` | 既存のログに `TraceId` と `SpanId` を含めることで、トレース情報との相関を可能にする。 |
+
+### **有効化戦略 (Opt-in方式)**
+
+パフォーマンス計測機能は、アプリケーションのオーバーヘッドとなり得るため、**デフォルトでは無効化**する。ユーザーがデバッグや性能解析を目的とする場合にのみ、以下のいずれかの方法で明示的に有効化できる（オプトイン）設計とする。
+
+1.  **設定ファイルによる制御 (推奨):**
+    `~/.config/fcode/config.json` に専用のセクションを設け、有効化フラグを配置する。
+
+2.  **コマンドライン引数による制御:**
+    パワーユーザーや開発者が一時的に利用するため、起動時の引数で有効化するオプションを提供する。
+    `fcode --enable-observability`
+
+**実装上の注意:**
+-   `SessionServer` の起動時にこれらの設定や引数を評価し、`Enabled: true` の場合にのみ OpenTelemetry のパイプラインを初期化する。
+-   `Enabled: false` の場合は、計装コード（`activitySource.StartActivity`など）が低オーバーヘッドなNo-Op（何もしない操作）となるため、パフォーマンスへの影響は無視できるレベルに留まる。
+
+## 18. 構成管理
+
+**目的:** ドキュメントやコード内にハードコードされた設定値（閾値、パスなど）を外部ファイルに分離し、保守性および運用性を向上させる。
+
+**採用技術:** .NET標準の `Microsoft.Extensions.Configuration` を採用する。
+
+**実装方針:**
+1.  **設定ファイルの配置:** `~/.config/fcode/config.json` にデフォルト設定ファイルを配置する。
+2.  **設定の読み込み:** `SessionServer` 起動時に `config.json` を読み込み、`IConfiguration` インスタンスを生成して各モジュールにDIコンテナ経由で提供する。
+3.  **強く型付けされた設定:** F#のレコード型を用いて設定をマッピングし、安全にアクセスする。
+
+**`config.json` の例:**
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "fcode": "Debug"
+    }
+  },
+  "FailureDetector": {
+    "CpuThresholdPercent": 120,
+    "MemoryThresholdMb": 1024,
+    "ResponseTimeoutSeconds": 5
+  },
+  "RestartPolicy": {
+    "InitialDelaySeconds": 1,
+    "Multiplier": 2.0,
+    "MaxDelaySeconds": 60
+  },
+  "History": {
+    "LogRotationMaxSizeMb": 100,
+    "MaxLogFiles": 3
+  },
+  "Observability": {
+    "Enabled": false,
+    "Exporter": "Console"
+  }
+}
+```

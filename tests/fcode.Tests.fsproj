@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="KeyBindingsTests.fs"/>
     <Compile Include="ColorSchemesTests.fs"/>
+    <Compile Include="ProcessSupervisorTests.fs"/>
     <Compile Include="ClaudeCodeProcessTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>

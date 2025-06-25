@@ -105,8 +105,9 @@ type ClaudeCodeProcessTests() =
             let paneId = "test_pane"
             let workingDir = Directory.GetCurrentDirectory()
             // Claude CLIが存在しない環境でも例外が発生しないことを確認
+            let mockTextView = new TextView()
             Assert.DoesNotThrow(fun () -> 
-                manager.StartSession(paneId, workingDir) |> ignore)
+                manager.StartSession(paneId, workingDir, mockTextView) |> ignore)
         | None ->
             Assert.Fail("SessionManagerが初期化されていない")
 
@@ -117,7 +118,8 @@ type ClaudeCodeProcessTests() =
             let paneId = "test_pane"
             let invalidDir = "/nonexistent/directory"
             // 無効なディレクトリでのセッション起動は例外を適切に処理すること
+            let mockTextView = new TextView()
             Assert.DoesNotThrow(fun () -> 
-                manager.StartSession(paneId, invalidDir) |> ignore)
+                manager.StartSession(paneId, invalidDir, mockTextView) |> ignore)
         | None ->
             Assert.Fail("SessionManagerが初期化されていない")

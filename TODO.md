@@ -10,9 +10,9 @@
   - .NET 8 SDK がインストール済みか確認 (`dotnet --version`) → 8.0.101で確認済み
   - Mono フォント & TrueColor 対応ターミナル（推奨: Alacritty, WezTerm, Kitty）
 - [x] **依存ライブラリの復元**
-  - `dotnet restore src/TuiPoC/fcode.fsproj` → Terminal.Gui 1.5.0復元済み
+  - `dotnet restore src/fcode.fsproj` → Terminal.Gui 1.5.0復元済み
 - [x] **PoC 起動確認**
-  - `dotnet run --project src/TuiPoC/fcode.fsproj` → ビルド・起動成功
+  - `dotnet run --project src/fcode.fsproj` → ビルド・起動成功
   - 画面レイアウトが **docs/ui_layout.md** と一致しているか目視確認 → 8ペイン構成実装済み
 - [x] **README 更新**
   - 実行方法・フォント設定・既知の問題を追記 → 実装状況含め更新済み

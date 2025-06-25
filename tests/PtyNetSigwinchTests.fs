@@ -38,8 +38,8 @@ type PtyNetSigwinchTests() =
                 let! sessionResult = manager.CreateSession("htop", [||]) |> Async.AwaitTask
                 
                 match sessionResult with
-                | Ok session ->
-                    let readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartAsChild
+                | Result.Ok _session ->
+                    let! _readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartChild
                     
                     // 初期サイズ設定（80x24）
                     let initialResize = manager.ResizeWindow(24, 80)
@@ -82,7 +82,7 @@ type PtyNetSigwinchTests() =
                     let containsProcessInfo = initialOutput.Contains("PID") || initialOutput.Contains("htop") || resizedOutput.Contains("PID") || secondResizedOutput.Contains("PID")
                     Assert.That(containsProcessInfo, Is.True, "htopプロセス情報が出力に含まれていません")
                         
-                | Error error ->
+                | Result.Error error ->
                     Assert.Fail("htopセッション作成に失敗: " + error)
                     
             | None ->
@@ -102,8 +102,8 @@ type PtyNetSigwinchTests() =
                 let! sessionResult = manager.CreateSession("vim", [|testFile|]) |> Async.AwaitTask
                 
                 match sessionResult with
-                | Ok session ->
-                    let readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartAsChild
+                | Result.Ok _session ->
+                    let! _readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartChild
                     
                     // vim起動待機
                     do! Task.Delay(2000) |> Async.AwaitTask
@@ -147,7 +147,7 @@ type PtyNetSigwinchTests() =
                     do! Task.Delay(500) |> Async.AwaitTask
                     
                     logInfo "vim SIGWINCH テスト結果" 
-                        ("before_resize_length={beforeResizeOutput.Length}, after_resize_length={afterResizeOutput.Length}"
+                        ("before_resize_length=" + beforeResizeOutput.Length.ToString() + ", after_resize_length=" + afterResizeOutput.Length.ToString())
                     
                     // vimが正常に動作していることを確認
                     Assert.That(beforeResizeOutput.Length + afterResizeOutput.Length, Is.GreaterThan(0), 
@@ -157,8 +157,8 @@ type PtyNetSigwinchTests() =
                     Assert.That(beforeResizeOutput + afterResizeOutput, Is.Not.Empty, 
                         "リサイズ前後でvim出力に変化がありません")
                         
-                | Error error ->
-                    Assert.Fail(("vimセッション作成に失敗: {error}")
+                | Result.Error error ->
+                    Assert.Fail("vimセッション作成に失敗: " + error)
                     
             | None ->
                 Assert.Fail("PTYマネージャーが初期化されていません")
@@ -176,8 +176,8 @@ type PtyNetSigwinchTests() =
                 let! sessionResult = manager.CreateSession("cat", [||]) |> Async.AwaitTask
                 
                 match sessionResult with
-                | Ok session ->
-                    let readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartAsChild
+                | Result.Ok _session ->
+                    let! _readingTask = manager.StartOutputReading() |> Async.AwaitTask |> Async.StartChild
                     
                     // 様々なサイズでリサイズテスト
                     let testSizes = [
@@ -194,20 +194,20 @@ type PtyNetSigwinchTests() =
                         let resizeResult = manager.ResizeWindow(rows, cols)
                         if resizeResult then
                             successCount <- successCount + 1
-                            logInfo "リサイズ成功" ("rows={rows}, cols={cols}"
+                            logInfo "リサイズ成功" ("rows=" + rows.ToString() + ", cols=" + cols.ToString())
                         else
-                            logWarning "リサイズ失敗" ("rows={rows}, cols={cols}"
+                            logWarning "リサイズ失敗" ("rows=" + rows.ToString() + ", cols=" + cols.ToString())
                         
                         do! Task.Delay(100) |> Async.AwaitTask // 各リサイズ間の待機
                     
                     // 全てのリサイズが成功することを期待
                     Assert.That(successCount, Is.EqualTo(testSizes.Length), 
-                        ("一部のリサイズ操作が失敗: {successCount}/{testSizes.Length}")
+                        ("一部のリサイズ操作が失敗: " + successCount.ToString() + "/" + testSizes.Length.ToString()))
                     
-                    logInfo "基本リサイズテスト完了" ("success_rate={successCount}/{testSizes.Length}"
+                    logInfo "基本リサイズテスト完了" ("success_rate=" + successCount.ToString() + "/" + testSizes.Length.ToString())
                         
-                | Error error ->
-                    Assert.Fail(("基本リサイズテスト用セッション作成に失敗: {error}")
+                | Result.Error error ->
+                    Assert.Fail("基本リサイズテスト用セッション作成に失敗: " + error)
                     
             | None ->
                 Assert.Fail("PTYマネージャーが初期化されていません")

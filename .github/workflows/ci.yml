@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  format-lint-test-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    # 1. フォーマットチェック
+    - name: Check F# formatting
+      run: |
+        dotnet tool install -g fantomas
+        fantomas --check src/ tests/
+    
+    # 2. リント (F# Analyzer + 警告チェック)
+    - name: Restore dependencies for linting
+      run: |
+        dotnet restore src/fcode.fsproj
+        dotnet restore tests/fcode.Tests.fsproj
+    
+    - name: Run F# linting
+      run: |
+        dotnet build src/fcode.fsproj --configuration Debug --verbosity normal --property TreatWarningsAsErrors=true
+        dotnet build tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --property TreatWarningsAsErrors=true
+    
+    # 3. テスト実行
+    - name: Run tests
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: TestResults/
+    
+    # 4. リリースビルド
+    - name: Build release
+      run: |
+        dotnet build src/fcode.fsproj --configuration Release --verbosity normal
+        dotnet build tests/fcode.Tests.fsproj --configuration Release --verbosity normal
+    
+    # Linux向け単一ファイルパブリッシュ
+    - name: Publish Linux x64
+      run: dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o publish/linux-x64
+    
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: fcode-linux-x64
+        path: publish/linux-x64/fcode
+
+  build-macos:
+    runs-on: macos-latest
+    needs: format-lint-test-build
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Restore dependencies
+      run: |
+        dotnet restore src/fcode.fsproj
+        dotnet restore tests/fcode.Tests.fsproj
+    
+    - name: Run tests on macOS
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Release --verbosity normal
+    
+    # macOS向け単一ファイルパブリッシュ
+    - name: Publish macOS x64
+      run: dotnet publish src/fcode.fsproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -o publish/osx-x64
+    
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: fcode-macos-x64
+        path: publish/osx-x64/fcode

@@ -56,7 +56,21 @@ lint:
 # 全品質チェック (pre-commit相当)
 check:
 	@echo "🔍 全品質チェック実行中..."
-	@./.githooks/pre-commit
+	@if ./.githooks/pre-commit; then \
+		echo "✅ 全品質チェック完了 - コミット可能です"; \
+	else \
+		echo ""; \
+		echo "❌ 品質チェックに失敗しました"; \
+		echo ""; \
+		echo "📋 個別修正コマンド:"; \
+		echo "  make format  # フォーマット修正"; \
+		echo "  make lint    # リント警告修正"; \
+		echo "  make test    # テスト失敗修正"; \
+		echo "  make build   # ビルドエラー修正"; \
+		echo ""; \
+		echo "修正後に再度 make check を実行してください"; \
+		exit 1; \
+	fi
 
 # デバッグビルド
 build:

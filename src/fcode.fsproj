@@ -8,6 +8,7 @@
     <Compile Include="Logger.fs" />
     <Compile Include="ColorSchemes.fs" />
     <Compile Include="ProcessSupervisor.fs" />
+    <Compile Include="PtyNetManager.fs" />
     <Compile Include="ClaudeCodeProcess.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />
@@ -15,7 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Terminal.Gui" Version="1.15.0" />
-    <PackageReference Include="Pty.Net" Version="2.0.0" />
     <PackageReference Include="Spectre.Console" Version="0.48.0" />
     <PackageReference Include="System.IO.Pipelines" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />

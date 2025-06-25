@@ -16,6 +16,7 @@ type KeyAction =
     | ShowHelp
     | StartClaudeCode
     | StopClaudeCode
+    | Cancel
 
 // キーシーケンス状態管理
 type KeySequenceState = {
@@ -28,14 +29,20 @@ let emacsKeyBindings = [
     // 終了コマンド (Ctrl+X Ctrl+C)
     ([Key.CtrlMask ||| Key.X; Key.CtrlMask ||| Key.C], Exit)
     
+    // 緊急終了 (Esc)
+    ([Key.Esc], Exit)
+    
+    // キャンセル (Ctrl+G) - Emacs風入力キャンセル
+    ([Key.CtrlMask ||| Key.G], Cancel)
+    
     // ペイン移動 (Ctrl+X O = Other window)
     ([Key.CtrlMask ||| Key.X; Key.O], NextPane)
     
     // 直前ペイン (Ctrl+X Ctrl+O)
     ([Key.CtrlMask ||| Key.X; Key.CtrlMask ||| Key.O], PreviousPane)
     
-    // 会話ペイントグル (Ctrl+X C)
-    ([Key.CtrlMask ||| Key.X; Key.C], ToggleConversation)
+    // 会話ペイントグル (Ctrl+X V = View toggle)
+    ([Key.CtrlMask ||| Key.X; Key.V], ToggleConversation)
     
     // リフレッシュ (Ctrl+L)
     ([Key.CtrlMask ||| Key.L], Refresh)
@@ -65,13 +72,14 @@ Emacs風キーバインド:
 
 基本操作:
   Ctrl+X Ctrl+C  : 終了
+  Ctrl+G         : キャンセル/キーシーケンスリセット
   Ctrl+L         : 画面リフレッシュ
   Ctrl+X H       : このヘルプを表示
 
 ペイン操作:
   Ctrl+X O       : 次のペインに移動
   Ctrl+X Ctrl+O  : 前のペインに移動
-  Ctrl+X C       : 会話ペイン表示切替
+  Ctrl+X V       : 会話ペイン表示切替
 
 Claude Code制御:
   Ctrl+X S       : 現在ペインでClaude Code起動
@@ -88,7 +96,7 @@ Escキーでこのダイアログを閉じます
     ()
 
 // キーシーケンス管理クラス
-type EmacsKeyHandler(focusablePanes: FrameView[]) =
+type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: TuiPoC.ClaudeCodeProcess.SessionManager) =
     let mutable keySequenceState = { PendingKey = None; Timestamp = DateTime.MinValue }
     let sequenceTimeout = TimeSpan.FromSeconds(2.0) // 2秒でタイムアウト
     let mutable currentPaneIndex = 0
@@ -106,7 +114,12 @@ type EmacsKeyHandler(focusablePanes: FrameView[]) =
         match action with
         | Exit ->
             // 全てのClaude Codeセッションをクリーンアップしてから終了
-            sessionManager.CleanupAllSessions()
+            try
+                sessionMgr.CleanupAllSessions()
+                logInfo "KeyBindings" "All sessions cleaned up successfully"
+            with
+            | ex ->
+                logException "KeyBindings" "Error during session cleanup" ex
             Application.RequestStop()
         | NextPane ->
             currentPaneIndex <- (currentPaneIndex + 1) % focusablePanes.Length
@@ -148,7 +161,7 @@ type EmacsKeyHandler(focusablePanes: FrameView[]) =
                 | textView :: _ ->
                     try
                         let workingDir = System.Environment.CurrentDirectory
-                        let success = sessionManager.StartSession(paneId, workingDir, textView)
+                        let success = sessionMgr.StartSession(paneId, workingDir, textView)
                         if success then
                             MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインでClaude Codeを再起動しました", "OK") |> ignore
                         else
@@ -169,7 +182,7 @@ type EmacsKeyHandler(focusablePanes: FrameView[]) =
             
             if paneId <> "unknown" && currentPaneIndex > 0 then
                 try
-                    let success = sessionManager.StopSession(paneId)
+                    let success = sessionMgr.StopSession(paneId)
                     if success then
                         MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインのClaude Codeを終了しました", "OK") |> ignore
                     else
@@ -179,6 +192,11 @@ type EmacsKeyHandler(focusablePanes: FrameView[]) =
                     MessageBox.ErrorQuery("Error", $"停止操作エラー: {ex.Message}", "OK") |> ignore
             else
                 MessageBox.Query(50, 10, "Claude Code", "会話ペインではClaude Code操作はできません", "OK") |> ignore
+        | Cancel ->
+            // Emacs風キャンセル処理 - 進行中のキーシーケンスをリセット
+            logDebug "KeyBindings" "Ctrl+G pressed - canceling current operation"
+            resetSequence()
+            Application.Refresh()
     
     // マルチキーシーケンス検索
     let findMultiKeyBinding (firstKey: Key) (secondKey: Key) =
@@ -202,8 +220,12 @@ type EmacsKeyHandler(focusablePanes: FrameView[]) =
     member _.HandleKey(keyEvent: KeyEvent) =
         let currentKey = keyEvent.Key
         
+        // デバッグログ追加
+        logDebug "KeyBindings" $"Key pressed: {currentKey}, PendingKey: {keySequenceState.PendingKey}"
+        
         // タイムアウトチェック
         if keySequenceState.PendingKey.IsSome && isSequenceExpired() then
+            logDebug "KeyBindings" "Key sequence timed out, resetting"
             resetSequence()
         
         match keySequenceState.PendingKey with
@@ -223,18 +245,22 @@ type EmacsKeyHandler(focusablePanes: FrameView[]) =
                         | [] -> false)
                 
                 if isPotentialMultiKey then
+                    logDebug "KeyBindings" $"Starting multi-key sequence with: {currentKey}"
                     keySequenceState <- { PendingKey = Some currentKey; Timestamp = DateTime.Now }
                     true // handled (待機中)
                 else
                     false // not handled
         | Some pendingKey ->
             // 2番目のキー処理
+            logDebug "KeyBindings" $"Processing second key: {currentKey} after {pendingKey}"
             match findMultiKeyBinding pendingKey currentKey with
             | Some action ->
+                logDebug "KeyBindings" $"Found multi-key action: {action}"
                 executeAction action
                 resetSequence()
                 true // handled
             | None ->
+                logDebug "KeyBindings" $"No multi-key binding found for {pendingKey} + {currentKey}"
                 resetSequence()
                 false // not handled
     

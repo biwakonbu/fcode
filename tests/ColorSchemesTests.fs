@@ -128,12 +128,12 @@ type ColorSchemesTests() =
         Assert.That(frameView.ColorScheme, Is.EqualTo(devScheme), "空文字列にはdevScheme（デフォルト）が適用されること")
 
     [<Test>]
-    member _.``カラースキーム間の差異テスト``() =
-        // 各カラースキームが異なることを確認
-        Assert.That(chatScheme, Is.Not.EqualTo(devScheme), "chatSchemeとdevSchemeは異なること")
-        Assert.That(devScheme, Is.Not.EqualTo(qaScheme), "devSchemeとqaSchemeは異なること")
-        Assert.That(qaScheme, Is.Not.EqualTo(uxScheme), "qaSchemeとuxSchemeは異なること")
-        Assert.That(uxScheme, Is.Not.EqualTo(pmScheme), "uxSchemeとpmSchemeは異なること")
+    member _.``カラースキーム統一テスト``() =
+        // 現在は全カラースキームが統一されたdefaultSchemeを使用していることを確認
+        Assert.That(chatScheme, Is.EqualTo(devScheme), "chatSchemeとdevSchemeは同じこと（統一カラー）")
+        Assert.That(devScheme, Is.EqualTo(qaScheme), "devSchemeとqaSchemeは同じこと（統一カラー）")
+        Assert.That(qaScheme, Is.EqualTo(uxScheme), "qaSchemeとuxSchemeは同じこと（統一カラー）")
+        Assert.That(uxScheme, Is.EqualTo(pmScheme), "uxSchemeとpmSchemeは同じこと（統一カラー）")
 
     [<Test>]
     member _.``複数ペインへの同時適用テスト``() =
@@ -151,6 +151,6 @@ type ColorSchemesTests() =
         Assert.That(dev2Pane.ColorScheme, Is.EqualTo(devScheme), "dev2Paneが適切なスキーム")
         Assert.That(qa1Pane.ColorScheme, Is.EqualTo(qaScheme), "qa1Paneが適切なスキーム")
         
-        // dev1とdev2は同じスキーム、qa1は異なることを確認
+        // 現在は全て統一スキームなので全て同じであることを確認
         Assert.That(dev1Pane.ColorScheme, Is.EqualTo(dev2Pane.ColorScheme), "dev1とdev2は同じスキーム")
-        Assert.That(dev1Pane.ColorScheme, Is.Not.EqualTo(qa1Pane.ColorScheme), "devとqaは異なるスキーム")
+        Assert.That(dev1Pane.ColorScheme, Is.EqualTo(qa1Pane.ColorScheme), "統一カラーにより全て同じスキーム")

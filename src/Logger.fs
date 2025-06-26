@@ -15,7 +15,7 @@ type Logger() =
 
     let logFile =
         let timestamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")
-        Path.Combine(logDir, $"fcode-{timestamp}.log")
+        Path.Combine(logDir, "fcode-" + timestamp + ".log")
 
     let lockObj = obj ()
 
@@ -26,7 +26,10 @@ type Logger() =
 
         // 初期化ログ
         let initTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")
-        let initMsg = $"[{initTimestamp}] [INFO] [Logger] ログシステム初期化完了 - ログファイル: {logFile}"
+
+        let initMsg =
+            "[" + initTimestamp + "] [INFO] [Logger] ログシステム初期化完了 - ログファイル: " + logFile
+
         File.AppendAllText(logFile, initMsg + Environment.NewLine)
 
     member _.LogPath = logFile
@@ -43,7 +46,7 @@ type Logger() =
                     | Warning -> "WARN"
                     | Error -> "ERROR"
 
-                let logLine = $"[{timestamp}] [{levelStr}] [{category}] {message}"
+                let logLine = "[" + timestamp + "] [" + levelStr + "] [" + category + "] " + message
                 File.AppendAllText(logFile, logLine + Environment.NewLine)
 
                 // 重要なエラーはコンソールにも出力
@@ -51,7 +54,16 @@ type Logger() =
                     Console.WriteLine(logLine)
             with ex ->
                 // ログ出力でエラーが発生した場合はコンソールのみに出力
-                Console.WriteLine($"LOG ERROR: {ex.Message} - Original: [{level}] [{category}] {message}"))
+                Console.WriteLine(
+                    "LOG ERROR: "
+                    + ex.Message
+                    + " - Original: ["
+                    + level.ToString()
+                    + "] ["
+                    + category
+                    + "] "
+                    + message
+                ))
 
     member this.Debug(category: string, message: string) = this.Log(Debug, category, message)
     member this.Info(category: string, message: string) = this.Log(Info, category, message)
@@ -60,7 +72,7 @@ type Logger() =
 
     member this.Exception(category: string, message: string, ex: Exception) =
         let fullMessage =
-            $"{message} - Exception: {ex.Message} - StackTrace: {ex.StackTrace}"
+            message + " - Exception: " + ex.Message + " - StackTrace: " + ex.StackTrace
 
         this.Log(Error, category, fullMessage)
 

@@ -36,6 +36,9 @@ jobs:
     # 3. テスト実行
     - name: Run tests
       run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
+      env:
+        TERM: xterm
+        CI: true
     
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -79,6 +82,9 @@ jobs:
     
     - name: Run tests on macOS
       run: dotnet test tests/fcode.Tests.fsproj --configuration Release --verbosity normal
+      env:
+        TERM: xterm
+        CI: true
     
     # macOS向け単一ファイルパブリッシュ
     - name: Publish macOS x64

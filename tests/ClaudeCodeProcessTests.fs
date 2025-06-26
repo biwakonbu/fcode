@@ -12,11 +12,14 @@ type ClaudeCodeProcessTests() =
 
     [<SetUp>]
     member _.Setup() =
-        // 各テストの前にTerminal.Guiを初期化
-        try
-            Application.Init()
-        with _ ->
-            () // Already initialized
+        // CI環境でのTerminal.Gui初期化スキップ
+        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+
+        if not isCI then
+            try
+                Application.Init()
+            with _ ->
+                () // Already initialized
 
         // 新しいSessionManagerインスタンスを作成
         sessionManager <- Some(SessionManager())

@@ -9,17 +9,25 @@ type UIHelpersTests() =
 
     [<SetUp>]
     member _.Setup() =
-        try
-            Application.Init()
-        with _ ->
-            () // Already initialized
+        // CI環境でのTerminal.Gui初期化スキップ
+        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+
+        if not isCI then
+            try
+                Application.Init()
+            with _ ->
+                () // Already initialized
 
     [<TearDown>]
     member _.TearDown() =
-        try
-            Application.Shutdown()
-        with _ ->
-            ()
+        // CI環境ではShutdownをスキップ
+        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+
+        if not isCI then
+            try
+                Application.Shutdown()
+            with _ ->
+                ()
 
     [<Test>]
     member _.``findTextViews should find direct TextView``() =

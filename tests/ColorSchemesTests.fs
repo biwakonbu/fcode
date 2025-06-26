@@ -9,19 +9,25 @@ type ColorSchemesTests() =
 
     [<SetUp>]
     member _.Setup() =
-        // 各テストの前にTerminal.Guiを初期化
-        try
-            Application.Init()
-        with _ ->
-            () // Already initialized
+        // CI環境でのTerminal.Gui初期化スキップ
+        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+
+        if not isCI then
+            try
+                Application.Init()
+            with _ ->
+                () // Already initialized
 
     [<TearDown>]
     member _.TearDown() =
-        // テスト後のクリーンアップ
-        try
-            Application.Shutdown()
-        with _ ->
-            () // Not initialized or already shutdown
+        // CI環境ではShutdownをスキップ
+        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+
+        if not isCI then
+            try
+                Application.Shutdown()
+            with _ ->
+                () // Not initialized or already shutdown
 
     [<Test>]
     member _.``カラースキーム定義の存在テスト``() =

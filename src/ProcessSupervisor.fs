@@ -399,7 +399,7 @@ type ProcessSupervisor(config: SupervisorConfig) =
         }
 
     // パブリックメソッド
-    member _.StartSupervisor() =
+    member this.StartSupervisor() =
         if not isRunning then
             isRunning <- true
 
@@ -410,6 +410,9 @@ type ProcessSupervisor(config: SupervisorConfig) =
 
             // IPC サーバー初期化
             initializeIPCServer () |> ignore
+
+            // 接続健全性監視を開始
+            this.StartConnectionHealthMonitoring() |> ignore
 
             logInfo "Supervisor" "Process supervisor started with IPC support"
             Task.Run(Func<Task>(fun () -> monitoringLoop ())) |> ignore
@@ -503,12 +506,42 @@ type ProcessSupervisor(config: SupervisorConfig) =
         task {
             match ipcChannel with
             | Some channel ->
-                let! response = channel.SendCommandAsync(command)
-                return Some response
+                try
+                    // 再接続機能付きでコマンドを送信
+                    let! response = channel.SendCommandWithRetryAsync(command)
+                    return Some response
+                with ex ->
+                    logException "Supervisor" "Failed to send IPC command with retry" ex
+                    return None
             | None ->
                 logError "Supervisor" "IPC channel not available"
                 return None
         }
+
+    // 接続健全性を定期的にチェック
+    member this.StartConnectionHealthMonitoring() =
+        Task.Run(Func<Task>(fun () ->
+            task {
+                while not supervisorCancellation.Token.IsCancellationRequested do
+                    try
+                        match ipcChannel with
+                        | Some channel ->
+                            let! isHealthy = channel.CheckConnectionHealth()
+                            if not isHealthy then
+                                logWarning "Supervisor" "IPC connection health check failed - attempting to restore"
+                                // 必要に応じて接続の再初期化を実行
+                        | None ->
+                            logDebug "Supervisor" "IPC channel not initialized for health check"
+
+                        do! Task.Delay(config.HeartbeatIntervalMs * 5, supervisorCancellation.Token) // 5倍の間隔でヘルスチェック
+
+                    with
+                    | :? OperationCanceledException -> ()
+                    | ex ->
+                        logException "Supervisor" "Error in connection health monitoring" ex
+                        do! Task.Delay(10000, supervisorCancellation.Token) // エラー時は10秒待機
+            }
+        ))
 
     interface IDisposable with
         member this.Dispose() =

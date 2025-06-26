@@ -329,12 +329,14 @@ type IPCChannel(config: IPCChannelConfig) =
         activeConnections.Clear()
 
     // 再接続機能付きコマンド送信
-    member this.SendCommandWithRetryAsync(command: SessionCommand, ?cancellationToken: CancellationToken) : Task<SessionResponse> =
+    member this.SendCommandWithRetryAsync
+        (command: SessionCommand, ?cancellationToken: CancellationToken)
+        : Task<SessionResponse> =
         let rec tryWithRetry attempt lastEx =
             task {
                 if attempt > config.MaxRetryAttempts then
                     match lastEx with
-                    | Some (ex: Exception) -> return Error("", ex.Message)
+                    | Some(ex: Exception) -> return Error("", ex.Message)
                     | None -> return Error("", "All retry attempts failed")
                 else
                     try
@@ -344,21 +346,20 @@ type IPCChannel(config: IPCChannelConfig) =
                         match response with
                         | Error(_, errorMsg) when errorMsg.Contains("timeout") || errorMsg.Contains("connection") ->
                             logWarning "IPC" $"Attempt {attempt}/{config.MaxRetryAttempts} failed: {errorMsg}"
-                            
+
                             if attempt < config.MaxRetryAttempts then
                                 let delayMs = config.RetryDelayMs * attempt // 指数バックオフ
                                 logInfo "IPC" $"Retrying in {delayMs}ms..."
                                 let token = defaultArg cancellationToken CancellationToken.None
                                 do! Task.Delay(delayMs, token)
-                                return! tryWithRetry (attempt + 1) (Some (Exception(errorMsg)))
+                                return! tryWithRetry (attempt + 1) (Some(Exception(errorMsg)))
                             else
                                 return response
-                        | _ ->
-                            return response
+                        | _ -> return response
 
                     with ex ->
                         logException "IPC" $"Attempt {attempt}/{config.MaxRetryAttempts} failed" ex
-                        
+
                         if attempt < config.MaxRetryAttempts then
                             let delayMs = config.RetryDelayMs * attempt
                             logInfo "IPC" $"Retrying in {delayMs}ms..."
@@ -368,7 +369,7 @@ type IPCChannel(config: IPCChannelConfig) =
                         else
                             return Error("", ex.Message)
             }
-        
+
         tryWithRetry 1 None
 
     // 接続健全性チェック
@@ -376,6 +377,7 @@ type IPCChannel(config: IPCChannelConfig) =
         task {
             try
                 let! response = this.SendCommandAsync(HealthCheck("system"), CancellationToken.None)
+
                 match response with
                 | HealthStatus(_, isHealthy, _) -> return isHealthy
                 | Error _ -> return false

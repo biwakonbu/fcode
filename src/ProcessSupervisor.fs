@@ -520,28 +520,31 @@ type ProcessSupervisor(config: SupervisorConfig) =
 
     // 接続健全性を定期的にチェック
     member this.StartConnectionHealthMonitoring() =
-        Task.Run(Func<Task>(fun () ->
-            task {
-                while not supervisorCancellation.Token.IsCancellationRequested do
-                    try
-                        match ipcChannel with
-                        | Some channel ->
-                            let! isHealthy = channel.CheckConnectionHealth()
-                            if not isHealthy then
-                                logWarning "Supervisor" "IPC connection health check failed - attempting to restore"
-                                // 必要に応じて接続の再初期化を実行
-                        | None ->
-                            logDebug "Supervisor" "IPC channel not initialized for health check"
+        Task.Run(
+            Func<Task>(fun () ->
+                task {
+                    while not supervisorCancellation.Token.IsCancellationRequested do
+                        try
+                            match ipcChannel with
+                            | Some channel ->
+                                let! isHealthy = channel.CheckConnectionHealth()
 
-                        do! Task.Delay(config.HeartbeatIntervalMs * 5, supervisorCancellation.Token) // 5倍の間隔でヘルスチェック
+                                if not isHealthy then
+                                    logWarning
+                                        "Supervisor"
+                                        "IPC connection health check failed - attempting to restore"
+                            // 必要に応じて接続の再初期化を実行
+                            | None -> logDebug "Supervisor" "IPC channel not initialized for health check"
 
-                    with
-                    | :? OperationCanceledException -> ()
-                    | ex ->
-                        logException "Supervisor" "Error in connection health monitoring" ex
-                        do! Task.Delay(10000, supervisorCancellation.Token) // エラー時は10秒待機
-            }
-        ))
+                            do! Task.Delay(config.HeartbeatIntervalMs * 5, supervisorCancellation.Token) // 5倍の間隔でヘルスチェック
+
+                        with
+                        | :? OperationCanceledException -> ()
+                        | ex ->
+                            logException "Supervisor" "Error in connection health monitoring" ex
+                            do! Task.Delay(10000, supervisorCancellation.Token) // エラー時は10秒待機
+                })
+        )
 
     interface IDisposable with
         member this.Dispose() =

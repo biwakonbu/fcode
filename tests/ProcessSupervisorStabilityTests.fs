@@ -17,17 +17,16 @@ type ProcessSupervisorStabilityTests() =
         ()
 
     [<TearDown>]
-    member _.TearDown() =
-        supervisor.StopSupervisor()
+    member _.TearDown() = supervisor.StopSupervisor()
 
     [<Test>]
     member _.Supervisor_StartAndStop_WorksCorrectly() =
         // Act
         supervisor.StartSupervisor()
-        
+
         // Assert - Should not throw
         Assert.Pass("Supervisor started successfully")
-        
+
         // Cleanup
         supervisor.StopSupervisor()
         Assert.Pass("Supervisor stopped successfully")
@@ -52,7 +51,7 @@ type ProcessSupervisorStabilityTests() =
     member _.Supervisor_MultipleWorkers_CanBeManaged() =
         // Arrange
         supervisor.StartSupervisor()
-        let workerIds = ["worker1"; "worker2"; "worker3"]
+        let workerIds = [ "worker1"; "worker2"; "worker3" ]
 
         // Act & Assert
         for workerId in workerIds do
@@ -89,14 +88,13 @@ type ProcessSupervisorStabilityTests() =
             Assert.GreaterOrEqual(m.ProcessedRequests, 0L)
             Assert.GreaterOrEqual(m.QueueLength, 0)
             Assert.GreaterOrEqual(m.AverageLatencyMs, 0.0)
-        | None ->
-            Assert.Pass("IPC metrics not available (expected in test env)")
+        | None -> Assert.Pass("IPC metrics not available (expected in test env)")
 
     [<Test>]
     member _.Supervisor_ConnectionHealthMonitoring_StartsWithoutError() =
         // Arrange & Act
         supervisor.StartSupervisor()
-        
+
         // Give some time for health monitoring to start
         Task.Delay(2000).Wait()
 
@@ -111,17 +109,16 @@ type ProcessSupervisorStabilityTests() =
             let commandCount = 10
 
             // Act - Send multiple commands rapidly
-            let tasks = [|
-                for i in 1..commandCount do
-                    yield supervisor.SendIPCCommand(HealthCheck($"stress-test-{i}"))
-            |]
+            let tasks =
+                [| for i in 1..commandCount do
+                       yield supervisor.SendIPCCommand(HealthCheck($"stress-test-{i}")) |]
 
             let! responses = Task.WhenAll(tasks)
 
             // Assert
             Assert.AreEqual(commandCount, responses.Length)
             let successCount = responses |> Array.sumBy (fun r -> if r.IsSome then 1 else 0)
-            
+
             // In test environment, some may fail - that's OK
             Assert.GreaterOrEqual(successCount, 0, "At least some commands should complete")
         }
@@ -148,14 +145,13 @@ type ProcessSupervisorStabilityTests() =
             supervisor.StartSupervisor()
 
             // Act - Multiple threads accessing supervisor simultaneously
-            let tasks = [|
-                for i in 1..5 do
-                    yield Task.Run(fun () ->
-                        supervisor.StartWorker($"concurrent-{i}", "/tmp") |> ignore
-                        supervisor.GetWorkerStatus($"concurrent-{i}") |> ignore
-                        supervisor.StopWorker($"concurrent-{i}") |> ignore
-                    )
-            |]
+            let tasks =
+                [| for i in 1..5 do
+                       yield
+                           Task.Run(fun () ->
+                               supervisor.StartWorker($"concurrent-{i}", "/tmp") |> ignore
+                               supervisor.GetWorkerStatus($"concurrent-{i}") |> ignore
+                               supervisor.StopWorker($"concurrent-{i}") |> ignore) |]
 
             do! Task.WhenAll(tasks)
 

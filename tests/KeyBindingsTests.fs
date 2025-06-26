@@ -10,20 +10,27 @@ open System
 type KeyBindingsTests() =
 
     let createMockFrameViews () =
-        // Terminal.Guiを初期化してからFrameViewを作成
-        Application.Init()
-        let panes = Array.init 8 (fun i -> new FrameView($"pane{i}"))
+        // CI環境でのTerminal.Gui初期化スキップ
+        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+
+        if not isCI then
+            Application.Init()
+
+        let panes = Array.init 8 (fun i -> new FrameView("pane" + i.ToString()))
         panes
 
     let createMockSessionManager () = new SessionManager()
 
     [<SetUp>]
     member _.Setup() =
-        // 各テストの前にTerminal.Guiを初期化
-        try
-            Application.Init()
-        with _ ->
-            () // Already initialized
+        // CI環境でのTerminal.Gui初期化スキップ
+        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+
+        if not isCI then
+            try
+                Application.Init()
+            with _ ->
+                () // Already initialized
 
     [<TearDown>]
     member _.TearDown() =

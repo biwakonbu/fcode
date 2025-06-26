@@ -2,8 +2,8 @@ module fcode.Tests.KeyBindingsTests
 
 open NUnit.Framework
 open Terminal.Gui
-open TuiPoC.KeyBindings
-open TuiPoC.ClaudeCodeProcess
+open FCode.KeyBindings
+open FCode.ClaudeCodeProcess
 open System
 
 [<TestFixture>]

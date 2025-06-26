@@ -2,7 +2,7 @@ module fcode.Tests.ColorSchemesTests
 
 open NUnit.Framework
 open Terminal.Gui
-open TuiPoC.ColorSchemes
+open FCode.ColorSchemes
 
 [<TestFixture>]
 type ColorSchemesTests() =

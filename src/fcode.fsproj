@@ -12,6 +12,7 @@
     <Compile Include="ProcessSupervisor.fs" />
     <Compile Include="PtyNetManager.fs" />
     <Compile Include="ClaudeCodeProcess.fs" />
+    <Compile Include="WorkerProcessManager.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />
     <Compile Include="Program.fs" />

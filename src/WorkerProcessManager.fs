@@ -102,16 +102,21 @@ type WorkerProcessManager() =
                 let mutable lastUiUpdate = DateTime.Now
                 let uiUpdateThresholdMs = 100 // 100ms間隔制限
 
-                // UI更新用のイベントハンドラー
+                // UI更新用のイベントハンドラー（MainLoop.Invoke統合）
                 let updateUI (data: string) =
                     let now = DateTime.Now
 
                     if (now - lastUiUpdate).TotalMilliseconds > float uiUpdateThresholdMs then
-                        outputBuffer.AppendLine(data) |> ignore
-                        textView.Text <- outputBuffer.ToString()
-                        textView.SetNeedsDisplay()
-                        Application.Refresh()
-                        lastUiUpdate <- now
+                        // バックグラウンドスレッドからの安全なUI更新
+                        Application.MainLoop.Invoke(fun () ->
+                            try
+                                outputBuffer.AppendLine(data) |> ignore
+                                textView.Text <- outputBuffer.ToString()
+                                textView.SetNeedsDisplay()
+                                lastUiUpdate <- now
+                            with ex ->
+                                logException "WorkerManager" $"Error updating UI for pane: {paneId}" ex
+                        )
 
                 // 出力イベントの作成
                 let outputEvent = Event<string>()
@@ -140,8 +145,14 @@ type WorkerProcessManager() =
                                             match response with
                                             | Some _ ->
                                                 logDebug "WorkerManager" $"Input sent via IPC for pane: {paneId}"
-                                                outputBuffer.AppendLine($"> {input}") |> ignore
-                                                updateUI ("")
+                                                Application.MainLoop.Invoke(fun () ->
+                                                    try
+                                                        outputBuffer.AppendLine($"> {input}") |> ignore
+                                                        textView.Text <- outputBuffer.ToString()
+                                                        textView.SetNeedsDisplay()
+                                                    with ex ->
+                                                        logException "WorkerManager" $"Error updating UI after input for pane: {paneId}" ex
+                                                )
                                             | None ->
                                                 logError
                                                     "WorkerManager"
@@ -175,19 +186,23 @@ type WorkerProcessManager() =
 
                 workers <- workers.Add(paneId, workerInfo)
 
-                // 初期メッセージを表示
-                outputBuffer.AppendLine($"[DEBUG] Worker Process セッション開始完了 - ペイン: {paneId}")
-                |> ignore
+                // 初期メッセージを表示（MainLoop.Invoke統合）
+                Application.MainLoop.Invoke(fun () ->
+                    try
+                        outputBuffer.AppendLine($"[DEBUG] Worker Process セッション開始完了 - ペイン: {paneId}")
+                        |> ignore
 
-                outputBuffer.AppendLine($"[DEBUG] 作業ディレクトリ: {workingDir}") |> ignore
-                outputBuffer.AppendLine($"[DEBUG] プロセス分離: 有効") |> ignore
-                outputBuffer.AppendLine($"[DEBUG] IPC通信: Unix Domain Socket") |> ignore
-                outputBuffer.AppendLine($"[DEBUG] ログファイル: {logger.LogPath}") |> ignore
-                outputBuffer.AppendLine("=" + String.replicate 50 "=") |> ignore
-                outputBuffer.AppendLine($"[INFO] Worker対話セッション初期化中...") |> ignore
-                textView.Text <- outputBuffer.ToString()
-                textView.SetNeedsDisplay()
-                Application.Refresh()
+                        outputBuffer.AppendLine($"[DEBUG] 作業ディレクトリ: {workingDir}") |> ignore
+                        outputBuffer.AppendLine($"[DEBUG] プロセス分離: 有効") |> ignore
+                        outputBuffer.AppendLine($"[DEBUG] IPC通信: Unix Domain Socket") |> ignore
+                        outputBuffer.AppendLine($"[DEBUG] ログファイル: {logger.LogPath}") |> ignore
+                        outputBuffer.AppendLine("=" + String.replicate 50 "=") |> ignore
+                        outputBuffer.AppendLine($"[INFO] Worker対話セッション初期化中...") |> ignore
+                        textView.Text <- outputBuffer.ToString()
+                        textView.SetNeedsDisplay()
+                    with ex ->
+                        logException "WorkerManager" $"Error displaying initial message for pane: {paneId}" ex
+                )
 
                 logInfo "WorkerManager" $"Worker info created and stored for pane: {paneId}"
 
@@ -236,13 +251,17 @@ type WorkerProcessManager() =
 
                     workers <- workers.Add(paneId, updatedWorker)
 
-                    // 終了メッセージを表示
+                    // 終了メッセージを表示（MainLoop.Invoke統合）
                     match workerInfo.TextView with
                     | Some textView ->
-                        workerInfo.OutputBuffer.AppendLine("[INFO] Worker Process セッション終了") |> ignore
-                        textView.Text <- workerInfo.OutputBuffer.ToString()
-                        textView.SetNeedsDisplay()
-                        Application.Refresh()
+                        Application.MainLoop.Invoke(fun () ->
+                            try
+                                workerInfo.OutputBuffer.AppendLine("[INFO] Worker Process セッション終了") |> ignore
+                                textView.Text <- workerInfo.OutputBuffer.ToString()
+                                textView.SetNeedsDisplay()
+                            with ex ->
+                                logException "WorkerManager" $"Error updating UI during stop for pane: {paneId}" ex
+                        )
                     | None -> ()
 
                     logInfo "WorkerManager" $"Worker process stopped for pane: {paneId}"

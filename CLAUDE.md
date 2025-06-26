@@ -140,3 +140,8 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 1. TextView初期化タイミング問題の解決
 2. Claude Code標準出力キャプチャ機能実装
 3. dev1ペインでの基本対話動作確認
+
+## 開発時注意事項
+
+- **重複回避**: github issue や PR を立てる時は重複が無いか確認してから対応して
+- **PR管理**: PR は issue の実装を対応した場合関連付けておいて

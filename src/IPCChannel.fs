@@ -42,7 +42,11 @@ type IPCChannelConfig =
       RequestTimeoutMs: int
       BackpressureThreshold: int
       BackpressurePolicy: BackpressurePolicy
-      BatchProcessingMs: int }
+      BatchProcessingMs: int
+      MaxRetryAttempts: int
+      RetryDelayMs: int
+      ConnectionTimeoutMs: int
+      HeartbeatIntervalMs: int }
 
 and BackpressurePolicy =
     | DropOldest
@@ -56,7 +60,11 @@ let defaultIPCConfig =
       RequestTimeoutMs = 30000
       BackpressureThreshold = 800
       BackpressurePolicy = DropOldest
-      BatchProcessingMs = 16 }
+      BatchProcessingMs = 16
+      MaxRetryAttempts = 3
+      RetryDelayMs = 1000
+      ConnectionTimeoutMs = 5000
+      HeartbeatIntervalMs = 30000 }
 
 // ===============================================
 // メッセージ順序制御・バックプレッシャ
@@ -319,6 +327,62 @@ type IPCChannel(config: IPCChannelConfig) =
             kvp.Value.Close()
 
         activeConnections.Clear()
+
+    // 再接続機能付きコマンド送信
+    member this.SendCommandWithRetryAsync(command: SessionCommand, ?cancellationToken: CancellationToken) : Task<SessionResponse> =
+        let rec tryWithRetry attempt lastEx =
+            task {
+                if attempt > config.MaxRetryAttempts then
+                    match lastEx with
+                    | Some (ex: Exception) -> return Error("", ex.Message)
+                    | None -> return Error("", "All retry attempts failed")
+                else
+                    try
+                        let token = defaultArg cancellationToken CancellationToken.None
+                        let! response = this.SendCommandAsync(command, token)
+
+                        match response with
+                        | Error(_, errorMsg) when errorMsg.Contains("timeout") || errorMsg.Contains("connection") ->
+                            logWarning "IPC" $"Attempt {attempt}/{config.MaxRetryAttempts} failed: {errorMsg}"
+                            
+                            if attempt < config.MaxRetryAttempts then
+                                let delayMs = config.RetryDelayMs * attempt // 指数バックオフ
+                                logInfo "IPC" $"Retrying in {delayMs}ms..."
+                                let token = defaultArg cancellationToken CancellationToken.None
+                                do! Task.Delay(delayMs, token)
+                                return! tryWithRetry (attempt + 1) (Some (Exception(errorMsg)))
+                            else
+                                return response
+                        | _ ->
+                            return response
+
+                    with ex ->
+                        logException "IPC" $"Attempt {attempt}/{config.MaxRetryAttempts} failed" ex
+                        
+                        if attempt < config.MaxRetryAttempts then
+                            let delayMs = config.RetryDelayMs * attempt
+                            logInfo "IPC" $"Retrying in {delayMs}ms..."
+                            let token = defaultArg cancellationToken CancellationToken.None
+                            do! Task.Delay(delayMs, token)
+                            return! tryWithRetry (attempt + 1) (Some ex)
+                        else
+                            return Error("", ex.Message)
+            }
+        
+        tryWithRetry 1 None
+
+    // 接続健全性チェック
+    member this.CheckConnectionHealth() : Task<bool> =
+        task {
+            try
+                let! response = this.SendCommandAsync(HealthCheck("system"), CancellationToken.None)
+                match response with
+                | HealthStatus(_, isHealthy, _) -> return isHealthy
+                | Error _ -> return false
+                | _ -> return true
+            with _ ->
+                return false
+        }
 
     interface IDisposable with
         member this.Dispose() =

@@ -115,8 +115,7 @@ type WorkerProcessManager() =
                                 textView.SetNeedsDisplay()
                                 lastUiUpdate <- now
                             with ex ->
-                                logException "WorkerManager" $"Error updating UI for pane: {paneId}" ex
-                        )
+                                logException "WorkerManager" $"Error updating UI for pane: {paneId}" ex)
 
                 // 出力イベントの作成
                 let outputEvent = Event<string>()
@@ -145,14 +144,17 @@ type WorkerProcessManager() =
                                             match response with
                                             | Some _ ->
                                                 logDebug "WorkerManager" $"Input sent via IPC for pane: {paneId}"
+
                                                 Application.MainLoop.Invoke(fun () ->
                                                     try
                                                         outputBuffer.AppendLine($"> {input}") |> ignore
                                                         textView.Text <- outputBuffer.ToString()
                                                         textView.SetNeedsDisplay()
                                                     with ex ->
-                                                        logException "WorkerManager" $"Error updating UI after input for pane: {paneId}" ex
-                                                )
+                                                        logException
+                                                            "WorkerManager"
+                                                            $"Error updating UI after input for pane: {paneId}"
+                                                            ex)
                                             | None ->
                                                 logError
                                                     "WorkerManager"
@@ -201,8 +203,7 @@ type WorkerProcessManager() =
                         textView.Text <- outputBuffer.ToString()
                         textView.SetNeedsDisplay()
                     with ex ->
-                        logException "WorkerManager" $"Error displaying initial message for pane: {paneId}" ex
-                )
+                        logException "WorkerManager" $"Error displaying initial message for pane: {paneId}" ex)
 
                 logInfo "WorkerManager" $"Worker info created and stored for pane: {paneId}"
 
@@ -260,8 +261,7 @@ type WorkerProcessManager() =
                                 textView.Text <- workerInfo.OutputBuffer.ToString()
                                 textView.SetNeedsDisplay()
                             with ex ->
-                                logException "WorkerManager" $"Error updating UI during stop for pane: {paneId}" ex
-                        )
+                                logException "WorkerManager" $"Error updating UI during stop for pane: {paneId}" ex)
                     | None -> ()
 
                     logInfo "WorkerManager" $"Worker process stopped for pane: {paneId}"

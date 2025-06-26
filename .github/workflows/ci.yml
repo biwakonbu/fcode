@@ -85,6 +85,7 @@ jobs:
       env:
         TERM: xterm
         CI: true
+        CIOS: true
     
     # macOS向け単一ファイルパブリッシュ
     - name: Publish macOS x64

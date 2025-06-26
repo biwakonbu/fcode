@@ -38,7 +38,7 @@ type PtyNetRealWorldTests() =
                         )
                     then
                         [ ("echo", [| "Hello, PTY Test!" |], "Hello, PTY Test!")
-                          ("date", [||], "2025") // macOS: 引数なしで年確認
+                          ("date", [| "+%Y" |], "2025") // macOS: 年のみフォーマット指定
                           ("pwd", [||], "/") ]
                     else
                         [ ("echo", [| "Hello, PTY Test!" |], "Hello, PTY Test!")

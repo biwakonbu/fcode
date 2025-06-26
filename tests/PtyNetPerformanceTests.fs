@@ -14,6 +14,23 @@ type PtyNetPerformanceTests() =
 
     let mutable ptyManager: PtyNetManager option = None
 
+    /// コマンドの存在確認
+    let checkCommandExists (command: string) : bool =
+        try
+            let processInfo = ProcessStartInfo()
+            processInfo.FileName <- "which"
+            processInfo.Arguments <- command
+            processInfo.RedirectStandardOutput <- true
+            processInfo.RedirectStandardError <- true
+            processInfo.UseShellExecute <- false
+            processInfo.CreateNoWindow <- true
+
+            use proc = Process.Start(processInfo)
+            proc.WaitForExit()
+            proc.ExitCode = 0
+        with _ ->
+            false
+
     [<SetUp>]
     member this.Setup() = ptyManager <- Some(new PtyNetManager())
 
@@ -29,6 +46,10 @@ type PtyNetPerformanceTests() =
     [<Test>]
     member this.ThroughputTest_YesCommand_60FPS() =
         async {
+            // yesコマンドの存在確認
+            if not (checkCommandExists "yes") then
+                Assert.Ignore("yes command not available on this platform")
+
             match ptyManager with
             | Some manager ->
                 logInfo "スループットテスト開始" "yesコマンド 60fps相当"

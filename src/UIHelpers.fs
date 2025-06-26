@@ -1,4 +1,4 @@
-module TuiPoC.UIHelpers
+module FCode.UIHelpers
 
 open Terminal.Gui
 

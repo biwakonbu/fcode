@@ -1,9 +1,9 @@
-module TuiPoC.KeyBindings
+module FCode.KeyBindings
 
 open Terminal.Gui
 open System
-open TuiPoC.Logger
-open TuiPoC.ClaudeCodeProcess
+open FCode.Logger
+open FCode.ClaudeCodeProcess
 
 // キーバインドアクション定義
 type KeyAction =
@@ -97,7 +97,7 @@ Escキーでこのダイアログを閉じます
     ()
 
 // キーシーケンス管理クラス
-type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: TuiPoC.ClaudeCodeProcess.SessionManager) =
+type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodeProcess.SessionManager) =
     let mutable keySequenceState =
         { PendingKey = None
           Timestamp = DateTime.MinValue }

@@ -6,7 +6,7 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open System.Diagnostics
-open TuiPoC.Logger
+open FCode.Logger
 
 /// PTYセッション情報（.NET Process使用の簡易版）
 type PtySession =

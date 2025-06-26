@@ -1,4 +1,4 @@
-module TuiPoC.ProcessSupervisor
+module FCode.ProcessSupervisor
 
 open System
 open System.Collections.Concurrent
@@ -8,7 +8,9 @@ open System.Net.Sockets
 open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
-open TuiPoC.Logger
+open FCode.Logger
+open FCode.UnixDomainSocketManager
+open FCode.IPCChannel
 
 // ===============================================
 // ワーカープロセス状態管理
@@ -126,10 +128,87 @@ type ProcessSupervisor(config: SupervisorConfig) =
     let workers = ConcurrentDictionary<string, WorkerProcess>()
     let supervisorCancellation = new CancellationTokenSource()
     let mutable isRunning = false
+    
+    // IPC チャネル統合
+    let mutable ipcChannel: IPCChannel option = None
+    let mutable udsServer: UdsServer option = None
 
     // IPC ソケットパス
     let getSocketPath paneId =
         Path.Combine(Path.GetTempPath(), $"fcode-{paneId}.sock")
+    
+    // IPC サーバーソケットパス  
+    let getServerSocketPath () =
+        Path.Combine(Path.GetTempPath(), "fcode-supervisor.sock")
+    
+    // IPC クライアント接続処理
+    let handleClientConnection (connection: UdsConnection) =
+        try
+            logInfo "Supervisor" "New IPC client connected"
+            
+            // 接続ごとの処理タスクを開始
+            let handleConnection () =
+                try
+                    try
+                        while connection.IsConnected do
+                            try
+                                // SessionCommand メッセージを受信
+                                let envelopeTask = connection.ReceiveAsync<SessionCommand>(supervisorCancellation.Token)
+                                let envelope = envelopeTask.Result
+                                
+                                logDebug "Supervisor" $"Received IPC command: {envelope.MessageId}"
+                                
+                                // IPCチャネル経由で処理
+                                match ipcChannel with
+                                | Some channel ->
+                                    let responseTask = channel.SendCommandAsync(envelope.Data, supervisorCancellation.Token)
+                                    let response = responseTask.Result
+                                    
+                                    // レスポンスを送信
+                                    let responseEnvelope = createEnvelope response
+                                    let sendTask = connection.SendAsync(responseEnvelope, supervisorCancellation.Token)
+                                    sendTask.Wait()
+                                    
+                                    logDebug "Supervisor" $"Sent IPC response: {responseEnvelope.MessageId}"
+                                    
+                                | None ->
+                                    logError "Supervisor" "IPC channel not initialized"
+                                    let errorResponse = Error ("", "IPC channel not available")
+                                    let errorEnvelope = createEnvelope errorResponse
+                                    let sendTask = connection.SendAsync(errorEnvelope, supervisorCancellation.Token)
+                                    sendTask.Wait()
+                                    
+                            with
+                            | :? OperationCanceledException -> ()
+                            | ex ->
+                                logException "Supervisor" "Error handling IPC client message" ex
+                                
+                    with ex ->
+                        logException "Supervisor" "Error in IPC client connection handler" ex
+                finally
+                    connection.Close()
+                    logInfo "Supervisor" "IPC client disconnected"
+            
+            Task.Run(handleConnection) |> ignore
+            
+        with ex ->
+            logException "Supervisor" "Error setting up IPC client connection handler" ex
+    
+    // IPC サーバー初期化
+    let initializeIPCServer () =
+        try
+            let serverSocketPath = getServerSocketPath()
+            let config = defaultUdsConfig serverSocketPath
+            let server = new UdsServer(config)
+            server.OnClientConnected <- Some handleClientConnection
+            
+            udsServer <- Some server
+            logInfo "Supervisor" $"IPC server initialized at: {serverSocketPath}"
+            server.StartAsync()
+            
+        with ex ->
+            logException "Supervisor" "Failed to initialize IPC server" ex
+            Task.CompletedTask
 
     // ワーカープロセス起動
     let startWorkerProcess paneId workingDir =
@@ -320,13 +399,35 @@ type ProcessSupervisor(config: SupervisorConfig) =
     member _.StartSupervisor() =
         if not isRunning then
             isRunning <- true
-            logInfo "Supervisor" "Process supervisor started"
+            
+            // IPCチャネル初期化
+            let channel = createIPCChannel()
+            ipcChannel <- Some channel
+            channel.StartAsync() |> ignore
+            
+            // IPC サーバー初期化
+            initializeIPCServer() |> ignore
+            
+            logInfo "Supervisor" "Process supervisor started with IPC support"
             Task.Run(Func<Task>(fun () -> monitoringLoop ())) |> ignore
 
     member _.StopSupervisor() =
         if isRunning then
             isRunning <- false
             supervisorCancellation.Cancel()
+
+            // IPC リソースクリーンアップ
+            match ipcChannel with
+            | Some channel -> 
+                channel.Stop()
+                ipcChannel <- None
+            | None -> ()
+                
+            match udsServer with
+            | Some server ->
+                server.Stop()
+                udsServer <- None
+            | None -> ()
 
             // 全ワーカープロセスを停止
             for kvp in workers do
@@ -389,6 +490,22 @@ type ProcessSupervisor(config: SupervisorConfig) =
         | false, _ -> None
 
     member _.GetAllWorkers() = workers.Values |> Seq.toList
+    
+    member _.GetIPCMetrics() =
+        match ipcChannel with
+        | Some channel -> Some (channel.GetMetrics())
+        | None -> None
+    
+    member _.SendIPCCommand(command: SessionCommand) =
+        task {
+            match ipcChannel with
+            | Some channel ->
+                let! response = channel.SendCommandAsync(command)
+                return Some response
+            | None ->
+                logError "Supervisor" "IPC channel not available"
+                return None
+        }
 
     interface IDisposable with
         member this.Dispose() =

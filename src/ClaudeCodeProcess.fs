@@ -63,6 +63,18 @@ type SessionManager() =
                     startInfo.Environment.["FORCE_COLOR"] <- "1"
                     startInfo.Environment.["NO_COLOR"] <- "0"
 
+                    // FC-005: ペインロール情報を環境変数で設定
+                    let role =
+                        match paneId with
+                        | id when id.StartsWith("dev") -> "dev"
+                        | id when id.StartsWith("qa") -> "qa"
+                        | "ux" -> "ux"
+                        | "pm" -> "pm"
+                        | _ -> "unknown"
+
+                    startInfo.Environment.["CLAUDE_ROLE"] <- role
+                    logDebug "SessionManager" $"Setting CLAUDE_ROLE={role} for pane: {paneId}"
+
                     logDebug "SessionManager" $"Starting Claude process for pane: {paneId}"
                     let proc = Process.Start(startInfo)
                     logInfo "SessionManager" $"Claude process started - PaneId: {paneId}, ProcessId: {proc.Id}"

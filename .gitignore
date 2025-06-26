@@ -349,4 +349,7 @@ FodyWeavers.xsd
 
 # Temporary files
 *.tmp
-*.temphhkb.xkm
+*.temp
+
+# Keyboard mapping files
+hhkb.xkm

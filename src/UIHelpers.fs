@@ -9,7 +9,7 @@ let rec findTextViews (view: View) =
         match view with
         | :? TextView as tv -> yield tv
         | _ -> ()
-        
+
         // 子要素も再帰的に検索
         for subview in view.Subviews do
             yield! findTextViews subview
@@ -17,6 +17,4 @@ let rec findTextViews (view: View) =
 
 /// FrameView内の全TextViewを取得する便利関数
 let getTextViewsFromPane (pane: FrameView) =
-    pane.Subviews 
-    |> Seq.collect findTextViews
-    |> Seq.toList
+    pane.Subviews |> Seq.collect findTextViews |> Seq.toList

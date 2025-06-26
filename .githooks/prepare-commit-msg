@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# prepare-commit-msg hook: --no-verify使用時の強制エラー
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+
+# カラー出力用の定数
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# --no-verify使用時のエラー表示
+# プロセスのコマンドラインから --no-verify フラグを検出
+# prepare-commit-msg の親プロセスを確認
+parent_cmd=$(ps -o args= -p $PPID 2>/dev/null || echo "")
+if [[ "$parent_cmd" =~ git.*commit.*--no-verify ]]; then
+    echo -e "${RED}❌ ERROR: --no-verify フラグの使用は禁止されています${NC}" >&2
+    echo -e "${RED}" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "🚨 コード品質チェックのスキップは許可されていません" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo -e "${NC}" >&2
+    echo "まず以下のコマンドでエラーを修正してください：" >&2
+    echo "" >&2
+    echo -e "${BLUE}  make check${NC}     # 全品質チェック実行" >&2
+    echo "" >&2
+    echo "エラーが見つかった場合の個別修正：" >&2
+    echo -e "${BLUE}  make format${NC}   # F#コードフォーマット" >&2
+    echo -e "${BLUE}  make lint${NC}     # リント実行・警告修正" >&2
+    echo -e "${BLUE}  make test${NC}     # テスト実行・失敗修正" >&2
+    echo -e "${BLUE}  make build${NC}    # ビルド確認・エラー修正" >&2
+    echo "" >&2
+    echo -e "${YELLOW}修正完了後に再度コミットしてください（--no-verify なしで）：${NC}" >&2
+    echo -e "${BLUE}  git commit -m \"your message\"${NC}" >&2
+    echo "" >&2
+    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}" >&2
+    echo "" >&2
+    
+    # コミットを強制的に失敗させる
+    exit 1
+fi

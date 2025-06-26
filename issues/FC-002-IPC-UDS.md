@@ -1,7 +1,7 @@
-# FC-002: PoC - IPC Unix Domain Socket (UDS) フレーミング + 同時接続シリアライズ
+# FC-002: IPC Unix Domain Socket (UDS) フレーミング + 同時接続シリアライズ
 
 ## 背景
-`docs/pty-architecture.md` セクション 15.1 では、複数 UI クライアントが同一 Unix ドメインソケットに接続する際の競合と、メッセージフレーミング方式 (length-prefix) の実装リスクが指摘されています。本 PoC では、実運用に耐える UDS 通信レイヤを設計・検証します。
+`docs/pty-architecture.md` セクション 15.1 では、複数 UI クライアントが同一 Unix ドメインソケットに接続する際の競合と、メッセージフレーミング方式 (length-prefix) の実装リスクが指摘されています。本検証では、実運用に耐える UDS 通信レイヤを設計・検証します。
 
 ## 目的
 1. `length-prefix (4-byte big-endian + JSON)` 方式の送受信ラッパを実装し、パフォーマンスと安定性を検証する。
@@ -15,7 +15,7 @@
 - [ ] サーバ側: `Channel<SessionCommand>` にプッシュし、単一 consumer タスクが順序どおり処理する実装を追加。
 - [ ] クライアント側: 10 本の並列タスクで大量リクエストを送信し、順序性とスループットを計測するベンチマークを実装。
 - [ ] 異常系テスト: 不正 JSON, size mismatch, 途中切断, タイムアウト。
-- [ ] 検証結果を `docs/poc/ipc-uds-results.md` にまとめる。
+- [ ] 検証結果を `docs/ipc-uds-results.md` にまとめる。
 
 ## 受け入れ基準
 - [ ] 1 万 req/s の負荷でメッセージロス 0, 順序保証が保たれること。

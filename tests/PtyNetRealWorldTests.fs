@@ -30,10 +30,20 @@ type PtyNetRealWorldTests() =
         async {
             match ptyManager with
             | Some manager ->
+                // クロスプラットフォーム対応コマンド設定
                 let basicCommands =
-                    [ ("echo", [| "Hello, PTY Test!" |], "Hello, PTY Test!")
-                      ("date", [| "+%Y-%m-%d" |], "2025") // 年が含まれることを確認
-                      ("pwd", [||], "/") ] // 絶対パスが含まれることを確認（クロスプラットフォーム対応）
+                    if
+                        System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                            System.Runtime.InteropServices.OSPlatform.OSX
+                        )
+                    then
+                        [ ("echo", [| "Hello, PTY Test!" |], "Hello, PTY Test!")
+                          ("date", [||], "2025") // macOS: 引数なしで年確認
+                          ("pwd", [||], "/") ]
+                    else
+                        [ ("echo", [| "Hello, PTY Test!" |], "Hello, PTY Test!")
+                          ("date", [| "+%Y-%m-%d" |], "2025") // Linux: フォーマット指定
+                          ("pwd", [||], "/") ]
 
                 for (cmd, args, expectedContent) in basicCommands do
                     logInfo "基本コマンドテスト" ("実行中: " + cmd + " " + String.Join(" ", args))

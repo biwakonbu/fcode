@@ -81,11 +81,17 @@ jobs:
         dotnet restore tests/fcode.Tests.fsproj
     
     - name: Run tests on macOS
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Release --verbosity normal
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
       env:
         TERM: xterm
         CI: true
-        CIOS: true
+    
+    - name: Upload macOS test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: macos-test-results
+        path: TestResults/
     
     # macOS向け単一ファイルパブリッシュ
     - name: Publish macOS x64

@@ -2,6 +2,7 @@ namespace FCode.Tests
 
 open NUnit.Framework
 open System
+open System.Diagnostics
 open System.Threading.Tasks
 open System.Threading
 open System.Text.RegularExpressions
@@ -13,6 +14,23 @@ open TuiPoC.Logger
 type PtyNetSigwinchTests() =
 
     let mutable ptyManager: PtyNetManager option = None
+
+    /// コマンドの存在確認
+    let checkCommandExists (command: string) : bool =
+        try
+            let processInfo = ProcessStartInfo()
+            processInfo.FileName <- "which"
+            processInfo.Arguments <- command
+            processInfo.RedirectStandardOutput <- true
+            processInfo.RedirectStandardError <- true
+            processInfo.UseShellExecute <- false
+            processInfo.CreateNoWindow <- true
+
+            use proc = Process.Start(processInfo)
+            proc.WaitForExit()
+            proc.ExitCode = 0
+        with _ ->
+            false
 
     [<SetUp>]
     member this.Setup() = ptyManager <- Some(new PtyNetManager())
@@ -29,6 +47,10 @@ type PtyNetSigwinchTests() =
     [<Test>]
     member this.SigwinchTest_Htop_Resize() =
         async {
+            // htopコマンドの存在確認
+            if not (checkCommandExists "htop") then
+                Assert.Ignore("htop command not available on this platform")
+
             match ptyManager with
             | Some manager ->
                 logInfo "SIGWINCH htopテスト開始" "ウィンドウリサイズ検証"
@@ -101,6 +123,10 @@ type PtyNetSigwinchTests() =
     [<Test>]
     member this.SigwinchTest_Vim_Resize() =
         async {
+            // vimコマンドの存在確認
+            if not (checkCommandExists "vim") then
+                Assert.Ignore("vim command not available on this platform")
+
             match ptyManager with
             | Some manager ->
                 logInfo "SIGWINCH vimテスト開始" "エディタリサイズ検証"

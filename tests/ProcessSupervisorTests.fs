@@ -3,7 +3,7 @@ module ProcessSupervisorTests
 open NUnit.Framework
 open System
 open System.Threading
-open TuiPoC.ProcessSupervisor
+open FCode.ProcessSupervisor
 
 [<TestFixture>]
 type ProcessSupervisorTests() =

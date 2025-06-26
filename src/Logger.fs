@@ -6,59 +6,74 @@ open System.Threading
 
 type LogLevel =
     | Debug
-    | Info  
+    | Info
     | Warning
     | Error
 
 type Logger() =
     let logDir = Path.Combine(Path.GetTempPath(), "fcode-logs")
-    let logFile = 
+
+    let logFile =
         let timestamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")
-        Path.Combine(logDir, $"fcode-{timestamp}.log")
-    let lockObj = obj()
-    
+        Path.Combine(logDir, "fcode-" + timestamp + ".log")
+
+    let lockObj = obj ()
+
     do
         // ログディレクトリを作成
         if not (Directory.Exists(logDir)) then
             Directory.CreateDirectory(logDir) |> ignore
-        
+
         // 初期化ログ
         let initTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")
-        let initMsg = $"[{initTimestamp}] [INFO] [Logger] ログシステム初期化完了 - ログファイル: {logFile}"
+
+        let initMsg =
+            "[" + initTimestamp + "] [INFO] [Logger] ログシステム初期化完了 - ログファイル: " + logFile
+
         File.AppendAllText(logFile, initMsg + Environment.NewLine)
-    
+
     member _.LogPath = logFile
-    
+
     member _.Log(level: LogLevel, category: string, message: string) =
         lock lockObj (fun () ->
             try
                 let timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")
-                let levelStr = 
+
+                let levelStr =
                     match level with
                     | Debug -> "DEBUG"
-                    | Info -> "INFO"  
+                    | Info -> "INFO"
                     | Warning -> "WARN"
                     | Error -> "ERROR"
-                
-                let logLine = $"[{timestamp}] [{levelStr}] [{category}] {message}"
+
+                let logLine = "[" + timestamp + "] [" + levelStr + "] [" + category + "] " + message
                 File.AppendAllText(logFile, logLine + Environment.NewLine)
-                
+
                 // 重要なエラーはコンソールにも出力
                 if level = Error then
                     Console.WriteLine(logLine)
-            with
-            | ex ->
+            with ex ->
                 // ログ出力でエラーが発生した場合はコンソールのみに出力
-                Console.WriteLine($"LOG ERROR: {ex.Message} - Original: [{level}] [{category}] {message}")
-        )
-    
+                Console.WriteLine(
+                    "LOG ERROR: "
+                    + ex.Message
+                    + " - Original: ["
+                    + level.ToString()
+                    + "] ["
+                    + category
+                    + "] "
+                    + message
+                ))
+
     member this.Debug(category: string, message: string) = this.Log(Debug, category, message)
-    member this.Info(category: string, message: string) = this.Log(Info, category, message)  
+    member this.Info(category: string, message: string) = this.Log(Info, category, message)
     member this.Warning(category: string, message: string) = this.Log(Warning, category, message)
     member this.Error(category: string, message: string) = this.Log(Error, category, message)
-    
+
     member this.Exception(category: string, message: string, ex: Exception) =
-        let fullMessage = $"{message} - Exception: {ex.Message} - StackTrace: {ex.StackTrace}"
+        let fullMessage =
+            message + " - Exception: " + ex.Message + " - StackTrace: " + ex.StackTrace
+
         this.Log(Error, category, fullMessage)
 
 // グローバルロガーインスタンス

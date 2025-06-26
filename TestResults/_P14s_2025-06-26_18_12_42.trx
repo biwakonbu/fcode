@@ -1,0 +1,686 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="4f126502-32d5-4789-be6c-9f9e6599e0d8" name="@P14s 2025-06-26 18:12:42" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2025-06-26T18:12:42.8986758+09:00" queuing="2025-06-26T18:12:42.8986758+09:00" start="2025-06-26T18:12:41.0080797+09:00" finish="2025-06-26T18:13:16.0053738+09:00" />
+  <TestSettings name="default" id="28f9fd71-60a9-4928-9eca-2545b3f6d13a">
+    <Deployment runDeploymentRoot="_P14s_2025-06-26_18_12_42" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="64574573-dbb1-45ec-99b1-a3dce1e750c7" testId="07b644c5-a415-cc13-8bd6-fe6bc7021038" testName="ペイン移動の循環テスト" computerName="P14s" duration="00:00:00.0094990" startTime="2025-06-26T18:12:44.8728099+09:00" endTime="2025-06-26T18:12:44.8823075+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="64574573-dbb1-45ec-99b1-a3dce1e750c7">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="35493b78-8909-48c3-becf-625ec67a03f2" testId="9f296a9a-0305-a5c7-934c-5afda4e0647c" testName="BasicCommands_Success" computerName="P14s" duration="00:00:03.0036920" startTime="2025-06-26T18:12:53.2654097+09:00" endTime="2025-06-26T18:12:56.2691015+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="35493b78-8909-48c3-becf-625ec67a03f2" />
+    <UnitTestResult executionId="38a3a248-e32f-405b-944b-e8140846baab" testId="0739e789-27e6-7455-3f87-bbf71130517b" testName="ProcessSupervisor初期化テスト" computerName="P14s" duration="00:00:00.0008050" startTime="2025-06-26T18:13:15.8592203+09:00" endTime="2025-06-26T18:13:15.8600258+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="38a3a248-e32f-405b-944b-e8140846baab" />
+    <UnitTestResult executionId="913b2146-5a23-49f7-9b6d-923ab0c620ba" testId="8a263fa0-a405-d115-f2b9-3ee29c31de43" testName="findTextViews should handle multiple nested TextViews" computerName="P14s" duration="00:00:00.0079160" startTime="2025-06-26T18:12:44.9280612+09:00" endTime="2025-06-26T18:12:44.9359770+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="913b2146-5a23-49f7-9b6d-923ab0c620ba">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="bcd89202-91c5-47e0-ba96-e9174801099c" testId="58a2095d-61ac-ef4d-d266-feb6c44bdceb" testName="マルチキーシーケンステスト" computerName="P14s" duration="00:00:00.0110690" startTime="2025-06-26T18:12:44.8823856+09:00" endTime="2025-06-26T18:12:44.8934538+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bcd89202-91c5-47e0-ba96-e9174801099c">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="3c36a27d-ca5a-40d3-a20d-4ddc954b4a1d" testId="f00e5816-78aa-94be-2bb0-232e435a845e" testName="無効なセッション停止テスト" computerName="P14s" duration="00:00:00.0123820" startTime="2025-06-26T18:12:41.6256812+09:00" endTime="2025-06-26T18:12:41.6380619+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3c36a27d-ca5a-40d3-a20d-4ddc954b4a1d">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="a878cf1b-643c-445e-a501-50bb019f10cb" testId="8c978159-d09f-d561-b8d1-d5840179cab8" testName="キーアクション型のテスト" computerName="P14s" duration="00:00:00.0095479" startTime="2025-06-26T18:12:44.8253600+09:00" endTime="2025-06-26T18:12:44.8349072+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a878cf1b-643c-445e-a501-50bb019f10cb">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="62f03945-4b38-4631-84e1-e200fbc29363" testId="ca786b48-f98a-3b89-df83-eb49ce9b0d8d" testName="シングルキーバインドテスト" computerName="P14s" duration="00:00:00.0079110" startTime="2025-06-26T18:12:44.8449410+09:00" endTime="2025-06-26T18:12:44.8528509+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="62f03945-4b38-4631-84e1-e200fbc29363">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ca291c42-b216-43b0-a9de-1d7df09237bc" testId="00e92432-48c3-ae84-ee30-351e1ecd2faa" testName="前ペイン移動テスト" computerName="P14s" duration="00:00:00.0088100" startTime="2025-06-26T18:12:44.8935140+09:00" endTime="2025-06-26T18:12:44.9023219+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ca291c42-b216-43b0-a9de-1d7df09237bc">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="f4cdaf2d-06f5-41a0-8ae2-dfd4994c5bf5" testId="fb635d86-6651-377c-21e4-5bfb6cc0ad1a" testName="getTextViewsFromPane should return empty list for pane without TextView" computerName="P14s" duration="00:00:00.0424390" startTime="2025-06-26T18:12:44.9459260+09:00" endTime="2025-06-26T18:12:44.9883635+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f4cdaf2d-06f5-41a0-8ae2-dfd4994c5bf5">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5f514364-2de1-4969-bb2c-2ae4ec7d7adc" testId="a134c12b-8ea2-210d-8dce-81414f82e77d" testName="RecoveryStrategy選択テスト - 無応答プロセス" computerName="P14s" duration="00:00:00.0004310" startTime="2025-06-26T18:13:15.8641874+09:00" endTime="2025-06-26T18:13:15.8646181+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5f514364-2de1-4969-bb2c-2ae4ec7d7adc">
+      <Output>
+        <StdOut>Correct immediate restart strategy</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="a2aae2c5-1fca-4b53-ac49-cba98dbc56a4" testId="06dab689-de38-c05c-b16c-4353a919200d" testName="キーシーケンスタイムアウトテスト" computerName="P14s" duration="00:00:00.0098850" startTime="2025-06-26T18:12:44.8349828+09:00" endTime="2025-06-26T18:12:44.8448669+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a2aae2c5-1fca-4b53-ac49-cba98dbc56a4">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="f124bcef-5124-4c06-8843-155ecc56571e" testId="a3999e33-a16b-6893-a3b6-3c4875a91a7f" testName="WorkerStatus型のテスト" computerName="P14s" duration="00:00:00.0007350" startTime="2025-06-26T18:13:15.8665690+09:00" endTime="2025-06-26T18:13:15.8673044+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f124bcef-5124-4c06-8843-155ecc56571e">
+      <Output>
+        <StdOut>Starting status exists</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="85834097-14cc-4126-8fd3-92df03b60ffa" testId="ec0fc0d6-91aa-474f-9607-d1040cb62736" testName="重複セッション起動テスト - モック" computerName="P14s" duration="00:00:03.0177990" startTime="2025-06-26T18:12:41.6692678+09:00" endTime="2025-06-26T18:12:44.6870655+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="85834097-14cc-4126-8fd3-92df03b60ffa">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="6d551521-e586-4a84-b361-52805dd1d542" testId="d07ce57a-50b5-79d5-3622-6e306671e9c8" testName="セッション入力送信テスト - 非アクティブセッション" computerName="P14s" duration="00:00:00.0176470" startTime="2025-06-26T18:12:41.5923170+09:00" endTime="2025-06-26T18:12:41.6099627+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6d551521-e586-4a84-b361-52805dd1d542">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="872d5923-b76a-4672-b2ca-495b3c307ceb" testId="59b8bb17-6df5-41c1-f755-eb4c6050d253" testName="未定義役割のデフォルトカラースキーム適用テスト" computerName="P14s" duration="00:00:00.0110110" startTime="2025-06-26T18:12:44.7418958+09:00" endTime="2025-06-26T18:12:44.7529058+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="872d5923-b76a-4672-b2ca-495b3c307ceb">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="bbc6cfaa-a9c1-44c1-b995-0efa0255acd7" testId="6f4989d9-0b03-65f0-cece-5977c41fad75" testName="SigwinchTest_Basic_Resize_Operation" computerName="P14s" duration="00:00:00.5104740" startTime="2025-06-26T18:13:05.8454704+09:00" endTime="2025-06-26T18:13:06.3559443+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bbc6cfaa-a9c1-44c1-b995-0efa0255acd7" />
+    <UnitTestResult executionId="78091d1b-6c8f-42be-9479-ba9ea15a4e61" testId="6d4c3f57-30b9-567f-c031-dd70525e4bba" testName="複数ペインへの同時適用テスト" computerName="P14s" duration="00:00:00.0064050" startTime="2025-06-26T18:12:44.7529692+09:00" endTime="2025-06-26T18:12:44.7593737+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="78091d1b-6c8f-42be-9479-ba9ea15a4e61">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="60df914a-01c0-4835-a1f2-51404a663659" testId="d2ada8b5-d6f4-33c2-58d4-f33c483d0fe2" testName="findTextViews should find TextView inside FrameView ContentView hierarchy" computerName="P14s" duration="00:00:00.0081410" startTime="2025-06-26T18:12:44.9135886+09:00" endTime="2025-06-26T18:12:44.9217288+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="60df914a-01c0-4835-a1f2-51404a663659">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="4c2048df-1302-42b2-ba59-24f84ad7e4ef" testId="5aae9171-dfa7-85a1-e71b-c8067b23f7fa" testName="MultipleSessionsConcurrent_Isolation" computerName="P14s" duration="00:00:01.5057750" startTime="2025-06-26T18:12:59.2818202+09:00" endTime="2025-06-26T18:13:00.7875945+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4c2048df-1302-42b2-ba59-24f84ad7e4ef" />
+    <UnitTestResult executionId="5e6056aa-d8de-438f-a344-574b385f1c3a" testId="0c2d49ea-ac39-0cc7-4a29-ac53e7f0b67e" testName="SessionManager初期化テスト" computerName="P14s" duration="00:00:00.1049820" startTime="2025-06-26T18:12:41.4783428+09:00" endTime="2025-06-26T18:12:41.5832851+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5e6056aa-d8de-438f-a344-574b385f1c3a">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="78163464-6fe5-4077-b5ff-4af06ceccfd7" testId="df8c5574-79db-fd98-7720-28bf519ecf14" testName="グローバル関数の存在確認テスト" computerName="P14s" duration="00:00:00.0015680" startTime="2025-06-26T18:13:15.8682151+09:00" endTime="2025-06-26T18:13:15.8697833+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="78163464-6fe5-4077-b5ff-4af06ceccfd7" />
+    <UnitTestResult executionId="740ec9a3-8106-4ae4-9c0e-188f499714fc" testId="139bacbf-0fa1-f28b-305a-36f79d5c85e6" testName="findTextViews should find direct TextView" computerName="P14s" duration="00:00:00.0107810" startTime="2025-06-26T18:12:44.9027521+09:00" endTime="2025-06-26T18:12:44.9135320+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="740ec9a3-8106-4ae4-9c0e-188f499714fc">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="1b991640-959e-43ea-9f83-5e61883cef88" testId="90a7f5ef-bf19-3de8-66c6-a879981ea716" testName="SupervisorConfig設定値テスト" computerName="P14s" duration="00:00:00.0003590" startTime="2025-06-26T18:13:15.8646537+09:00" endTime="2025-06-26T18:13:15.8650129+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1b991640-959e-43ea-9f83-5e61883cef88" />
+    <UnitTestResult executionId="7b58c8a7-3242-44f7-a17f-3801ccd09aa9" testId="bda2d9db-4140-7208-6004-3a33f2b42ba1" testName="カラースキームの属性設定テスト" computerName="P14s" duration="00:00:00.0071340" startTime="2025-06-26T18:12:44.7118053+09:00" endTime="2025-06-26T18:12:44.7189382+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7b58c8a7-3242-44f7-a17f-3801ccd09aa9">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ba1a63bf-56bc-4ba7-8ac8-50c0cd134b2e" testId="59c3264d-e511-645e-1391-f0f897eb0f0b" testName="getTextViewsFromPane should find TextView in ContentView hierarchy" computerName="P14s" duration="00:00:00.0098270" startTime="2025-06-26T18:12:44.9360286+09:00" endTime="2025-06-26T18:12:44.9458546+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ba1a63bf-56bc-4ba7-8ac8-50c0cd134b2e">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="8bbd919a-7784-4285-ae4b-2a46c999a69d" testId="ebc45cfd-ef81-92a0-d690-ab3f023ebce7" testName="SigwinchTest_Htop_Resize" computerName="P14s" duration="00:00:04.0021410" startTime="2025-06-26T18:13:06.3560030+09:00" endTime="2025-06-26T18:13:11.1326605+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8bbd919a-7784-4285-ae4b-2a46c999a69d" />
+    <UnitTestResult executionId="7db818e1-7b47-4d89-98ab-de5dd1a03ce3" testId="5a6f40fa-0369-9c7c-31e6-83706f055fb8" testName="Emacsキーバインド定義のテスト" computerName="P14s" duration="00:00:00.0093060" startTime="2025-06-26T18:12:44.8159688+09:00" endTime="2025-06-26T18:12:44.8252735+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7db818e1-7b47-4d89-98ab-de5dd1a03ce3">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="8c68031b-89cf-42d2-9b06-6595b09a1072" testId="0d6096fd-2863-5922-c40b-0877d9872b5a" testName="EmacsKeyHandlerの初期化テスト" computerName="P14s" duration="00:00:00.0087860" startTime="2025-06-26T18:12:44.8071070+09:00" endTime="2025-06-26T18:12:44.8158937+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8c68031b-89cf-42d2-9b06-6595b09a1072">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="52d99c3e-a782-49b7-a168-1e693cb01b71" testId="e41aa856-980f-58ec-2284-2cfe21bd28d5" testName="大文字小文字を無視したカラースキーム適用テスト" computerName="P14s" duration="00:00:00.0053410" startTime="2025-06-26T18:12:44.7365050+09:00" endTime="2025-06-26T18:12:44.7418451+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="52d99c3e-a782-49b7-a168-1e693cb01b71">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ff5f6a57-063a-4f32-a498-7612b1f45834" testId="1f3bafdc-da47-9205-398c-558f59c1bb58" testName="HealthMetrics構造体のテスト" computerName="P14s" duration="00:00:00.0020310" startTime="2025-06-26T18:13:15.8545432+09:00" endTime="2025-06-26T18:13:15.8565749+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ff5f6a57-063a-4f32-a498-7612b1f45834" />
+    <UnitTestResult executionId="f0fd334c-1779-42cc-8f90-ad539151bd6b" testId="c98e3b66-646c-4f08-473f-2bebbecc11e5" testName="IPCResponse型のテスト" computerName="P14s" duration="00:00:00.0006050" startTime="2025-06-26T18:13:15.8575952+09:00" endTime="2025-06-26T18:13:15.8581999+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f0fd334c-1779-42cc-8f90-ad539151bd6b" />
+    <UnitTestResult executionId="1f680f9a-6286-49ef-ab86-2b0b7ce79957" testId="d39914ec-2db3-3645-c220-f7bde126e3cf" testName="セッション状態確認テスト" computerName="P14s" duration="00:00:00.0072950" startTime="2025-06-26T18:12:41.6100247+09:00" endTime="2025-06-26T18:12:41.6173189+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1f680f9a-6286-49ef-ab86-2b0b7ce79957">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="a63aea93-20c0-4868-9c2a-cd9c5d2bfc71" testId="b27d48ac-cf13-06b2-b8be-bd1d472ba259" testName="カラースキーム統一テスト" computerName="P14s" duration="00:00:00.0053390" startTime="2025-06-26T18:12:44.7254450+09:00" endTime="2025-06-26T18:12:44.7307837+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a63aea93-20c0-4868-9c2a-cd9c5d2bfc71">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="492d538b-4e3a-46e1-a93e-03da82b2f2f9" testId="8fbe77e3-d8b8-3e55-a447-567c6da41227" testName="会話ペイン用カラースキーム適用テスト" computerName="P14s" duration="00:00:00.0056400" startTime="2025-06-26T18:12:44.7308240+09:00" endTime="2025-06-26T18:12:44.7364640+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="492d538b-4e3a-46e1-a93e-03da82b2f2f9">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="d29ff562-e6da-41d4-8312-ac6624757bb5" testId="6ff3c7eb-e48c-7092-cef5-bb4c8882e1ca" testName="RecoveryStrategy選択テスト - リソース枯渇" computerName="P14s" duration="00:00:00.0028060" startTime="2025-06-26T18:13:15.8600780+09:00" endTime="2025-06-26T18:13:15.8628840+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d29ff562-e6da-41d4-8312-ac6624757bb5">
+      <Output>
+        <StdOut>Correct immediate restart strategy</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="c453ce92-4962-40e2-afc2-56cad52db337" testId="3eafaade-a96a-2a3d-4dd7-758fd19d3012" testName="ペインインデックス設定テスト" computerName="P14s" duration="00:00:00.0069590" startTime="2025-06-26T18:12:44.8657803+09:00" endTime="2025-06-26T18:12:44.8727390+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c453ce92-4962-40e2-afc2-56cad52db337">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5fc42e5a-d445-49ec-9b9f-e19b96624a47" testId="84a61302-104a-538c-e985-33457cdc5cb3" testName="QAペイン用カラースキーム適用テスト" computerName="P14s" duration="00:00:00.0063290" startTime="2025-06-26T18:12:44.6991734+09:00" endTime="2025-06-26T18:12:44.7055017+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5fc42e5a-d445-49ec-9b9f-e19b96624a47">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ab29dae2-fd92-4041-b46d-ccac0a9d14d6" testId="53be7529-b7db-51ba-8616-429486f7aaf3" testName="RecoveryStrategy選択テスト - 最大再起動回数超過" computerName="P14s" duration="00:00:00.0006590" startTime="2025-06-26T18:13:15.8629744+09:00" endTime="2025-06-26T18:13:15.8636339+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ab29dae2-fd92-4041-b46d-ccac0a9d14d6" />
+    <UnitTestResult executionId="b5c9a79f-ccf0-460d-9224-119a4e624cf9" testId="ceee05ec-c315-9a41-f6dc-15b9e09e9595" testName="ダイレクトペイン移動テスト" computerName="P14s" duration="00:00:00.0127780" startTime="2025-06-26T18:12:44.8529379+09:00" endTime="2025-06-26T18:12:44.8657150+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b5c9a79f-ccf0-460d-9224-119a4e624cf9">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="52412dcb-4a1f-454d-b7e1-23066d221d11" testId="fc556650-9a28-410c-7ba9-2e7ade0c7239" testName="RecoveryStrategy選択テスト - 少ない再起動回数" computerName="P14s" duration="00:00:00.0004770" startTime="2025-06-26T18:13:15.8636743+09:00" endTime="2025-06-26T18:13:15.8641516+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="52412dcb-4a1f-454d-b7e1-23066d221d11" />
+    <UnitTestResult executionId="95fe2461-86f1-42ee-9b5c-c0a445609f62" testId="f0c14dc6-b370-4b1d-899f-aa2625b6ef65" testName="LatencyTest_99Percentile_Under16ms" computerName="P14s" duration="00:00:01.5997750" startTime="2025-06-26T18:12:44.9886660+09:00" endTime="2025-06-26T18:12:46.5884399+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="95fe2461-86f1-42ee-9b5c-c0a445609f62" />
+    <UnitTestResult executionId="ae0c089e-9f16-4e2a-8b59-e9a9e2df5f33" testId="d7cac979-b6b4-ad8b-5bba-b06abe528b4e" testName="全セッションクリーンアップテスト" computerName="P14s" duration="00:00:00.0082460" startTime="2025-06-26T18:12:41.6173815+09:00" endTime="2025-06-26T18:12:41.6256265+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ae0c089e-9f16-4e2a-8b59-e9a9e2df5f33">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="3d1cac71-872e-49fe-861c-804e68230086" testId="d5888df2-f634-830a-da73-63cc5aafd20b" testName="WorkerProcess初期化テスト" computerName="P14s" duration="00:00:00.0014850" startTime="2025-06-26T18:13:15.8650250+09:00" endTime="2025-06-26T18:13:15.8665101+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3d1cac71-872e-49fe-861c-804e68230086" />
+    <UnitTestResult executionId="dca4c915-13b6-4f9e-b9e9-c53e0308b093" testId="9b1f8a3b-53a8-fa8d-f024-20e1641297a7" testName="LongRunningCommand_EarlyTermination" computerName="P14s" duration="00:00:03.0125250" startTime="2025-06-26T18:12:56.2692172+09:00" endTime="2025-06-26T18:12:59.2817415+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="dca4c915-13b6-4f9e-b9e9-c53e0308b093" />
+    <UnitTestResult executionId="d9a2cde7-188f-44c5-89fc-fd42caabd69c" testId="b682ea88-5730-4da4-e03c-9c0d01d4e6f7" testName="NonExistentCommand_ErrorHandling" computerName="P14s" duration="00:00:00.0435600" startTime="2025-06-26T18:13:00.7876638+09:00" endTime="2025-06-26T18:13:00.8312236+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d9a2cde7-188f-44c5-89fc-fd42caabd69c">
+      <Output>
+        <StdOut>[2025-06-26 18:13:00.817] [ERROR] [PTYセッション作成エラー] An error occurred trying to start process 'nonexistent-command-12345' with working directory '/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0'. No such file or directory
+
+存在しないコマンドで適切にエラーが発生しました</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="29a00c3e-d25c-4c7e-9460-472fdfb94e44" testId="aa4750c4-4318-a707-59c6-9eb2b828c639" testName="UXペイン用カラースキーム適用テスト" computerName="P14s" duration="00:00:00.0061980" startTime="2025-06-26T18:12:44.7055522+09:00" endTime="2025-06-26T18:12:44.7117491+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="29a00c3e-d25c-4c7e-9460-472fdfb94e44">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="48589632-cd73-4738-8a66-f22a427b8ea3" testId="3e9100ad-5013-549e-1eda-fb7874bb23cb" testName="開発者ペイン用カラースキーム適用テスト" computerName="P14s" duration="00:00:00.0065080" startTime="2025-06-26T18:12:44.7594326+09:00" endTime="2025-06-26T18:12:44.7659396+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="48589632-cd73-4738-8a66-f22a427b8ea3">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="01a74932-fc6b-4aa4-aea8-6d861273c09c" testId="49c93311-3f2c-206a-3f1b-b837d3048f9a" testName="ThroughputTest_YesCommand_60FPS" computerName="P14s" duration="00:00:01.6550940" startTime="2025-06-26T18:12:51.6098919+09:00" endTime="2025-06-26T18:12:53.2649858+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="01a74932-fc6b-4aa4-aea8-6d861273c09c" />
+    <UnitTestResult executionId="2710cd60-7488-41d7-863d-04f5be0225dd" testId="e874103a-ff94-1546-30d1-d0537a587935" testName="Ctrl-X Ctrl-C終了コマンドテスト" computerName="P14s" duration="00:00:00.0404960" startTime="2025-06-26T18:12:44.7665361+09:00" endTime="2025-06-26T18:12:44.8070313+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2710cd60-7488-41d7-863d-04f5be0225dd">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5f28b739-11f8-40ad-b18e-3f3f8ac50291" testId="bc694113-c70d-c74a-73e0-742046836a1e" testName="IPCMessage型のテスト" computerName="P14s" duration="00:00:00.0009380" startTime="2025-06-26T18:13:15.8566236+09:00" endTime="2025-06-26T18:13:15.8575614+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5f28b739-11f8-40ad-b18e-3f3f8ac50291" />
+    <UnitTestResult executionId="bed20138-bf2a-4205-90b1-a4f8f0ae2c73" testId="13c35cf4-a062-4598-2432-7b4b2d62a4b3" testName="無効なディレクトリでのセッション起動テスト" computerName="P14s" duration="00:00:00.0310830" startTime="2025-06-26T18:12:41.6381278+09:00" endTime="2025-06-26T18:12:41.6692093+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bed20138-bf2a-4205-90b1-a4f8f0ae2c73">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h[2025-06-26 18:12:41.665] [ERROR] [SessionManager] Failed to start session for pane: test_pane - Exception: An error occurred trying to start process '/home/biwakonbu/.volta/tools/image/node/20.17.0/bin/claude' with working directory '/nonexistent/directory'. No such file or directory - StackTrace:    at System.Diagnostics.Process.ForkAndExecProcess(ProcessStartInfo startInfo, String resolvedFilename, String[] argv, String[] envp, String cwd, Boolean setCredentials, UInt32 userId, UInt32 groupId, UInt32[] groups, Int32&amp; stdinFd, Int32&amp; stdoutFd, Int32&amp; stderrFd, Boolean usesTerminal, Boolean throwOnNoExec)
+   at System.Diagnostics.Process.StartCore(ProcessStartInfo startInfo)
+   at System.Diagnostics.Process.Start(ProcessStartInfo startInfo)
+   at TuiPoC.ClaudeCodeProcess.SessionManager.StartSession(String paneId, String workingDir, TextView outputView) in /home/biwakonbu/github/fcode/src/ClaudeCodeProcess.fs:line 67
+\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="b11b0dea-470d-4543-94b0-11a1a0d29a86" testId="c81b3214-d4a4-b478-1165-c7f51417196f" testName="PMペイン用カラースキーム適用テスト" computerName="P14s" duration="00:00:00.0101570" startTime="2025-06-26T18:12:44.6889527+09:00" endTime="2025-06-26T18:12:44.6991091+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b11b0dea-470d-4543-94b0-11a1a0d29a86">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="8a67e372-18fb-4024-bc9f-739d17e06513" testId="2f05c2c2-f5ee-e7f4-303a-4d04db4f1d23" testName="findTextViews should handle empty View without crash" computerName="P14s" duration="00:00:00.0062240" startTime="2025-06-26T18:12:44.9217957+09:00" endTime="2025-06-26T18:12:44.9280195+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8a67e372-18fb-4024-bc9f-739d17e06513">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="4bbc17f9-631e-4ae4-9622-361b1f8092d8" testId="f142d9b7-26e4-f7e4-20f5-ada037b7bf04" testName="カラースキーム定義の存在テスト" computerName="P14s" duration="00:00:00.0064180" startTime="2025-06-26T18:12:44.7189876+09:00" endTime="2025-06-26T18:12:44.7254057+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4bbc17f9-631e-4ae4-9622-361b1f8092d8">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="b8f0af99-fc8c-4bcd-ab28-7106dca63a95" testId="0a950690-d283-3d6c-ae58-92ea90c6bb75" testName="アクティブセッション数カウントテスト" computerName="P14s" duration="00:00:00.0077240" startTime="2025-06-26T18:12:41.5845335+09:00" endTime="2025-06-26T18:12:41.5922570+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b8f0af99-fc8c-4bcd-ab28-7106dca63a95">
+      <Output>
+        <StdOut>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="1e74a42a-608f-4d21-a8d0-0c5f430cd560" testId="5d1d56df-3d44-e941-d33e-379e3e43a2f0" testName="ProcessError型の詳細テスト" computerName="P14s" duration="00:00:00.0009390" startTime="2025-06-26T18:13:15.8582363+09:00" endTime="2025-06-26T18:13:15.8591750+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1e74a42a-608f-4d21-a8d0-0c5f430cd560">
+      <Output>
+        <StdOut>Network connectivity loss error exists</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="6c349563-32c1-4d03-b5fe-b25531ef935a" testId="8ec43114-e1ae-e8ef-1137-b6929a8cb49c" testName="MemoryEfficiencyTest_LargeOutput" computerName="P14s" duration="00:00:05.0212940" startTime="2025-06-26T18:12:46.5885416+09:00" endTime="2025-06-26T18:12:51.6098351+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6c349563-32c1-4d03-b5fe-b25531ef935a" />
+    <UnitTestResult executionId="af129776-a5a0-4082-b986-bbfea5dc2d36" testId="fb317f08-5328-1a97-b957-cb7dda575834" testName="Worker管理関数のテスト" computerName="P14s" duration="00:00:00.0008210" startTime="2025-06-26T18:13:15.8673522+09:00" endTime="2025-06-26T18:13:15.8681726+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="af129776-a5a0-4082-b986-bbfea5dc2d36" />
+    <UnitTestResult executionId="c3440615-bf41-4947-babb-649e880ae93f" testId="15a9f1a7-327e-577d-1df8-65f466e1a593" testName="SigwinchTest_Vim_Resize" computerName="P14s" duration="00:00:04.7214159" startTime="2025-06-26T18:13:11.1327487+09:00" endTime="2025-06-26T18:13:15.8541641+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c3440615-bf41-4947-babb-649e880ae93f" />
+    <UnitTestResult executionId="a854ed09-2058-4c9b-ae6a-fe72db1116f9" testId="73fe5f13-2ac0-8eff-da30-1387a07fba17" testName="SecurityTest_CommandInjectionResistance" computerName="P14s" duration="00:00:05.0138210" startTime="2025-06-26T18:13:00.8312831+09:00" endTime="2025-06-26T18:13:05.8451038+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a854ed09-2058-4c9b-ae6a-fe72db1116f9" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="キーシーケンスタイムアウトテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="06dab689-de38-c05c-b16c-4353a919200d">
+      <Execution id="a2aae2c5-1fca-4b53-ac49-cba98dbc56a4" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="キーシーケンスタイムアウトテスト" />
+    </UnitTest>
+    <UnitTest name="カラースキーム統一テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="b27d48ac-cf13-06b2-b8be-bd1d472ba259">
+      <Execution id="a63aea93-20c0-4868-9c2a-cd9c5d2bfc71" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="カラースキーム統一テスト" />
+    </UnitTest>
+    <UnitTest name="前ペイン移動テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="00e92432-48c3-ae84-ee30-351e1ecd2faa">
+      <Execution id="ca291c42-b216-43b0-a9de-1d7df09237bc" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="前ペイン移動テスト" />
+    </UnitTest>
+    <UnitTest name="findTextViews should handle empty View without crash" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="2f05c2c2-f5ee-e7f4-303a-4d04db4f1d23">
+      <Execution id="8a67e372-18fb-4024-bc9f-739d17e06513" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.UIHelpersTests+UIHelpersTests" name="findTextViews should handle empty View without crash" />
+    </UnitTest>
+    <UnitTest name="SupervisorConfig設定値テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="90a7f5ef-bf19-3de8-66c6-a879981ea716">
+      <Execution id="1b991640-959e-43ea-9f83-5e61883cef88" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="SupervisorConfig設定値テスト" />
+    </UnitTest>
+    <UnitTest name="ProcessError型の詳細テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="5d1d56df-3d44-e941-d33e-379e3e43a2f0">
+      <Execution id="1e74a42a-608f-4d21-a8d0-0c5f430cd560" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="ProcessError型の詳細テスト" />
+    </UnitTest>
+    <UnitTest name="シングルキーバインドテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="ca786b48-f98a-3b89-df83-eb49ce9b0d8d">
+      <Execution id="62f03945-4b38-4631-84e1-e200fbc29363" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="シングルキーバインドテスト" />
+    </UnitTest>
+    <UnitTest name="NonExistentCommand_ErrorHandling" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="b682ea88-5730-4da4-e03c-9c0d01d4e6f7">
+      <Execution id="d9a2cde7-188f-44c5-89fc-fd42caabd69c" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetRealWorldTests" name="NonExistentCommand_ErrorHandling" />
+    </UnitTest>
+    <UnitTest name="WorkerStatus型のテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="a3999e33-a16b-6893-a3b6-3c4875a91a7f">
+      <Execution id="f124bcef-5124-4c06-8843-155ecc56571e" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="WorkerStatus型のテスト" />
+    </UnitTest>
+    <UnitTest name="Emacsキーバインド定義のテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="5a6f40fa-0369-9c7c-31e6-83706f055fb8">
+      <Execution id="7db818e1-7b47-4d89-98ab-de5dd1a03ce3" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="Emacsキーバインド定義のテスト" />
+    </UnitTest>
+    <UnitTest name="EmacsKeyHandlerの初期化テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="0d6096fd-2863-5922-c40b-0877d9872b5a">
+      <Execution id="8c68031b-89cf-42d2-9b06-6595b09a1072" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="EmacsKeyHandlerの初期化テスト" />
+    </UnitTest>
+    <UnitTest name="RecoveryStrategy選択テスト - 無応答プロセス" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="a134c12b-8ea2-210d-8dce-81414f82e77d">
+      <Execution id="5f514364-2de1-4969-bb2c-2ae4ec7d7adc" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="RecoveryStrategy選択テスト - 無応答プロセス" />
+    </UnitTest>
+    <UnitTest name="ペインインデックス設定テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="3eafaade-a96a-2a3d-4dd7-758fd19d3012">
+      <Execution id="c453ce92-4962-40e2-afc2-56cad52db337" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="ペインインデックス設定テスト" />
+    </UnitTest>
+    <UnitTest name="getTextViewsFromPane should return empty list for pane without TextView" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="fb635d86-6651-377c-21e4-5bfb6cc0ad1a">
+      <Execution id="f4cdaf2d-06f5-41a0-8ae2-dfd4994c5bf5" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.UIHelpersTests+UIHelpersTests" name="getTextViewsFromPane should return empty list for pane without TextView" />
+    </UnitTest>
+    <UnitTest name="キーアクション型のテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="8c978159-d09f-d561-b8d1-d5840179cab8">
+      <Execution id="a878cf1b-643c-445e-a501-50bb019f10cb" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="キーアクション型のテスト" />
+    </UnitTest>
+    <UnitTest name="Ctrl-X Ctrl-C終了コマンドテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="e874103a-ff94-1546-30d1-d0537a587935">
+      <Execution id="2710cd60-7488-41d7-863d-04f5be0225dd" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="Ctrl-X Ctrl-C終了コマンドテスト" />
+    </UnitTest>
+    <UnitTest name="LongRunningCommand_EarlyTermination" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="9b1f8a3b-53a8-fa8d-f024-20e1641297a7">
+      <Execution id="dca4c915-13b6-4f9e-b9e9-c53e0308b093" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetRealWorldTests" name="LongRunningCommand_EarlyTermination" />
+    </UnitTest>
+    <UnitTest name="MemoryEfficiencyTest_LargeOutput" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="8ec43114-e1ae-e8ef-1137-b6929a8cb49c">
+      <Execution id="6c349563-32c1-4d03-b5fe-b25531ef935a" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetPerformanceTests" name="MemoryEfficiencyTest_LargeOutput" />
+    </UnitTest>
+    <UnitTest name="ダイレクトペイン移動テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="ceee05ec-c315-9a41-f6dc-15b9e09e9595">
+      <Execution id="b5c9a79f-ccf0-460d-9224-119a4e624cf9" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="ダイレクトペイン移動テスト" />
+    </UnitTest>
+    <UnitTest name="IPCResponse型のテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="c98e3b66-646c-4f08-473f-2bebbecc11e5">
+      <Execution id="f0fd334c-1779-42cc-8f90-ad539151bd6b" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="IPCResponse型のテスト" />
+    </UnitTest>
+    <UnitTest name="LatencyTest_99Percentile_Under16ms" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="f0c14dc6-b370-4b1d-899f-aa2625b6ef65">
+      <Execution id="95fe2461-86f1-42ee-9b5c-c0a445609f62" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetPerformanceTests" name="LatencyTest_99Percentile_Under16ms" />
+    </UnitTest>
+    <UnitTest name="SigwinchTest_Vim_Resize" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="15a9f1a7-327e-577d-1df8-65f466e1a593">
+      <Execution id="c3440615-bf41-4947-babb-649e880ae93f" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetSigwinchTests" name="SigwinchTest_Vim_Resize" />
+    </UnitTest>
+    <UnitTest name="グローバル関数の存在確認テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="df8c5574-79db-fd98-7720-28bf519ecf14">
+      <Execution id="78163464-6fe5-4077-b5ff-4af06ceccfd7" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="グローバル関数の存在確認テスト" />
+    </UnitTest>
+    <UnitTest name="全セッションクリーンアップテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="d7cac979-b6b4-ad8b-5bba-b06abe528b4e">
+      <Execution id="ae0c089e-9f16-4e2a-8b59-e9a9e2df5f33" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ClaudeCodeProcessTests+ClaudeCodeProcessTests" name="全セッションクリーンアップテスト" />
+    </UnitTest>
+    <UnitTest name="アクティブセッション数カウントテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="0a950690-d283-3d6c-ae58-92ea90c6bb75">
+      <Execution id="b8f0af99-fc8c-4bcd-ab28-7106dca63a95" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ClaudeCodeProcessTests+ClaudeCodeProcessTests" name="アクティブセッション数カウントテスト" />
+    </UnitTest>
+    <UnitTest name="findTextViews should handle multiple nested TextViews" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="8a263fa0-a405-d115-f2b9-3ee29c31de43">
+      <Execution id="913b2146-5a23-49f7-9b6d-923ab0c620ba" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.UIHelpersTests+UIHelpersTests" name="findTextViews should handle multiple nested TextViews" />
+    </UnitTest>
+    <UnitTest name="HealthMetrics構造体のテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="1f3bafdc-da47-9205-398c-558f59c1bb58">
+      <Execution id="ff5f6a57-063a-4f32-a498-7612b1f45834" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="HealthMetrics構造体のテスト" />
+    </UnitTest>
+    <UnitTest name="ThroughputTest_YesCommand_60FPS" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="49c93311-3f2c-206a-3f1b-b837d3048f9a">
+      <Execution id="01a74932-fc6b-4aa4-aea8-6d861273c09c" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetPerformanceTests" name="ThroughputTest_YesCommand_60FPS" />
+    </UnitTest>
+    <UnitTest name="複数ペインへの同時適用テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="6d4c3f57-30b9-567f-c031-dd70525e4bba">
+      <Execution id="78091d1b-6c8f-42be-9479-ba9ea15a4e61" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="複数ペインへの同時適用テスト" />
+    </UnitTest>
+    <UnitTest name="未定義役割のデフォルトカラースキーム適用テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="59b8bb17-6df5-41c1-f755-eb4c6050d253">
+      <Execution id="872d5923-b76a-4672-b2ca-495b3c307ceb" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="未定義役割のデフォルトカラースキーム適用テスト" />
+    </UnitTest>
+    <UnitTest name="RecoveryStrategy選択テスト - リソース枯渇" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="6ff3c7eb-e48c-7092-cef5-bb4c8882e1ca">
+      <Execution id="d29ff562-e6da-41d4-8312-ac6624757bb5" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="RecoveryStrategy選択テスト - リソース枯渇" />
+    </UnitTest>
+    <UnitTest name="SigwinchTest_Htop_Resize" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="ebc45cfd-ef81-92a0-d690-ab3f023ebce7">
+      <Execution id="8bbd919a-7784-4285-ae4b-2a46c999a69d" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetSigwinchTests" name="SigwinchTest_Htop_Resize" />
+    </UnitTest>
+    <UnitTest name="SessionManager初期化テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="0c2d49ea-ac39-0cc7-4a29-ac53e7f0b67e">
+      <Execution id="5e6056aa-d8de-438f-a344-574b385f1c3a" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ClaudeCodeProcessTests+ClaudeCodeProcessTests" name="SessionManager初期化テスト" />
+    </UnitTest>
+    <UnitTest name="IPCMessage型のテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="bc694113-c70d-c74a-73e0-742046836a1e">
+      <Execution id="5f28b739-11f8-40ad-b18e-3f3f8ac50291" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="IPCMessage型のテスト" />
+    </UnitTest>
+    <UnitTest name="findTextViews should find direct TextView" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="139bacbf-0fa1-f28b-305a-36f79d5c85e6">
+      <Execution id="740ec9a3-8106-4ae4-9c0e-188f499714fc" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.UIHelpersTests+UIHelpersTests" name="findTextViews should find direct TextView" />
+    </UnitTest>
+    <UnitTest name="開発者ペイン用カラースキーム適用テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="3e9100ad-5013-549e-1eda-fb7874bb23cb">
+      <Execution id="48589632-cd73-4738-8a66-f22a427b8ea3" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="開発者ペイン用カラースキーム適用テスト" />
+    </UnitTest>
+    <UnitTest name="PMペイン用カラースキーム適用テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="c81b3214-d4a4-b478-1165-c7f51417196f">
+      <Execution id="b11b0dea-470d-4543-94b0-11a1a0d29a86" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="PMペイン用カラースキーム適用テスト" />
+    </UnitTest>
+    <UnitTest name="会話ペイン用カラースキーム適用テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="8fbe77e3-d8b8-3e55-a447-567c6da41227">
+      <Execution id="492d538b-4e3a-46e1-a93e-03da82b2f2f9" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="会話ペイン用カラースキーム適用テスト" />
+    </UnitTest>
+    <UnitTest name="RecoveryStrategy選択テスト - 少ない再起動回数" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="fc556650-9a28-410c-7ba9-2e7ade0c7239">
+      <Execution id="52412dcb-4a1f-454d-b7e1-23066d221d11" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="RecoveryStrategy選択テスト - 少ない再起動回数" />
+    </UnitTest>
+    <UnitTest name="無効なディレクトリでのセッション起動テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="13c35cf4-a062-4598-2432-7b4b2d62a4b3">
+      <Execution id="bed20138-bf2a-4205-90b1-a4f8f0ae2c73" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ClaudeCodeProcessTests+ClaudeCodeProcessTests" name="無効なディレクトリでのセッション起動テスト" />
+    </UnitTest>
+    <UnitTest name="MultipleSessionsConcurrent_Isolation" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="5aae9171-dfa7-85a1-e71b-c8067b23f7fa">
+      <Execution id="4c2048df-1302-42b2-ba59-24f84ad7e4ef" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetRealWorldTests" name="MultipleSessionsConcurrent_Isolation" />
+    </UnitTest>
+    <UnitTest name="Worker管理関数のテスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="fb317f08-5328-1a97-b957-cb7dda575834">
+      <Execution id="af129776-a5a0-4082-b986-bbfea5dc2d36" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="Worker管理関数のテスト" />
+    </UnitTest>
+    <UnitTest name="UXペイン用カラースキーム適用テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="aa4750c4-4318-a707-59c6-9eb2b828c639">
+      <Execution id="29a00c3e-d25c-4c7e-9460-472fdfb94e44" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="UXペイン用カラースキーム適用テスト" />
+    </UnitTest>
+    <UnitTest name="ペイン移動の循環テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="07b644c5-a415-cc13-8bd6-fe6bc7021038">
+      <Execution id="64574573-dbb1-45ec-99b1-a3dce1e750c7" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="ペイン移動の循環テスト" />
+    </UnitTest>
+    <UnitTest name="無効なセッション停止テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="f00e5816-78aa-94be-2bb0-232e435a845e">
+      <Execution id="3c36a27d-ca5a-40d3-a20d-4ddc954b4a1d" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ClaudeCodeProcessTests+ClaudeCodeProcessTests" name="無効なセッション停止テスト" />
+    </UnitTest>
+    <UnitTest name="ProcessSupervisor初期化テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="0739e789-27e6-7455-3f87-bbf71130517b">
+      <Execution id="38a3a248-e32f-405b-944b-e8140846baab" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="ProcessSupervisor初期化テスト" />
+    </UnitTest>
+    <UnitTest name="RecoveryStrategy選択テスト - 最大再起動回数超過" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="53be7529-b7db-51ba-8616-429486f7aaf3">
+      <Execution id="ab29dae2-fd92-4041-b46d-ccac0a9d14d6" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="RecoveryStrategy選択テスト - 最大再起動回数超過" />
+    </UnitTest>
+    <UnitTest name="セッション入力送信テスト - 非アクティブセッション" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="d07ce57a-50b5-79d5-3622-6e306671e9c8">
+      <Execution id="6d551521-e586-4a84-b361-52805dd1d542" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ClaudeCodeProcessTests+ClaudeCodeProcessTests" name="セッション入力送信テスト - 非アクティブセッション" />
+    </UnitTest>
+    <UnitTest name="findTextViews should find TextView inside FrameView ContentView hierarchy" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="d2ada8b5-d6f4-33c2-58d4-f33c483d0fe2">
+      <Execution id="60df914a-01c0-4835-a1f2-51404a663659" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.UIHelpersTests+UIHelpersTests" name="findTextViews should find TextView inside FrameView ContentView hierarchy" />
+    </UnitTest>
+    <UnitTest name="重複セッション起動テスト - モック" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="ec0fc0d6-91aa-474f-9607-d1040cb62736">
+      <Execution id="85834097-14cc-4126-8fd3-92df03b60ffa" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ClaudeCodeProcessTests+ClaudeCodeProcessTests" name="重複セッション起動テスト - モック" />
+    </UnitTest>
+    <UnitTest name="SigwinchTest_Basic_Resize_Operation" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="6f4989d9-0b03-65f0-cece-5977c41fad75">
+      <Execution id="bbc6cfaa-a9c1-44c1-b995-0efa0255acd7" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetSigwinchTests" name="SigwinchTest_Basic_Resize_Operation" />
+    </UnitTest>
+    <UnitTest name="大文字小文字を無視したカラースキーム適用テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="e41aa856-980f-58ec-2284-2cfe21bd28d5">
+      <Execution id="52d99c3e-a782-49b7-a168-1e693cb01b71" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="大文字小文字を無視したカラースキーム適用テスト" />
+    </UnitTest>
+    <UnitTest name="WorkerProcess初期化テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="d5888df2-f634-830a-da73-63cc5aafd20b">
+      <Execution id="3d1cac71-872e-49fe-861c-804e68230086" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="ProcessSupervisorTests+ProcessSupervisorTests" name="WorkerProcess初期化テスト" />
+    </UnitTest>
+    <UnitTest name="SecurityTest_CommandInjectionResistance" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="73fe5f13-2ac0-8eff-da30-1387a07fba17">
+      <Execution id="a854ed09-2058-4c9b-ae6a-fe72db1116f9" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetRealWorldTests" name="SecurityTest_CommandInjectionResistance" />
+    </UnitTest>
+    <UnitTest name="BasicCommands_Success" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="9f296a9a-0305-a5c7-934c-5afda4e0647c">
+      <Execution id="35493b78-8909-48c3-becf-625ec67a03f2" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FCode.Tests.PtyNetRealWorldTests" name="BasicCommands_Success" />
+    </UnitTest>
+    <UnitTest name="カラースキームの属性設定テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="bda2d9db-4140-7208-6004-3a33f2b42ba1">
+      <Execution id="7b58c8a7-3242-44f7-a17f-3801ccd09aa9" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="カラースキームの属性設定テスト" />
+    </UnitTest>
+    <UnitTest name="QAペイン用カラースキーム適用テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="84a61302-104a-538c-e985-33457cdc5cb3">
+      <Execution id="5fc42e5a-d445-49ec-9b9f-e19b96624a47" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="QAペイン用カラースキーム適用テスト" />
+    </UnitTest>
+    <UnitTest name="カラースキーム定義の存在テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="f142d9b7-26e4-f7e4-20f5-ada037b7bf04">
+      <Execution id="4bbc17f9-631e-4ae4-9622-361b1f8092d8" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ColorSchemesTests+ColorSchemesTests" name="カラースキーム定義の存在テスト" />
+    </UnitTest>
+    <UnitTest name="マルチキーシーケンステスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="58a2095d-61ac-ef4d-d266-feb6c44bdceb">
+      <Execution id="bcd89202-91c5-47e0-ba96-e9174801099c" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.KeyBindingsTests+KeyBindingsTests" name="マルチキーシーケンステスト" />
+    </UnitTest>
+    <UnitTest name="getTextViewsFromPane should find TextView in ContentView hierarchy" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="59c3264d-e511-645e-1391-f0f897eb0f0b">
+      <Execution id="ba1a63bf-56bc-4ba7-8ac8-50c0cd134b2e" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.UIHelpersTests+UIHelpersTests" name="getTextViewsFromPane should find TextView in ContentView hierarchy" />
+    </UnitTest>
+    <UnitTest name="セッション状態確認テスト" storage="/home/biwakonbu/github/fcode/tests/bin/debug/net8.0/fcode.tests.dll" id="d39914ec-2db3-3645-c220-f7bde126e3cf">
+      <Execution id="1f680f9a-6286-49ef-ab86-2b0b7ce79957" />
+      <TestMethod codeBase="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="fcode.Tests.ClaudeCodeProcessTests+ClaudeCodeProcessTests" name="セッション状態確認テスト" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="07b644c5-a415-cc13-8bd6-fe6bc7021038" executionId="64574573-dbb1-45ec-99b1-a3dce1e750c7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9f296a9a-0305-a5c7-934c-5afda4e0647c" executionId="35493b78-8909-48c3-becf-625ec67a03f2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0739e789-27e6-7455-3f87-bbf71130517b" executionId="38a3a248-e32f-405b-944b-e8140846baab" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8a263fa0-a405-d115-f2b9-3ee29c31de43" executionId="913b2146-5a23-49f7-9b6d-923ab0c620ba" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="58a2095d-61ac-ef4d-d266-feb6c44bdceb" executionId="bcd89202-91c5-47e0-ba96-e9174801099c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f00e5816-78aa-94be-2bb0-232e435a845e" executionId="3c36a27d-ca5a-40d3-a20d-4ddc954b4a1d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8c978159-d09f-d561-b8d1-d5840179cab8" executionId="a878cf1b-643c-445e-a501-50bb019f10cb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ca786b48-f98a-3b89-df83-eb49ce9b0d8d" executionId="62f03945-4b38-4631-84e1-e200fbc29363" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="00e92432-48c3-ae84-ee30-351e1ecd2faa" executionId="ca291c42-b216-43b0-a9de-1d7df09237bc" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fb635d86-6651-377c-21e4-5bfb6cc0ad1a" executionId="f4cdaf2d-06f5-41a0-8ae2-dfd4994c5bf5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a134c12b-8ea2-210d-8dce-81414f82e77d" executionId="5f514364-2de1-4969-bb2c-2ae4ec7d7adc" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="06dab689-de38-c05c-b16c-4353a919200d" executionId="a2aae2c5-1fca-4b53-ac49-cba98dbc56a4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a3999e33-a16b-6893-a3b6-3c4875a91a7f" executionId="f124bcef-5124-4c06-8843-155ecc56571e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ec0fc0d6-91aa-474f-9607-d1040cb62736" executionId="85834097-14cc-4126-8fd3-92df03b60ffa" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d07ce57a-50b5-79d5-3622-6e306671e9c8" executionId="6d551521-e586-4a84-b361-52805dd1d542" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="59b8bb17-6df5-41c1-f755-eb4c6050d253" executionId="872d5923-b76a-4672-b2ca-495b3c307ceb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6f4989d9-0b03-65f0-cece-5977c41fad75" executionId="bbc6cfaa-a9c1-44c1-b995-0efa0255acd7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6d4c3f57-30b9-567f-c031-dd70525e4bba" executionId="78091d1b-6c8f-42be-9479-ba9ea15a4e61" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d2ada8b5-d6f4-33c2-58d4-f33c483d0fe2" executionId="60df914a-01c0-4835-a1f2-51404a663659" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5aae9171-dfa7-85a1-e71b-c8067b23f7fa" executionId="4c2048df-1302-42b2-ba59-24f84ad7e4ef" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0c2d49ea-ac39-0cc7-4a29-ac53e7f0b67e" executionId="5e6056aa-d8de-438f-a344-574b385f1c3a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="df8c5574-79db-fd98-7720-28bf519ecf14" executionId="78163464-6fe5-4077-b5ff-4af06ceccfd7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="139bacbf-0fa1-f28b-305a-36f79d5c85e6" executionId="740ec9a3-8106-4ae4-9c0e-188f499714fc" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="90a7f5ef-bf19-3de8-66c6-a879981ea716" executionId="1b991640-959e-43ea-9f83-5e61883cef88" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bda2d9db-4140-7208-6004-3a33f2b42ba1" executionId="7b58c8a7-3242-44f7-a17f-3801ccd09aa9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="59c3264d-e511-645e-1391-f0f897eb0f0b" executionId="ba1a63bf-56bc-4ba7-8ac8-50c0cd134b2e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ebc45cfd-ef81-92a0-d690-ab3f023ebce7" executionId="8bbd919a-7784-4285-ae4b-2a46c999a69d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5a6f40fa-0369-9c7c-31e6-83706f055fb8" executionId="7db818e1-7b47-4d89-98ab-de5dd1a03ce3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0d6096fd-2863-5922-c40b-0877d9872b5a" executionId="8c68031b-89cf-42d2-9b06-6595b09a1072" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e41aa856-980f-58ec-2284-2cfe21bd28d5" executionId="52d99c3e-a782-49b7-a168-1e693cb01b71" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1f3bafdc-da47-9205-398c-558f59c1bb58" executionId="ff5f6a57-063a-4f32-a498-7612b1f45834" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c98e3b66-646c-4f08-473f-2bebbecc11e5" executionId="f0fd334c-1779-42cc-8f90-ad539151bd6b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d39914ec-2db3-3645-c220-f7bde126e3cf" executionId="1f680f9a-6286-49ef-ab86-2b0b7ce79957" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b27d48ac-cf13-06b2-b8be-bd1d472ba259" executionId="a63aea93-20c0-4868-9c2a-cd9c5d2bfc71" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8fbe77e3-d8b8-3e55-a447-567c6da41227" executionId="492d538b-4e3a-46e1-a93e-03da82b2f2f9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6ff3c7eb-e48c-7092-cef5-bb4c8882e1ca" executionId="d29ff562-e6da-41d4-8312-ac6624757bb5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3eafaade-a96a-2a3d-4dd7-758fd19d3012" executionId="c453ce92-4962-40e2-afc2-56cad52db337" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="84a61302-104a-538c-e985-33457cdc5cb3" executionId="5fc42e5a-d445-49ec-9b9f-e19b96624a47" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="53be7529-b7db-51ba-8616-429486f7aaf3" executionId="ab29dae2-fd92-4041-b46d-ccac0a9d14d6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ceee05ec-c315-9a41-f6dc-15b9e09e9595" executionId="b5c9a79f-ccf0-460d-9224-119a4e624cf9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fc556650-9a28-410c-7ba9-2e7ade0c7239" executionId="52412dcb-4a1f-454d-b7e1-23066d221d11" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f0c14dc6-b370-4b1d-899f-aa2625b6ef65" executionId="95fe2461-86f1-42ee-9b5c-c0a445609f62" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d7cac979-b6b4-ad8b-5bba-b06abe528b4e" executionId="ae0c089e-9f16-4e2a-8b59-e9a9e2df5f33" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d5888df2-f634-830a-da73-63cc5aafd20b" executionId="3d1cac71-872e-49fe-861c-804e68230086" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9b1f8a3b-53a8-fa8d-f024-20e1641297a7" executionId="dca4c915-13b6-4f9e-b9e9-c53e0308b093" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b682ea88-5730-4da4-e03c-9c0d01d4e6f7" executionId="d9a2cde7-188f-44c5-89fc-fd42caabd69c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="aa4750c4-4318-a707-59c6-9eb2b828c639" executionId="29a00c3e-d25c-4c7e-9460-472fdfb94e44" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3e9100ad-5013-549e-1eda-fb7874bb23cb" executionId="48589632-cd73-4738-8a66-f22a427b8ea3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="49c93311-3f2c-206a-3f1b-b837d3048f9a" executionId="01a74932-fc6b-4aa4-aea8-6d861273c09c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e874103a-ff94-1546-30d1-d0537a587935" executionId="2710cd60-7488-41d7-863d-04f5be0225dd" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bc694113-c70d-c74a-73e0-742046836a1e" executionId="5f28b739-11f8-40ad-b18e-3f3f8ac50291" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="13c35cf4-a062-4598-2432-7b4b2d62a4b3" executionId="bed20138-bf2a-4205-90b1-a4f8f0ae2c73" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c81b3214-d4a4-b478-1165-c7f51417196f" executionId="b11b0dea-470d-4543-94b0-11a1a0d29a86" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2f05c2c2-f5ee-e7f4-303a-4d04db4f1d23" executionId="8a67e372-18fb-4024-bc9f-739d17e06513" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f142d9b7-26e4-f7e4-20f5-ada037b7bf04" executionId="4bbc17f9-631e-4ae4-9622-361b1f8092d8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0a950690-d283-3d6c-ae58-92ea90c6bb75" executionId="b8f0af99-fc8c-4bcd-ab28-7106dca63a95" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5d1d56df-3d44-e941-d33e-379e3e43a2f0" executionId="1e74a42a-608f-4d21-a8d0-0c5f430cd560" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8ec43114-e1ae-e8ef-1137-b6929a8cb49c" executionId="6c349563-32c1-4d03-b5fe-b25531ef935a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fb317f08-5328-1a97-b957-cb7dda575834" executionId="af129776-a5a0-4082-b986-bbfea5dc2d36" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="15a9f1a7-327e-577d-1df8-65f466e1a593" executionId="c3440615-bf41-4947-babb-649e880ae93f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="73fe5f13-2ac0-8eff-da30-1387a07fba17" executionId="a854ed09-2058-4c9b-ae6a-fe72db1116f9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="61" executed="61" passed="61" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 4.2.0.0: Test execution started
+Running all tests in /home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll
+   NUnit3TestExecutor discovered 61 of 61 NUnit test cases using Current Discovery mode, Non-Explicit run
+NonExistentCommand_ErrorHandling: 存在しないコマンドで適切にエラーが発生しました
+ProcessError型の詳細テスト: Network connectivity loss error exists
+RecoveryStrategy選択テスト - リソース枯渇: Correct immediate restart strategy
+RecoveryStrategy選択テスト - 無応答プロセス: Correct immediate restart strategy
+WorkerStatus型のテスト: Starting status exists
+NUnit Adapter 4.2.0.0: Test execution complete
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:41.5984774+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:41.6020910+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:41.6110882+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:41.6184947+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:41.6266631+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:41.6391326+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:41.6764663+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h[2025-06-26 18:12:41.665] [ERROR] [SessionManager] Failed to start session for pane: test_pane - Exception: An error occurred trying to start process '/home/biwakonbu/.volta/tools/image/node/20.17.0/bin/claude' with working directory '/nonexistent/directory'. No such file or directory - StackTrace:    at System.Diagnostics.Process.ForkAndExecProcess(ProcessStartInfo startInfo, String resolvedFilename, String[] argv, String[] envp, String cwd, Boolean setCredentials, UInt32 userId, UInt32 groupId, UInt32[] groups, Int32&amp; stdinFd, Int32&amp; stdoutFd, Int32&amp; stderrFd, Boolean usesTerminal, Boolean throwOnNoExec)
+   at System.Diagnostics.Process.StartCore(ProcessStartInfo startInfo)
+   at System.Diagnostics.Process.Start(ProcessStartInfo startInfo)
+   at TuiPoC.ClaudeCodeProcess.SessionManager.StartSession(String paneId, String workingDir, TextView outputView) in /home/biwakonbu/github/fcode/src/ClaudeCodeProcess.fs:line 67
+\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.6884837+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7002320+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7065683+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7127406+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7198434+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7261275+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7316423+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7372144+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7473647+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7543536+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7603394+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.7681088+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.8082686+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.8172898+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.8266702+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.8361524+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.8461427+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.8540826+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.8669534+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.8737591+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.8835254+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.8946779+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.9036072+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.9147116+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.9228199+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.9287931+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.9369555+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.9468469+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:12:44.9894238+09:00">
+        <Text>\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q</Text>
+      </RunInfo>
+      <RunInfo computerName="P14s" outcome="Warning" timestamp="2025-06-26T18:13:00.8325646+09:00">
+        <Text>[2025-06-26 18:13:00.817] [ERROR] [PTYセッション作成エラー] An error occurred trying to start process 'nonexistent-command-12345' with working directory '/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0'. No such file or directory
+</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

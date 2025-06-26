@@ -14,6 +14,9 @@
     <Compile Include="ProcessSupervisorTests.fs"/>
     <Compile Include="ClaudeCodeProcessTests.fs"/>
     <Compile Include="UIHelpersTests.fs"/>
+    <Compile Include="PtyNetPerformanceTests.fs"/>
+    <Compile Include="PtyNetSigwinchTests.fs"/>
+    <Compile Include="PtyNetRealWorldTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 
@@ -23,7 +26,7 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
     <PackageReference Include="NUnit.Analyzers" Version="3.6.1" />
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="Terminal.Gui" Version="1.5.0" />
+    <PackageReference Include="Terminal.Gui" Version="1.15.0" />
   </ItemGroup>
 
   <ItemGroup>

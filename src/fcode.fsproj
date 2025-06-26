@@ -7,6 +7,8 @@
   <ItemGroup>
     <Compile Include="Logger.fs" />
     <Compile Include="ColorSchemes.fs" />
+    <Compile Include="UnixDomainSocketManager.fs" />
+    <Compile Include="IPCChannel.fs" />
     <Compile Include="ProcessSupervisor.fs" />
     <Compile Include="PtyNetManager.fs" />
     <Compile Include="ClaudeCodeProcess.fs" />

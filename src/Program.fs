@@ -1,12 +1,12 @@
-module TuiPoC.Program
+module FCode.Program
 
 open System.Threading.Tasks
 open Terminal.Gui
-open TuiPoC.Logger
-open TuiPoC.ColorSchemes
-open TuiPoC.KeyBindings
-open TuiPoC.ClaudeCodeProcess
-open TuiPoC.UIHelpers
+open FCode.Logger
+open FCode.ColorSchemes
+open FCode.KeyBindings
+open FCode.ClaudeCodeProcess
+open FCode.UIHelpers
 
 [<EntryPoint>]
 let main _argv =

@@ -1,4 +1,4 @@
-module TuiPoC.ColorSchemes
+module FCode.ColorSchemes
 
 open Terminal.Gui
 

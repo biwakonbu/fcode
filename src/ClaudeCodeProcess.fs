@@ -1,4 +1,4 @@
-module TuiPoC.ClaudeCodeProcess
+module FCode.ClaudeCodeProcess
 
 open System
 open System.Diagnostics
@@ -6,7 +6,7 @@ open System.IO
 open System.Threading.Tasks
 open System.Text
 open Terminal.Gui
-open TuiPoC.Logger
+open FCode.Logger
 
 type ClaudeSession =
     { Process: Process option

@@ -1,4 +1,4 @@
-module TuiPoC.Logger
+module FCode.Logger
 
 open System
 open System.IO

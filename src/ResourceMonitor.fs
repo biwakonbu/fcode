@@ -105,7 +105,7 @@ type ResourceMonitor() =
 
             if metrics.CpuUsagePercent > thresholds.MaxCpuPerProcess then
                 violations.Add(
-                    ($"CPU usage exceeded for {paneId}: {metrics.CpuUsagePercent:F1}% > {thresholds.MaxCpuPerProcess}%",
+                    ($"CPU usage exceeded for {paneId}: {metrics.CpuUsagePercent:F1}%% > {thresholds.MaxCpuPerProcess}%%",
                      metrics)
                 )
 
@@ -120,7 +120,7 @@ type ResourceMonitor() =
         | Some sysMetrics ->
             if sysMetrics.CpuUsagePercent > thresholds.MaxSystemCpuPercent then
                 violations.Add(
-                    ($"System CPU usage exceeded: {sysMetrics.CpuUsagePercent:F1}% > {thresholds.MaxSystemCpuPercent}%",
+                    ($"System CPU usage exceeded: {sysMetrics.CpuUsagePercent:F1}%% > {thresholds.MaxSystemCpuPercent}%%",
                      sysMetrics)
                 )
 

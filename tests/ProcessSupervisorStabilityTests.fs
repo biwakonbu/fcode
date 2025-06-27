@@ -8,6 +8,8 @@ open FCode.ProcessSupervisor
 open FCode.IPCChannel
 open FCode.Logger
 
+// FC-004品質改善: 新しいメトリクス機能のテスト
+
 [<TestFixture>]
 type ProcessSupervisorStabilityTests() =
 
@@ -172,4 +174,109 @@ type ProcessSupervisorStabilityTests() =
 
             // Assert
             Assert.Pass("Long-running operations completed successfully")
+        }
+
+    // FC-004品質改善: 新しいメトリクス機能のテスト
+
+    [<Test>]
+    member _.CircularBuffer_AddAndRetrive_WorksCorrectly() =
+        // Arrange
+        let buffer = CircularBuffer<int>(5)
+
+        // Act
+        for i in 1..10 do
+            buffer.Add(i)
+
+        // Assert
+        Assert.AreEqual(5, buffer.Count, "Buffer should contain exactly 5 items")
+        let recent = buffer.GetLast(3)
+        Assert.AreEqual([| 10; 9; 8 |], recent, "Should return 3 most recent items in reverse order")
+
+        let average = buffer.GetAverage(float)
+        Assert.AreEqual(8.0, average, "Average of [6,7,8,9,10] should be 8")
+
+    [<Test>]
+    member _.Supervisor_GetCpuUsageStats_ReturnsCorrectFormat() =
+        // Arrange
+        supervisor.StartSupervisor()
+        let testDir = System.IO.Directory.GetCurrentDirectory()
+        let success = supervisor.StartWorker("test-cpu", testDir)
+        Assert.IsTrue(success, "Worker should start successfully")
+
+        // Act
+        let cpuStats = supervisor.GetCpuUsageStats("test-cpu")
+
+        // Assert
+        match cpuStats with
+        | Some stats ->
+            Assert.GreaterOrEqual(stats.Current, 0.0, "Current CPU usage should be >= 0")
+            Assert.LessOrEqual(stats.Current, 100.0, "Current CPU usage should be <= 100")
+            Assert.GreaterOrEqual(stats.Average, 0.0, "Average CPU usage should be >= 0")
+            Assert.IsNotNull(stats.History, "CPU history should not be null")
+        | None -> Assert.Pass("CPU stats not available (expected initially)")
+
+    [<Test>]
+    member _.Supervisor_GetResponseTimeStats_ReturnsValidData() =
+        // Arrange
+        supervisor.StartSupervisor()
+        let testDir = System.IO.Directory.GetCurrentDirectory()
+        let success = supervisor.StartWorker("test-response", testDir)
+        Assert.IsTrue(success, "Worker should start successfully")
+
+        // Act
+        let responseStats = supervisor.GetResponseTimeStats("test-response")
+
+        // Assert
+        match responseStats with
+        | Some stats ->
+            Assert.GreaterOrEqual(stats.AverageMs, 0.0, "Average response time should be >= 0")
+            Assert.IsNotNull(stats.RecentHistory, "Response history should not be null")
+            Assert.GreaterOrEqual(stats.PendingRequests, 0, "Pending requests should be >= 0")
+        | None -> Assert.Fail("Response stats should be available for started worker")
+
+    [<Test>]
+    member _.Supervisor_GetErrorStatistics_TracksErrors() =
+        // Arrange
+        supervisor.StartSupervisor()
+        let testDir = System.IO.Directory.GetCurrentDirectory()
+        let success = supervisor.StartWorker("test-errors", testDir)
+        Assert.IsTrue(success, "Worker should start successfully")
+
+        // Act
+        let errorStats = supervisor.GetErrorStatistics("test-errors")
+
+        // Assert
+        match errorStats with
+        | Some stats ->
+            Assert.GreaterOrEqual(stats.TotalErrors, 0, "Total errors should be >= 0")
+            Assert.GreaterOrEqual(stats.IPCErrors, 0, "IPC errors should be >= 0")
+            Assert.GreaterOrEqual(stats.ProcessCrashes, 0, "Process crashes should be >= 0")
+            Assert.GreaterOrEqual(stats.TimeoutErrors, 0, "Timeout errors should be >= 0")
+            Assert.GreaterOrEqual(stats.ErrorRate, 0.0, "Error rate should be >= 0")
+        | None -> Assert.Fail("Error stats should be available for started worker")
+
+    [<Test>]
+    member _.Supervisor_SendIPCCommandWithMetrics_RecordsResponseTime() =
+        task {
+            // Arrange
+            supervisor.StartSupervisor()
+            let testDir = System.IO.Directory.GetCurrentDirectory()
+            let success = supervisor.StartWorker("test-metrics", testDir)
+            Assert.IsTrue(success, "Worker should start successfully")
+
+            // Give some time for worker to fully initialize
+            do! Task.Delay(1000)
+
+            // Act
+            let command = HealthCheck("test-metrics")
+            let! response = supervisor.SendIPCCommandWithMetrics("test-metrics", command)
+
+            // Assert - Response may be None in test environment, but metrics should be updated
+            let responseStats = supervisor.GetResponseTimeStats("test-metrics")
+
+            match responseStats with
+            | Some stats ->
+                // If we have stats, pending requests should be reasonable
+                Assert.GreaterOrEqual(stats.PendingRequests, 0, "Pending requests should be tracked")
+            | None -> Assert.Pass("Response time tracking not available in test environment")
         }

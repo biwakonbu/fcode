@@ -156,7 +156,13 @@ type ProcessSupervisorTests() =
               ResponseTimeMs = 100
               LastActivity = timestamp
               ErrorCount = 0
-              RestartCount = 1 }
+              RestartCount = 1
+              // 新しいメトリクス（FC-004対応）
+              AverageResponseTimeMs = 120.0
+              CpuUsageHistory = Array.empty
+              ErrorRate = 0.0
+              MemoryTrend = "stable"
+              LastCpuMeasurement = timestamp }
 
         // Act
         let responses =
@@ -197,7 +203,13 @@ type ProcessSupervisorTests() =
               ResponseTimeMs = responseMs
               LastActivity = lastActivity
               ErrorCount = errorCount
-              RestartCount = restartCount }
+              RestartCount = restartCount
+              // 新しいメトリクス（FC-004対応）
+              AverageResponseTimeMs = 300.0
+              CpuUsageHistory = [| 15.5; 12.3; 18.7 |]
+              ErrorRate = 1.5
+              MemoryTrend = "increasing"
+              LastCpuMeasurement = lastActivity }
 
         // Assert
         Assert.That(metrics.ProcessUptime, Is.EqualTo(uptime))
@@ -237,7 +249,13 @@ type ProcessSupervisorTests() =
               ResponseTimeMs = 0
               LastActivity = startTime
               ErrorCount = 0
-              RestartCount = 0 }
+              RestartCount = 0
+              // 新しいメトリクス（FC-004対応）
+              AverageResponseTimeMs = 0.0
+              CpuUsageHistory = Array.empty
+              ErrorRate = 0.0
+              MemoryTrend = "stable"
+              LastCpuMeasurement = startTime }
 
         // Act
         let worker =
@@ -249,7 +267,11 @@ type ProcessSupervisorTests() =
               SessionId = sessionId
               Process = None // テスト用にNone
               HealthMetrics = healthMetrics
-              StartTime = startTime }
+              StartTime = startTime
+              // 新しいメトリクス追跡機能（FC-004対応）
+              ProcessMetrics = None // テスト用にNone
+              ResponseTimeTracker = createResponseTimeTracker ()
+              ErrorCounter = createErrorCounter () }
 
         // Assert
         Assert.That(worker.PaneId, Is.EqualTo(paneId))

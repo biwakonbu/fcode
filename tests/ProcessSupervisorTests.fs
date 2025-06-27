@@ -156,7 +156,13 @@ type ProcessSupervisorTests() =
               ResponseTimeMs = 100
               LastActivity = timestamp
               ErrorCount = 0
-              RestartCount = 1 }
+              RestartCount = 1
+              // 新しいメトリクス（FC-004対応）
+              AverageResponseTimeMs = 120.0
+              CpuUsageHistory = Array.empty
+              ErrorRate = 0.0
+              MemoryTrend = "stable"
+              LastCpuMeasurement = timestamp }
 
         // Act
         let responses =
@@ -197,7 +203,13 @@ type ProcessSupervisorTests() =
               ResponseTimeMs = responseMs
               LastActivity = lastActivity
               ErrorCount = errorCount
-              RestartCount = restartCount }
+              RestartCount = restartCount
+              // 新しいメトリクス（FC-004対応）
+              AverageResponseTimeMs = 300.0
+              CpuUsageHistory = [| 15.5; 12.3; 18.7 |]
+              ErrorRate = 1.5
+              MemoryTrend = "increasing"
+              LastCpuMeasurement = lastActivity }
 
         // Assert
         Assert.That(metrics.ProcessUptime, Is.EqualTo(uptime))
@@ -237,7 +249,13 @@ type ProcessSupervisorTests() =
               ResponseTimeMs = 0
               LastActivity = startTime
               ErrorCount = 0
-              RestartCount = 0 }
+              RestartCount = 0
+              // 新しいメトリクス（FC-004対応）
+              AverageResponseTimeMs = 0.0
+              CpuUsageHistory = Array.empty
+              ErrorRate = 0.0
+              MemoryTrend = "stable"
+              LastCpuMeasurement = startTime }
 
         // Act
         let worker =
@@ -249,7 +267,12 @@ type ProcessSupervisorTests() =
               SessionId = sessionId
               Process = None // テスト用にNone
               HealthMetrics = healthMetrics
-              StartTime = startTime }
+              StartTime = startTime
+              WorkingDirectory = "/tmp/test"
+              // 新しいメトリクス追跡機能（FC-004対応）
+              ProcessMetrics = None // テスト用にNone
+              ResponseTimeTracker = createResponseTimeTracker ()
+              ErrorCounter = createErrorCounter () }
 
         // Assert
         Assert.That(worker.PaneId, Is.EqualTo(paneId))
@@ -293,3 +316,122 @@ type ProcessSupervisorTests() =
                 let metrics = getWorkerMetrics paneId
                 Assert.That(metrics, Is.EqualTo(None)) // 存在しないワーカー
             )
+
+    // ===============================================
+    // FC-004 新機能のテスト
+    // ===============================================
+
+    [<Test>]
+    member _.``CircularBuffer基本機能テスト``() =
+        // Arrange
+        let buffer = CircularBuffer<int>(3)
+
+        // Act & Assert - 空の状態
+        Assert.That(buffer.Count, Is.EqualTo(0))
+        Assert.That(buffer.IsEmpty, Is.True)
+
+        // Act - 要素追加
+        buffer.Add(1)
+        buffer.Add(2)
+        buffer.Add(3)
+
+        // Assert
+        Assert.That(buffer.Count, Is.EqualTo(3))
+        Assert.That(buffer.IsEmpty, Is.False)
+
+        let items = buffer.GetLast(3)
+        Assert.That(items, Is.EqualTo([| 3; 2; 1 |]))
+
+    [<Test>]
+    member _.``CircularBuffer容量超過テスト``() =
+        // Arrange
+        let buffer = CircularBuffer<int>(3)
+
+        // Act - 容量を超えて追加
+        buffer.Add(1)
+        buffer.Add(2)
+        buffer.Add(3)
+        buffer.Add(4) // 容量超過
+        buffer.Add(5) // 容量超過
+
+        // Assert - 最新3件が保持される
+        Assert.That(buffer.Count, Is.EqualTo(3))
+        let items = buffer.GetLast(3)
+        Assert.That(items, Is.EqualTo([| 5; 4; 3 |]))
+
+    [<Test>]
+    member _.``CircularBuffer平均値計算テスト``() =
+        // Arrange
+        let buffer = CircularBuffer<float>(5)
+
+        // Act
+        buffer.Add(10.0)
+        buffer.Add(20.0)
+        buffer.Add(30.0)
+
+        // Assert
+        let average = buffer.GetAverage(fun x -> x)
+        Assert.That(average, Is.EqualTo(20.0).Within(0.01))
+
+    [<Test>]
+    member _.``ErrorCounter機能テスト``() =
+        // Arrange
+        let counter = createErrorCounter ()
+
+        // Act
+        incrementErrorCount counter "ipc"
+        incrementErrorCount counter "crash"
+        incrementErrorCount counter "timeout"
+        incrementErrorCount counter "ipc"
+
+        // Assert
+        Assert.That(counter.TotalErrors, Is.EqualTo(4))
+        Assert.That(counter.IPCErrors, Is.EqualTo(2))
+        Assert.That(counter.ProcessCrashes, Is.EqualTo(1))
+        Assert.That(counter.TimeoutErrors, Is.EqualTo(1))
+        Assert.That(!counter.LastErrorTime, Is.Not.EqualTo(DateTime.MinValue))
+
+    [<Test>]
+    member _.``ResponseTimeTracker機能テスト``() =
+        // Arrange
+        let tracker = createResponseTimeTracker ()
+        let requestId = "test-request-1"
+
+        // Act
+        startResponseTimeMeasurement tracker requestId
+        Thread.Sleep(50) // 50ms待機
+        let responseTime = completeResponseTimeMeasurement tracker requestId
+
+        // Assert
+        Assert.That(responseTime, Is.GreaterThan(40))
+        Assert.That(responseTime, Is.LessThan(100))
+        Assert.That(tracker.ResponseHistory.Count, Is.EqualTo(1))
+
+    [<Test>]
+    member _.``新しいメトリクス型のテスト``() =
+        // Arrange & Act
+        let cpuStats =
+            { Current = 15.5
+              Average = 20.0
+              History = [| 15.5; 18.2; 22.3 |] }
+
+        let responseStats =
+            { AverageMs = 150.0
+              RecentHistory = [| 120; 180; 140 |]
+              PendingRequests = 2 }
+
+        let errorStats =
+            { TotalErrors = 5
+              IPCErrors = 2
+              ProcessCrashes = 1
+              TimeoutErrors = 2
+              LastErrorTime = DateTime.Now
+              ErrorRate = 1.5 }
+
+        // Assert
+        Assert.That(cpuStats.Current, Is.EqualTo(15.5))
+        Assert.That(cpuStats.History.Length, Is.EqualTo(3))
+        Assert.That(responseStats.AverageMs, Is.EqualTo(150.0))
+        Assert.That(responseStats.PendingRequests, Is.EqualTo(2))
+        Assert.That(errorStats.TotalErrors, Is.EqualTo(5))
+        Assert.That(errorStats.ErrorRate, Is.EqualTo(1.5))

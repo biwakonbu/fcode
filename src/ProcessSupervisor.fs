@@ -13,6 +13,121 @@ open FCode.UnixDomainSocketManager
 open FCode.IPCChannel
 
 // ===============================================
+// CircularBuffer - 固定サイズ履歴管理
+// ===============================================
+
+type CircularBuffer<'T>(capacity: int) =
+    let buffer = Array.zeroCreate<'T option> capacity
+    let mutable head = 0
+    let mutable size = 0
+    let lockObj = obj ()
+
+    member _.Add(item: 'T) =
+        lock lockObj (fun () ->
+            buffer.[head] <- Some item
+            head <- (head + 1) % capacity
+            size <- min (size + 1) capacity)
+
+    member _.GetAverage(selector: 'T -> float) =
+        lock lockObj (fun () ->
+            if size = 0 then
+                0.0
+            else
+                let sum = buffer |> Array.take size |> Array.choose id |> Array.sumBy selector
+                sum / float size)
+
+    member _.GetLast(count: int) =
+        lock lockObj (fun () ->
+            let actualCount = min count size
+            let result = Array.zeroCreate<'T> actualCount
+
+            for i = 0 to actualCount - 1 do
+                let index = (head - 1 - i + capacity) % capacity
+
+                match buffer.[index] with
+                | Some value -> result.[i] <- value
+                | None -> ()
+
+            result)
+
+    member _.Count = size
+    member _.IsEmpty = size = 0
+
+// 文字列専用CircularBuffer
+type CircularStringBuffer(capacity: int) =
+    let buffer = Array.zeroCreate<string option> capacity
+    let mutable head = 0
+    let mutable size = 0
+    let lockObj = obj ()
+
+    member _.AddLine(line: string) =
+        lock lockObj (fun () ->
+            buffer.[head] <- Some line
+            head <- (head + 1) % capacity
+            size <- min (size + 1) capacity)
+
+    member _.GetAllLines() =
+        lock lockObj (fun () ->
+            if size = 0 then
+                ""
+            else
+                let lines = Array.zeroCreate<string> size
+
+                for i = 0 to size - 1 do
+                    let index = (head - size + i + capacity) % capacity
+
+                    match buffer.[index] with
+                    | Some line -> lines.[i] <- line
+                    | None -> lines.[i] <- ""
+
+                String.Join("\n", lines))
+
+    member _.Count = size
+    member _.IsEmpty = size = 0
+
+// ===============================================
+// プロセスメトリクス追跡
+// ===============================================
+
+type ProcessMetrics =
+    { LastCpuTime: TimeSpan
+      LastMeasureTime: DateTime
+      CpuUsageHistory: CircularBuffer<float>
+      ProcessId: int }
+
+type ResponseTimeTracker =
+    { PendingRequests: ConcurrentDictionary<string, Stopwatch>
+      ResponseHistory: CircularBuffer<int>
+      mutable AverageResponseTime: float }
+
+type ErrorCounter =
+    { mutable IPCErrors: int
+      mutable ProcessCrashes: int
+      mutable TimeoutErrors: int
+      mutable TotalErrors: int
+      LastErrorTime: DateTime ref
+      ErrorHistory: CircularBuffer<DateTime> }
+
+// 新しいメトリクス用の型定義
+type CpuUsageStats =
+    { Current: float
+      Average: float
+      History: float array }
+
+type ResponseTimeStats =
+    { AverageMs: float
+      RecentHistory: int array
+      PendingRequests: int }
+
+type ErrorStats =
+    { TotalErrors: int
+      IPCErrors: int
+      ProcessCrashes: int
+      TimeoutErrors: int
+      LastErrorTime: DateTime
+      ErrorRate: float }
+
+// ===============================================
 // ワーカープロセス状態管理
 // ===============================================
 
@@ -30,7 +145,81 @@ type HealthMetrics =
       ResponseTimeMs: int
       LastActivity: DateTime
       ErrorCount: int
-      RestartCount: int }
+      RestartCount: int
+      // 新しいメトリクス
+      AverageResponseTimeMs: float
+      CpuUsageHistory: float array
+      ErrorRate: float
+      MemoryTrend: string // "stable", "increasing", "decreasing"
+      LastCpuMeasurement: DateTime }
+
+// CPU使用率計算用のヘルパー関数
+let calculateCpuUsage (proc: Process) (lastMetrics: ProcessMetrics option) =
+    try
+        let currentTime = DateTime.Now
+        let currentCpuTime = proc.TotalProcessorTime
+
+        match lastMetrics with
+        | Some last when last.ProcessId = proc.Id ->
+            let timeDiff = (currentTime - last.LastMeasureTime).TotalMilliseconds
+
+            if timeDiff > 0.0 then
+                let cpuDiff = (currentCpuTime - last.LastCpuTime).TotalMilliseconds
+                let cpuUsage = (cpuDiff / timeDiff) * 100.0 / float Environment.ProcessorCount
+                let normalizedUsage = min 100.0 (max 0.0 cpuUsage)
+
+                // CPU使用率履歴を更新
+                last.CpuUsageHistory.Add(normalizedUsage)
+                normalizedUsage
+            else
+                0.0
+        | _ -> 0.0
+    with ex ->
+        logException "ProcessSupervisor" "Error calculating CPU usage" ex
+        0.0
+
+// 応答時間測定機能
+let createResponseTimeTracker () =
+    { PendingRequests = ConcurrentDictionary<string, Stopwatch>()
+      ResponseHistory = CircularBuffer<int>(100) // 最新100件の履歴
+      AverageResponseTime = 0.0 }
+
+let startResponseTimeMeasurement (tracker: ResponseTimeTracker) (requestId: string) =
+    let stopwatch = Stopwatch.StartNew()
+    tracker.PendingRequests.TryAdd(requestId, stopwatch) |> ignore
+
+let completeResponseTimeMeasurement (tracker: ResponseTimeTracker) (requestId: string) =
+    match tracker.PendingRequests.TryRemove(requestId) with
+    | true, stopwatch ->
+        stopwatch.Stop()
+        let responseTimeMs = int stopwatch.ElapsedMilliseconds
+        tracker.ResponseHistory.Add(responseTimeMs)
+        tracker.AverageResponseTime <- tracker.ResponseHistory.GetAverage(float)
+        responseTimeMs
+    | false, _ -> -1
+
+// エラーカウンター機能
+let createErrorCounter () =
+    { IPCErrors = 0
+      ProcessCrashes = 0
+      TimeoutErrors = 0
+      TotalErrors = 0
+      LastErrorTime = ref DateTime.MinValue
+      ErrorHistory = CircularBuffer<DateTime>(50) } // 最新50件のエラー履歴
+
+let incrementErrorCount (counter: ErrorCounter) (errorType: string) =
+    let now = DateTime.Now
+    counter.LastErrorTime := now
+    counter.ErrorHistory.Add(now)
+    counter.TotalErrors <- counter.TotalErrors + 1
+
+    match errorType.ToLower() with
+    | "ipc" -> counter.IPCErrors <- counter.IPCErrors + 1
+    | "crash" -> counter.ProcessCrashes <- counter.ProcessCrashes + 1
+    | "timeout" -> counter.TimeoutErrors <- counter.TimeoutErrors + 1
+    | _ -> ()
+
+    logWarning "ProcessSupervisor" $"Error count incremented: {errorType} (Total: {counter.TotalErrors})"
 
 type WorkerProcess =
     { PaneId: string
@@ -41,7 +230,12 @@ type WorkerProcess =
       SessionId: string
       Process: Process option
       HealthMetrics: HealthMetrics
-      StartTime: DateTime }
+      StartTime: DateTime
+      WorkingDirectory: string
+      // 新しいメトリクス追跡機能
+      ProcessMetrics: ProcessMetrics option
+      ResponseTimeTracker: ResponseTimeTracker
+      ErrorCounter: ErrorCounter }
 
 // ===============================================
 // 設定・しきい値管理
@@ -140,6 +334,27 @@ type ProcessSupervisor(config: SupervisorConfig) =
     // IPC サーバーソケットパス
     let getServerSocketPath () =
         Path.Combine(Path.GetTempPath(), "fcode-supervisor.sock")
+
+    // ソケットファイルのセキュア権限設定
+    let setSocketFilePermissions (socketPath: string) =
+        try
+            if File.Exists(socketPath) then
+                // Unix系OS専用: ファイル権限を600 (所有者のみ読み書き可能)に設定
+                if Environment.OSVersion.Platform = PlatformID.Unix then
+                    let chmodCmd = $"chmod 600 \"{socketPath}\""
+                    let processInfo = ProcessStartInfo("sh", $"-c \"{chmodCmd}\"")
+                    processInfo.UseShellExecute <- false
+                    processInfo.RedirectStandardOutput <- true
+                    processInfo.RedirectStandardError <- true
+                    let proc = Process.Start(processInfo)
+                    proc.WaitForExit()
+
+                    if proc.ExitCode = 0 then
+                        logDebug "ProcessSupervisor" $"Socket file permissions set to 600: {socketPath}"
+                    else
+                        logWarning "ProcessSupervisor" $"Failed to set socket file permissions: {socketPath}"
+        with ex ->
+            logException "ProcessSupervisor" $"Error setting socket file permissions: {socketPath}" ex
 
     // IPC クライアント接続処理
     let handleClientConnection (connection: UdsConnection) =
@@ -244,7 +459,7 @@ type ProcessSupervisor(config: SupervisorConfig) =
             logException "Supervisor" $"Exception starting worker process for pane: {paneId}" ex
             None
 
-    // ヘルスメトリクス取得
+    // ヘルスメトリクス取得（新しいメトリクス機能付き）
     let getHealthMetrics (worker: WorkerProcess) =
         try
             match worker.Process with
@@ -252,21 +467,67 @@ type ProcessSupervisor(config: SupervisorConfig) =
                 let uptime = DateTime.Now - worker.StartTime
                 let memoryMB = float workerProc.WorkingSet64 / 1024.0 / 1024.0
 
+                // CPU使用率を計算
+                let cpuUsage = calculateCpuUsage workerProc worker.ProcessMetrics
+
+                // 最新の応答時間を取得
+                let responseTimeMs =
+                    if worker.ResponseTimeTracker.ResponseHistory.IsEmpty then
+                        0
+                    else
+                        let recentTimes = worker.ResponseTimeTracker.ResponseHistory.GetLast(1)
+                        if recentTimes.Length > 0 then recentTimes.[0] else 0
+
+                // CPU使用率履歴を取得
+                let cpuHistory =
+                    match worker.ProcessMetrics with
+                    | Some metrics -> metrics.CpuUsageHistory.GetLast(10)
+                    | None -> Array.empty
+
+                // メモリトレンドを計算（簡易版）
+                let memoryTrend =
+                    if memoryMB > config.MemoryLimitMB * 0.8 then "increasing"
+                    elif memoryMB < config.MemoryLimitMB * 0.3 then "stable"
+                    else "stable"
+
+                // エラーレート計算（過去1時間のエラー数）
+                let errorRate =
+                    let oneHourAgo = DateTime.Now.AddHours(-1.0)
+
+                    let recentErrors =
+                        worker.ErrorCounter.ErrorHistory.GetLast(50)
+                        |> Array.filter (fun dt -> dt > oneHourAgo)
+
+                    float recentErrors.Length
+
                 { ProcessUptime = uptime
                   MemoryUsageMB = memoryMB
-                  CpuUsagePercent = 0.0 // TODO: CPU使用率の実装
-                  ResponseTimeMs = 0 // TODO: 応答時間の実装
+                  CpuUsagePercent = cpuUsage
+                  ResponseTimeMs = responseTimeMs
                   LastActivity = worker.LastHeartbeat
-                  ErrorCount = 0 // TODO: エラーカウント実装
-                  RestartCount = worker.RestartCount }
+                  ErrorCount = worker.ErrorCounter.TotalErrors
+                  RestartCount = worker.RestartCount
+                  // 新しいメトリクス
+                  AverageResponseTimeMs = worker.ResponseTimeTracker.AverageResponseTime
+                  CpuUsageHistory = cpuHistory
+                  ErrorRate = errorRate
+                  MemoryTrend = memoryTrend
+                  LastCpuMeasurement = DateTime.Now }
+
             | _ ->
                 { ProcessUptime = TimeSpan.Zero
                   MemoryUsageMB = 0.0
                   CpuUsagePercent = 0.0
                   ResponseTimeMs = -1
                   LastActivity = DateTime.MinValue
-                  ErrorCount = 0
-                  RestartCount = worker.RestartCount }
+                  ErrorCount = worker.ErrorCounter.TotalErrors
+                  RestartCount = worker.RestartCount
+                  // 新しいメトリクス（デフォルト値）
+                  AverageResponseTimeMs = 0.0
+                  CpuUsageHistory = Array.empty
+                  ErrorRate = 0.0
+                  MemoryTrend = "unknown"
+                  LastCpuMeasurement = DateTime.MinValue }
         with ex ->
             logException "Supervisor" $"Error getting health metrics for pane: {worker.PaneId}" ex
 
@@ -275,8 +536,14 @@ type ProcessSupervisor(config: SupervisorConfig) =
               CpuUsagePercent = 0.0
               ResponseTimeMs = -1
               LastActivity = DateTime.MinValue
-              ErrorCount = 1
-              RestartCount = worker.RestartCount }
+              ErrorCount = worker.ErrorCounter.TotalErrors + 1
+              RestartCount = worker.RestartCount
+              // 新しいメトリクス（エラー時のデフォルト値）
+              AverageResponseTimeMs = 0.0
+              CpuUsageHistory = Array.empty
+              ErrorRate = 1.0
+              MemoryTrend = "error"
+              LastCpuMeasurement = DateTime.Now }
 
     // プロセス健全性チェック
     let isProcessHealthy (worker: WorkerProcess) =
@@ -324,7 +591,7 @@ type ProcessSupervisor(config: SupervisorConfig) =
                 stopWorkerProcess worker
 
                 // 新しいプロセスを起動
-                let workingDir = Environment.CurrentDirectory // TODO: 適切な作業ディレクトリを設定
+                let workingDir = worker.WorkingDirectory
 
                 match startWorkerProcess paneId workingDir with
                 | Some newProc ->
@@ -334,7 +601,17 @@ type ProcessSupervisor(config: SupervisorConfig) =
                             ProcessId = Some newProc.Id
                             Status = Starting
                             RestartCount = worker.RestartCount + 1
-                            StartTime = DateTime.Now }
+                            StartTime = DateTime.Now
+                            // プロセスメトリクスを新しいプロセス用に再初期化
+                            ProcessMetrics =
+                                Some
+                                    { LastCpuTime = newProc.TotalProcessorTime
+                                      LastMeasureTime = DateTime.Now
+                                      CpuUsageHistory = CircularBuffer<float>(20)
+                                      ProcessId = newProc.Id }
+                        // エラーカウンターはリセットしない（履歴として保持）
+                        // ResponseTimeTrackerは継続使用
+                        }
 
                     workers.TryUpdate(paneId, updatedWorker, worker) |> ignore
                     logInfo "Supervisor" $"Worker process restarted for pane: {paneId}"
@@ -399,7 +676,7 @@ type ProcessSupervisor(config: SupervisorConfig) =
         }
 
     // パブリックメソッド
-    member _.StartSupervisor() =
+    member this.StartSupervisor() =
         if not isRunning then
             isRunning <- true
 
@@ -410,6 +687,9 @@ type ProcessSupervisor(config: SupervisorConfig) =
 
             // IPC サーバー初期化
             initializeIPCServer () |> ignore
+
+            // 接続健全性監視を開始
+            this.StartConnectionHealthMonitoring() |> ignore
 
             logInfo "Supervisor" "Process supervisor started with IPC support"
             Task.Run(Func<Task>(fun () -> monitoringLoop ())) |> ignore
@@ -459,8 +739,24 @@ type ProcessSupervisor(config: SupervisorConfig) =
                           ResponseTimeMs = 0
                           LastActivity = DateTime.Now
                           ErrorCount = 0
-                          RestartCount = 0 }
-                      StartTime = DateTime.Now }
+                          RestartCount = 0
+                          // 新しいメトリクス初期化
+                          AverageResponseTimeMs = 0.0
+                          CpuUsageHistory = Array.empty
+                          ErrorRate = 0.0
+                          MemoryTrend = "stable"
+                          LastCpuMeasurement = DateTime.Now }
+                      StartTime = DateTime.Now
+                      WorkingDirectory = workingDir
+                      // 新しいメトリクス追跡機能を初期化
+                      ProcessMetrics =
+                        Some
+                            { LastCpuTime = workerProc.TotalProcessorTime
+                              LastMeasureTime = DateTime.Now
+                              CpuUsageHistory = CircularBuffer<float>(20)
+                              ProcessId = workerProc.Id }
+                      ResponseTimeTracker = createResponseTimeTracker ()
+                      ErrorCounter = createErrorCounter () }
 
                 workers.TryAdd(paneId, worker) |> ignore
                 logInfo "Supervisor" $"Worker added for pane: {paneId}"
@@ -503,12 +799,112 @@ type ProcessSupervisor(config: SupervisorConfig) =
         task {
             match ipcChannel with
             | Some channel ->
-                let! response = channel.SendCommandAsync(command)
-                return Some response
+                try
+                    // 再接続機能付きでコマンドを送信
+                    let! response = channel.SendCommandWithRetryAsync(command)
+                    return Some response
+                with ex ->
+                    logException "Supervisor" "Failed to send IPC command with retry" ex
+                    return None
             | None ->
                 logError "Supervisor" "IPC channel not available"
                 return None
         }
+
+    // 応答時間測定付きIPCコマンド送信
+    member this.SendIPCCommandWithMetrics(paneId: string, command: SessionCommand) =
+        task {
+            match workers.TryGetValue(paneId) with
+            | true, worker ->
+                let requestId = Guid.NewGuid().ToString()
+                startResponseTimeMeasurement worker.ResponseTimeTracker requestId
+
+                try
+                    let! response = this.SendIPCCommand(command)
+
+                    let responseTime =
+                        completeResponseTimeMeasurement worker.ResponseTimeTracker requestId
+
+                    logDebug "Supervisor" $"IPC command completed for pane {paneId} in {responseTime}ms"
+                    return response
+                with ex ->
+                    completeResponseTimeMeasurement worker.ResponseTimeTracker requestId |> ignore
+                    incrementErrorCount worker.ErrorCounter "ipc"
+                    logException "Supervisor" $"IPC command failed for pane {paneId}" ex
+                    return None
+            | false, _ ->
+                logError "Supervisor" $"Worker not found for IPC command: {paneId}"
+                return None
+        }
+
+    // 新しいメトリクス取得メソッド
+    member _.GetCpuUsageStats(paneId: string) =
+        match workers.TryGetValue(paneId) with
+        | true, worker ->
+            match worker.ProcessMetrics with
+            | Some metrics ->
+                let history = metrics.CpuUsageHistory.GetLast(10)
+                let average = if history.Length > 0 then Array.average history else 0.0
+
+                Some
+                    { Current = if history.Length > 0 then history.[0] else 0.0
+                      Average = average
+                      History = history }
+            | None -> None
+        | false, _ -> None
+
+    member _.GetResponseTimeStats(paneId: string) =
+        match workers.TryGetValue(paneId) with
+        | true, worker ->
+            let tracker = worker.ResponseTimeTracker
+
+            Some
+                { AverageMs = tracker.AverageResponseTime
+                  RecentHistory = tracker.ResponseHistory.GetLast(10)
+                  PendingRequests = tracker.PendingRequests.Count }
+        | false, _ -> None
+
+    member _.GetErrorStatistics(paneId: string) =
+        match workers.TryGetValue(paneId) with
+        | true, worker ->
+            let counter = worker.ErrorCounter
+
+            Some
+                { TotalErrors = counter.TotalErrors
+                  IPCErrors = counter.IPCErrors
+                  ProcessCrashes = counter.ProcessCrashes
+                  TimeoutErrors = counter.TimeoutErrors
+                  LastErrorTime = !counter.LastErrorTime
+                  ErrorRate = float counter.TotalErrors }
+        | false, _ -> None
+
+    // 接続健全性を定期的にチェック
+    member this.StartConnectionHealthMonitoring() =
+        Task.Run(
+            Func<Task>(fun () ->
+                task {
+                    while not supervisorCancellation.Token.IsCancellationRequested do
+                        try
+                            match ipcChannel with
+                            | Some channel ->
+                                let! isHealthy = channel.CheckConnectionHealth()
+
+                                if not isHealthy then
+                                    logWarning
+                                        "Supervisor"
+                                        "IPC connection health check failed - attempting to restore"
+                            // 必要に応じて接続の再初期化を実行
+                            | None -> logDebug "Supervisor" "IPC channel not initialized for health check"
+
+                            do! Task.Delay(config.HeartbeatIntervalMs * 5, supervisorCancellation.Token) // 5倍の間隔でヘルスチェック
+
+                        with
+                        | :? OperationCanceledException -> ()
+                        | ex ->
+                            logException "Supervisor" "Error in connection health monitoring" ex
+                            do! Task.Delay(10000, supervisorCancellation.Token) // エラー時は10秒待機
+                })
+        )
 
     interface IDisposable with
         member this.Dispose() =

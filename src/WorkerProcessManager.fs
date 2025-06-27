@@ -13,6 +13,72 @@ open FCode.UnixDomainSocketManager
 open FCode.IPCChannel
 
 // ===============================================
+// 動的待機機能
+// ===============================================
+
+// ソケットファイル存在確認ベースの待機機能
+let waitForSocketFile (socketPath: string) (maxWaitMs: int) =
+    task {
+        let mutable elapsed = 0
+        let intervalMs = 100 // 100ms間隔でチェック
+        let mutable fileExists = false
+
+        logDebug "WorkerManager" $"Waiting for socket file: {socketPath} (max {maxWaitMs}ms)"
+
+        while elapsed < maxWaitMs && not fileExists do
+            if File.Exists(socketPath) then
+                fileExists <- true
+                logInfo "WorkerManager" $"Socket file found after {elapsed}ms: {socketPath}"
+            else
+                do! Task.Delay(intervalMs)
+                elapsed <- elapsed + intervalMs
+
+                if elapsed % 1000 = 0 then // 1秒ごとにログ出力
+                    logDebug "WorkerManager" $"Still waiting for socket file ({elapsed}ms elapsed)..."
+
+        if not fileExists then
+            logWarning "WorkerManager" $"Socket file not found after {maxWaitMs}ms timeout: {socketPath}"
+
+        return fileExists
+    }
+
+// IPC接続確立確認機能
+let waitForIPCConnection (socketPath: string) (maxWaitMs: int) =
+    task {
+        try
+            let! socketReady = waitForSocketFile socketPath maxWaitMs
+
+            if socketReady then
+                let config = defaultUdsConfig socketPath
+                let client = new UdsClient(config)
+
+                // 接続テストを試行
+                let mutable connected = false
+                let mutable attempts = 0
+                let maxAttempts = 5
+
+                while not connected && attempts < maxAttempts do
+                    try
+                        let! connection = client.ConnectAsync()
+                        connection.Close()
+                        connected <- true
+                        logInfo "WorkerManager" $"IPC connection test successful for {socketPath}"
+                    with ex ->
+                        attempts <- attempts + 1
+                        logDebug "WorkerManager" $"IPC connection attempt {attempts} failed: {ex.Message}"
+
+                        if attempts < maxAttempts then
+                            do! Task.Delay(500) // 500ms待機してリトライ
+
+                return connected
+            else
+                return false
+        with ex ->
+            logException "WorkerManager" $"Error testing IPC connection: {socketPath}" ex
+            return false
+    }
+
+// ===============================================
 // Worker Process 統合管理
 // ===============================================
 
@@ -64,18 +130,19 @@ type WorkerProcessManager() =
 
                 let outputBuffer = StringBuilder()
 
-                // IPC経由でのI/O統合を設定
+                // IPC経由でのI/O統合を設定（動的待機機能付き）
                 let setupIOIntegration () =
                     task {
                         try
                             // IPCクライアントを作成してワーカープロセスと通信
                             let socketPath = Path.Combine(Path.GetTempPath(), $"fcode-{paneId}.sock")
-                            let config = defaultUdsConfig socketPath
 
-                            // ワーカープロセスの起動完了を待機
-                            do! Task.Delay(2000) // 2秒待機
+                            // 動的にソケットファイルの存在と接続可能性を待機（最大30秒）
+                            let maxWaitMs = 30000 // 30秒まで待機
+                            let! connectionReady = waitForIPCConnection socketPath maxWaitMs
 
-                            if File.Exists(socketPath) then
+                            if connectionReady then
+                                let config = defaultUdsConfig socketPath
                                 let client = new UdsClient(config)
                                 let! connection = client.ConnectAsync()
                                 logInfo "WorkerManager" $"IPC connection established for pane: {paneId}"
@@ -89,7 +156,9 @@ type WorkerProcessManager() =
                                 connection.Close()
 
                             else
-                                logWarning "WorkerManager" $"IPC socket not found for pane: {paneId}"
+                                logError
+                                    "WorkerManager"
+                                    $"IPC connection could not be established for pane: {paneId} after {maxWaitMs}ms"
 
                         with ex ->
                             logException "WorkerManager" $"Error setting up IPC for pane: {paneId}" ex
@@ -207,17 +276,31 @@ type WorkerProcessManager() =
 
                 logInfo "WorkerManager" $"Worker info created and stored for pane: {paneId}"
 
-                // 初期プロンプトをIPC経由で送信
+                // 初期プロンプトをIPC経由で送信（接続確立確認ベース）
                 Task.Run(
                     System.Func<Task>(fun () ->
                         task {
                             try
-                                do! Task.Delay(3000) // ワーカープロセスの完全起動を待機
+                                let socketPath = Path.Combine(Path.GetTempPath(), $"fcode-{paneId}.sock")
 
-                                let initPrompt = "こんにちは。Worker Process経由での対話を開始します。現在の作業ディレクトリとプロジェクト状況を教えてください。"
-                                workerIO.StandardInput(initPrompt)
+                                // IPC接続が安定するまで待機（最大60秒）
+                                let maxWaitMs = 60000 // 60秒まで待機
+                                let! connectionStable = waitForIPCConnection socketPath maxWaitMs
 
-                                logInfo "WorkerManager" $"Initial prompt sent via IPC for pane: {paneId}"
+                                if connectionStable then
+                                    // 追加でハートビート確認（オプション）
+                                    do! Task.Delay(1000) // 1秒の安定化待機
+
+                                    let initPrompt = "こんにちは。Worker Process経由での対話を開始します。現在の作業ディレクトリとプロジェクト状況を教えてください。"
+                                    workerIO.StandardInput(initPrompt)
+
+                                    logInfo
+                                        "WorkerManager"
+                                        $"Initial prompt sent via IPC for pane: {paneId} after connection confirmation"
+                                else
+                                    logError
+                                        "WorkerManager"
+                                        $"Could not send initial prompt - IPC connection not stable for pane: {paneId}"
 
                             with ex ->
                                 logException "WorkerManager" $"Error sending initial prompt for pane: {paneId}" ex

@@ -183,3 +183,63 @@ type WorkerProcessManagerTests() =
             for paneId in paneIds do
                 Assert.IsTrue(workerManager.IsWorkerActive(paneId), $"Worker {paneId} should be active")
         | None -> Assert.Fail("TextView not initialized")
+
+    // FC-004品質改善: 動的待機機能のテスト
+
+    [<Test>]
+    member _.WaitForSocketFile_WithExistingFile_ReturnsTrue() =
+        task {
+            // Arrange
+            let testSocketPath = Path.Combine(Path.GetTempPath(), "test-socket-exists.sock")
+            File.WriteAllText(testSocketPath, "test") // Create dummy file
+
+            try
+                // Act
+                let! result = FCode.WorkerProcessManager.waitForSocketFile testSocketPath 5000
+
+                // Assert
+                Assert.IsTrue(result, "Should return true for existing file")
+            finally
+                if File.Exists(testSocketPath) then
+                    File.Delete(testSocketPath)
+        }
+
+    [<Test>]
+    member _.WaitForSocketFile_WithNonExistingFile_ReturnsFalse() =
+        task {
+            // Arrange
+            let testSocketPath =
+                Path.Combine(Path.GetTempPath(), "test-socket-nonexisting.sock")
+
+            // Act
+            let! result = FCode.WorkerProcessManager.waitForSocketFile testSocketPath 1000 // Short timeout
+
+            // Assert
+            Assert.IsFalse(result, "Should return false for non-existing file within timeout")
+        }
+
+    [<Test>]
+    member _.WaitForSocketFile_WithDelayedFile_ReturnsTrue() =
+        task {
+            // Arrange
+            let testSocketPath = Path.Combine(Path.GetTempPath(), "test-socket-delayed.sock")
+
+            // Create file after delay
+            let createFileTask =
+                task {
+                    do! Task.Delay(2000) // 2 second delay
+                    File.WriteAllText(testSocketPath, "delayed test")
+                }
+
+            createFileTask |> ignore
+
+            try
+                // Act
+                let! result = FCode.WorkerProcessManager.waitForSocketFile testSocketPath 5000
+
+                // Assert
+                Assert.IsTrue(result, "Should return true when file is created within timeout")
+            finally
+                if File.Exists(testSocketPath) then
+                    File.Delete(testSocketPath)
+        }

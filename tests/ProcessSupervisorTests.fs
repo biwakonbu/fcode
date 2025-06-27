@@ -268,6 +268,7 @@ type ProcessSupervisorTests() =
               Process = None // テスト用にNone
               HealthMetrics = healthMetrics
               StartTime = startTime
+              WorkingDirectory = "/tmp/test"
               // 新しいメトリクス追跡機能（FC-004対応）
               ProcessMetrics = None // テスト用にNone
               ResponseTimeTracker = createResponseTimeTracker ()

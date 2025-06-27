@@ -12,6 +12,9 @@ open FCode.ProcessSupervisor
 open FCode.UnixDomainSocketManager
 open FCode.IPCChannel
 
+// CircularStringBufferをProcessSupervisorから利用
+type OutputBuffer = FCode.ProcessSupervisor.CircularStringBuffer
+
 // ===============================================
 // 動的待機機能
 // ===============================================
@@ -102,7 +105,7 @@ type WorkerProcessInfo =
       Status: WorkerProcessStatus
       WorkingDirectory: string
       TextView: TextView option
-      OutputBuffer: StringBuilder
+      OutputBuffer: OutputBuffer
       StartTime: DateTime
       LastActivity: DateTime
       RestartCount: int
@@ -128,7 +131,7 @@ type WorkerProcessManager() =
             if success then
                 logInfo "WorkerManager" $"Worker process started successfully for pane: {paneId}"
 
-                let outputBuffer = StringBuilder()
+                let outputBuffer = OutputBuffer(1000) // 最新1000行を保持
 
                 // IPC経由でのI/O統合を設定（動的待機機能付き）
                 let setupIOIntegration () =
@@ -179,8 +182,8 @@ type WorkerProcessManager() =
                         // バックグラウンドスレッドからの安全なUI更新
                         Application.MainLoop.Invoke(fun () ->
                             try
-                                outputBuffer.AppendLine(data) |> ignore
-                                textView.Text <- outputBuffer.ToString()
+                                outputBuffer.AddLine(data)
+                                textView.Text <- outputBuffer.GetAllLines()
                                 textView.SetNeedsDisplay()
                                 lastUiUpdate <- now
                             with ex ->
@@ -216,8 +219,8 @@ type WorkerProcessManager() =
 
                                                 Application.MainLoop.Invoke(fun () ->
                                                     try
-                                                        outputBuffer.AppendLine($"> {input}") |> ignore
-                                                        textView.Text <- outputBuffer.ToString()
+                                                        outputBuffer.AddLine($"> {input}")
+                                                        textView.Text <- outputBuffer.GetAllLines()
                                                         textView.SetNeedsDisplay()
                                                     with ex ->
                                                         logException
@@ -260,16 +263,14 @@ type WorkerProcessManager() =
                 // 初期メッセージを表示（MainLoop.Invoke統合）
                 Application.MainLoop.Invoke(fun () ->
                     try
-                        outputBuffer.AppendLine($"[DEBUG] Worker Process セッション開始完了 - ペイン: {paneId}")
-                        |> ignore
-
-                        outputBuffer.AppendLine($"[DEBUG] 作業ディレクトリ: {workingDir}") |> ignore
-                        outputBuffer.AppendLine($"[DEBUG] プロセス分離: 有効") |> ignore
-                        outputBuffer.AppendLine($"[DEBUG] IPC通信: Unix Domain Socket") |> ignore
-                        outputBuffer.AppendLine($"[DEBUG] ログファイル: {logger.LogPath}") |> ignore
-                        outputBuffer.AppendLine("=" + String.replicate 50 "=") |> ignore
-                        outputBuffer.AppendLine($"[INFO] Worker対話セッション初期化中...") |> ignore
-                        textView.Text <- outputBuffer.ToString()
+                        outputBuffer.AddLine($"[DEBUG] Worker Process セッション開始完了 - ペイン: {paneId}")
+                        outputBuffer.AddLine($"[DEBUG] 作業ディレクトリ: {workingDir}")
+                        outputBuffer.AddLine($"[DEBUG] プロセス分離: 有効")
+                        outputBuffer.AddLine($"[DEBUG] IPC通信: Unix Domain Socket")
+                        outputBuffer.AddLine($"[DEBUG] ログファイル: {logger.LogPath}")
+                        outputBuffer.AddLine("=" + String.replicate 50 "=")
+                        outputBuffer.AddLine($"[INFO] Worker対話セッション初期化中...")
+                        textView.Text <- outputBuffer.GetAllLines()
                         textView.SetNeedsDisplay()
                     with ex ->
                         logException "WorkerManager" $"Error displaying initial message for pane: {paneId}" ex)
@@ -340,8 +341,8 @@ type WorkerProcessManager() =
                     | Some textView ->
                         Application.MainLoop.Invoke(fun () ->
                             try
-                                workerInfo.OutputBuffer.AppendLine("[INFO] Worker Process セッション終了") |> ignore
-                                textView.Text <- workerInfo.OutputBuffer.ToString()
+                                workerInfo.OutputBuffer.AddLine("[INFO] Worker Process セッション終了")
+                                textView.Text <- workerInfo.OutputBuffer.GetAllLines()
                                 textView.SetNeedsDisplay()
                             with ex ->
                                 logException "WorkerManager" $"Error updating UI during stop for pane: {paneId}" ex)

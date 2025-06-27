@@ -53,6 +53,38 @@ type CircularBuffer<'T>(capacity: int) =
     member _.Count = size
     member _.IsEmpty = size = 0
 
+// 文字列専用CircularBuffer
+type CircularStringBuffer(capacity: int) =
+    let buffer = Array.zeroCreate<string option> capacity
+    let mutable head = 0
+    let mutable size = 0
+    let lockObj = obj ()
+
+    member _.AddLine(line: string) =
+        lock lockObj (fun () ->
+            buffer.[head] <- Some line
+            head <- (head + 1) % capacity
+            size <- min (size + 1) capacity)
+
+    member _.GetAllLines() =
+        lock lockObj (fun () ->
+            if size = 0 then
+                ""
+            else
+                let lines = Array.zeroCreate<string> size
+
+                for i = 0 to size - 1 do
+                    let index = (head - size + i + capacity) % capacity
+
+                    match buffer.[index] with
+                    | Some line -> lines.[i] <- line
+                    | None -> lines.[i] <- ""
+
+                String.Join("\n", lines))
+
+    member _.Count = size
+    member _.IsEmpty = size = 0
+
 // ===============================================
 // プロセスメトリクス追跡
 // ===============================================
@@ -199,6 +231,7 @@ type WorkerProcess =
       Process: Process option
       HealthMetrics: HealthMetrics
       StartTime: DateTime
+      WorkingDirectory: string
       // 新しいメトリクス追跡機能
       ProcessMetrics: ProcessMetrics option
       ResponseTimeTracker: ResponseTimeTracker
@@ -301,6 +334,27 @@ type ProcessSupervisor(config: SupervisorConfig) =
     // IPC サーバーソケットパス
     let getServerSocketPath () =
         Path.Combine(Path.GetTempPath(), "fcode-supervisor.sock")
+
+    // ソケットファイルのセキュア権限設定
+    let setSocketFilePermissions (socketPath: string) =
+        try
+            if File.Exists(socketPath) then
+                // Unix系OS専用: ファイル権限を600 (所有者のみ読み書き可能)に設定
+                if Environment.OSVersion.Platform = PlatformID.Unix then
+                    let chmodCmd = $"chmod 600 \"{socketPath}\""
+                    let processInfo = ProcessStartInfo("sh", $"-c \"{chmodCmd}\"")
+                    processInfo.UseShellExecute <- false
+                    processInfo.RedirectStandardOutput <- true
+                    processInfo.RedirectStandardError <- true
+                    let proc = Process.Start(processInfo)
+                    proc.WaitForExit()
+
+                    if proc.ExitCode = 0 then
+                        logDebug "ProcessSupervisor" $"Socket file permissions set to 600: {socketPath}"
+                    else
+                        logWarning "ProcessSupervisor" $"Failed to set socket file permissions: {socketPath}"
+        with ex ->
+            logException "ProcessSupervisor" $"Error setting socket file permissions: {socketPath}" ex
 
     // IPC クライアント接続処理
     let handleClientConnection (connection: UdsConnection) =
@@ -537,7 +591,7 @@ type ProcessSupervisor(config: SupervisorConfig) =
                 stopWorkerProcess worker
 
                 // 新しいプロセスを起動
-                let workingDir = Environment.CurrentDirectory // TODO: 適切な作業ディレクトリを設定
+                let workingDir = worker.WorkingDirectory
 
                 match startWorkerProcess paneId workingDir with
                 | Some newProc ->
@@ -693,6 +747,7 @@ type ProcessSupervisor(config: SupervisorConfig) =
                           MemoryTrend = "stable"
                           LastCpuMeasurement = DateTime.Now }
                       StartTime = DateTime.Now
+                      WorkingDirectory = workingDir
                       // 新しいメトリクス追跡機能を初期化
                       ProcessMetrics =
                         Some

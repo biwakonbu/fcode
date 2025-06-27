@@ -193,11 +193,15 @@ let main _argv =
                     logError "AutoStart" debugMsg
                     System.Console.WriteLine(debugMsg)
 
-            // 各エージェントペインでClaude Codeを起動 (dev1-3のみ有効化)
-            logInfo "AutoStart" "Starting Claude Code auto-start process for dev panes"
-            let devPanes = agentPanes |> List.filter (fun (id, _) -> id.StartsWith("dev"))
-            devPanes |> List.iter startClaudeCodeForPane
-            logInfo "AutoStart" $"Claude Code auto-start completed for {devPanes.Length} dev panes"
+            // 各エージェントペインでClaude Codeを起動 (dev1-3, qa1-2を有効化)
+            logInfo "AutoStart" "Starting Claude Code auto-start process for dev and qa panes"
+
+            let activeAgentPanes =
+                agentPanes
+                |> List.filter (fun (id, _) -> id.StartsWith("dev") || id.StartsWith("qa"))
+
+            activeAgentPanes |> List.iter startClaudeCodeForPane
+            logInfo "AutoStart" $"Claude Code auto-start completed for {activeAgentPanes.Length} active panes"
 
             // Create focus management for panes
             let focusablePanes = [| convo; dev1; dev2; dev3; qa1; qa2; ux; timeline |]
@@ -227,12 +231,14 @@ let main _argv =
 
                     // メインスレッドでUI操作を実行
                     Application.MainLoop.Invoke(fun () ->
-                        logInfo "AutoStart" "Executing delayed Claude Code auto-start for dev panes"
+                        logInfo "AutoStart" "Executing delayed Claude Code auto-start for dev and qa panes"
 
-                        // dev1-3ペインを順次起動（500ms間隔で負荷分散）
-                        let devPanes = agentPanes |> List.filter (fun (id, _) -> id.StartsWith("dev"))
+                        // dev1-3, qa1-2ペインを順次起動（500ms間隔で負荷分散）
+                        let activeAgentPanes =
+                            agentPanes
+                            |> List.filter (fun (id, _) -> id.StartsWith("dev") || id.StartsWith("qa"))
 
-                        devPanes
+                        activeAgentPanes
                         |> List.iteri (fun i (paneId, pane) ->
                             Task.Run(fun () ->
                                 System.Threading.Thread.Sleep(i * 500) // 500ms間隔で起動
@@ -243,7 +249,7 @@ let main _argv =
                                     logInfo "AutoStart" $"Delayed auto-start completed for {paneId}"))
                             |> ignore)
 
-                        logInfo "AutoStart" $"Delayed auto-start initiated for {devPanes.Length} dev panes"))
+                        logInfo "AutoStart" $"Delayed auto-start initiated for {activeAgentPanes.Length} active panes"))
                 |> ignore
 
             // Run application

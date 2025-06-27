@@ -144,9 +144,29 @@ type SessionManager() =
                     Application.Refresh()
                     logInfo "SessionManager" $"UI updated for pane: {paneId}"
 
-                    // Claude Codeの対話モードを開始するため初期プロンプトを送信
+                    // Claude Codeの対話モードを開始するため役割別初期プロンプトを送信
                     try
-                        let initPrompt = "こんにちは。対話を開始します。現在の作業ディレクトリとプロジェクト状況を教えてください。"
+                        let rolePrompt =
+                            match paneId with
+                            | id when id.StartsWith("qa") ->
+                                "こんにちは。私は品質保証の専門家として対話を開始します。"
+                                + "テスト戦略、バグ検出、品質向上の観点から支援します。"
+                                + "現在のプロジェクトのテスト状況と品質課題について教えてください。"
+                            | id when id.StartsWith("dev") ->
+                                "こんにちは。熟練のソフトウェアエンジニアとして対話を開始します。"
+                                + "コード品質、パフォーマンス、保守性を重視して支援します。"
+                                + "現在の開発状況と技術的課題について教えてください。"
+                            | "ux" ->
+                                "こんにちは。UX/UIデザインの専門家として対話を開始します。"
+                                + "ユーザビリティ、アクセシビリティ、使いやすさの観点から支援します。"
+                                + "現在のプロダクトのUX課題について教えてください。"
+                            | "pm" ->
+                                "こんにちは。プロジェクトマネージャーとして対話を開始します。"
+                                + "進捗管理、リスク管理、品質管理の観点から支援します。"
+                                + "現在のプロジェクト状況と課題について教えてください。"
+                            | _ -> "こんにちは。対話を開始します。現在の作業ディレクトリとプロジェクト状況を教えてください。"
+
+                        let initPrompt = rolePrompt
                         proc.StandardInput.WriteLine(initPrompt)
                         proc.StandardInput.Flush()
                         buffer.AppendLine($"> {initPrompt}") |> ignore

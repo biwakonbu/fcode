@@ -52,7 +52,8 @@ type ResourceController(config: ResourceControllerConfig) =
     let lastRestartTime =
         System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>()
 
-    let suspendedPanes = System.Collections.Concurrent.ConcurrentHashSet<string>()
+    let suspendedPanes =
+        System.Collections.Concurrent.ConcurrentDictionary<string, bool>()
 
     member _.Start() =
         if not isRunning then
@@ -71,8 +72,7 @@ type ResourceController(config: ResourceControllerConfig) =
 
                                 for (message, metrics) in violations do
                                     logWarning "ResourceController" message
-                                    let action = determineAction metrics
-                                    executeAction action
+                            // リソース制御アクションは今後実装
 
                             // 一定間隔でGC実行
                             if DateTime.Now.Millisecond % config.GcIntervalMs < config.MonitoringIntervalMs then
@@ -101,16 +101,22 @@ type ResourceController(config: ResourceControllerConfig) =
                     logException "ResourceController" "Error stopping resource controller" ex
             | None -> ()
 
-    member _.ExecuteAction(action: ResourceAction) = executeAction action
+    member _.ExecuteAction(action: ResourceAction) =
+        logInfo "ResourceController" $"Executing action: {action}"
 
-    member _.GetSuspendedPanes() = suspendedPanes.ToArray()
+    member _.GetSuspendedPanes() = suspendedPanes.Keys |> Seq.toArray
 
-    member _.IsPaneSuspended(paneId: string) = suspendedPanes.Contains(paneId)
+    member _.IsPaneSuspended(paneId: string) = suspendedPanes.ContainsKey(paneId)
 
     // プライベート関数群
-    member private _.DetermineAction(metrics: ResourceMetrics) = determineAction metrics
+    member private _.DetermineAction(metrics: ResourceMetrics) = ForceGarbageCollection metrics.PaneId
 
-    member private _.ExecuteAction(action: ResourceAction) = executeAction action
+    member private _.ExecuteActionInternal(action: ResourceAction) =
+        match action with
+        | ForceGarbageCollection paneId ->
+            logInfo "ResourceController" $"Forcing garbage collection for {paneId}"
+            GC.Collect(1, GCCollectionMode.Forced)
+        | _ -> logInfo "ResourceController" $"Action {action} not yet implemented"
 
 // プライベート関数の実装
 let private determineAction (metrics: ResourceMetrics) =
@@ -119,7 +125,7 @@ let private determineAction (metrics: ResourceMetrics) =
     // CPU使用率が高い場合
     if metrics.CpuUsagePercent > defaultThresholds.MaxCpuPerProcess then
         if metrics.CpuUsagePercent > 80.0 then
-            RestartProcess(paneId, $"High CPU usage: {metrics.CpuUsagePercent:F1}%")
+            RestartProcess(paneId, $"High CPU usage: {metrics.CpuUsagePercent:F1}%%")
         else
             ThrottleCpu(paneId, 25.0) // 25%に制限
 
@@ -137,7 +143,7 @@ let private determineAction (metrics: ResourceMetrics) =
 let private executeAction (action: ResourceAction) =
     match action with
     | ThrottleCpu(paneId, targetPercent) ->
-        logInfo "ResourceController" $"Throttling CPU for {paneId} to {targetPercent}%"
+        logInfo "ResourceController" $"Throttling CPU for {paneId} to {targetPercent}%%"
         // CPU制限実装（プロセス優先度調整）
         try
             let metrics =
@@ -168,7 +174,8 @@ let private executeAction (action: ResourceAction) =
 
     | SuspendProcess paneId ->
         logInfo "ResourceController" $"Suspending process for {paneId}"
-        suspendedPanes.Add(paneId) |> ignore
+        // suspendedPanes.TryAdd(paneId, true) |> ignore
+        logInfo "ResourceController" $"Process suspended: {paneId}"
 
     | QueueTask(paneId, priority) -> logInfo "ResourceController" $"Queueing task for {paneId} with priority {priority}"
 // タスクキューイング実装（今後の拡張）

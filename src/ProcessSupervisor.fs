@@ -11,6 +11,8 @@ open System.Threading.Tasks
 open FCode.Logger
 open FCode.UnixDomainSocketManager
 open FCode.IPCChannel
+open FCode.ResourceMonitor
+open FCode.ResourceController
 
 // ===============================================
 // CircularBuffer - 固定サイズ履歴管理

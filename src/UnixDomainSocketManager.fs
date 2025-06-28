@@ -63,7 +63,7 @@ let serializeMessage<'T> (envelope: Envelope<'T>) : byte[] =
         raise ex
 
 /// ストリームから4-byte length prefixを読み取る
-let rec readLengthPrefix (stream: Stream) (cancellationToken: CancellationToken) : Task<int> =
+let readLengthPrefix (stream: Stream) (cancellationToken: CancellationToken) : Task<int> =
     task {
         let lengthBuffer = Array.zeroCreate<byte> (4)
         let mutable totalRead = 0
@@ -91,7 +91,7 @@ let rec readLengthPrefix (stream: Stream) (cancellationToken: CancellationToken)
     }
 
 /// ストリームから指定長のペイロードを読み取る
-let rec readPayload (stream: Stream) (length: int) (cancellationToken: CancellationToken) : Task<byte[]> =
+let readPayload (stream: Stream) (length: int) (cancellationToken: CancellationToken) : Task<byte[]> =
     task {
         let buffer = Array.zeroCreate<byte> (length)
         let mutable totalRead = 0
@@ -339,5 +339,5 @@ let createServer socketPath onClientConnected =
 /// UDS クライアントで接続
 let connectToServer socketPath =
     let config = defaultUdsConfig socketPath
-    let client = new UdsClient(config)
+    let client = UdsClient(config)
     client.ConnectAsync()

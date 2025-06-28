@@ -4,7 +4,7 @@ open Terminal.Gui
 
 // Use terminal default colors for all schemes
 let defaultScheme =
-    let scheme = new ColorScheme()
+    let scheme = ColorScheme()
     scheme.Normal <- Terminal.Gui.Attribute.Make(Color.White, Color.Black)
     scheme.Focus <- Terminal.Gui.Attribute.Make(Color.Black, Color.Gray)
     scheme.HotNormal <- Terminal.Gui.Attribute.Make(Color.Cyan, Color.Black)

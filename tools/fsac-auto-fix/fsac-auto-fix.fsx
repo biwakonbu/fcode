@@ -51,8 +51,8 @@ let fsacDiagnostics = [
         Title = "Redundant qualifier"
         Description = "冗長な修飾子を削除"
         Examples = [
-            "System.String.Empty → String.Empty"
-            "System.Int32.Parse → Int32.Parse"
+            "String.Empty → String.Empty"
+            "Int32.Parse → Int32.Parse"
         ]
     }
     {
@@ -165,7 +165,7 @@ let safeUnnecessaryParenthesesPatterns = [
         Code = "FSAC0004"
         Name = "Safe simple function call"
         Pattern = Regex(@"\b(\w+)\((\w+)\)", RegexOptions.Compiled)
-        Examples = ["float(x) → float x"; "calculate(value) → calculate value"]
+        Examples = ["float x → float x"; "calculate(value) → calculate value"]
         Replacement = fun (content: string) ->
             let pattern = Regex(@"\b(\w+)\((\w+)\)")
             let matches = pattern.Matches(content)
@@ -194,7 +194,7 @@ let safeUnnecessaryParenthesesPatterns = [
         Code = "FSAC0004" 
         Name = "Safe static method call (improved)"
         Pattern = Regex(@"([A-Z]\w*\.[A-Z]\w*)\(([^,)]+)\)", RegexOptions.Compiled)
-        Examples = ["Process.Start(info) → Process.Start info"; "DateTime.Parse(str) → DateTime.Parse str"]
+        Examples = ["Process.Start(info) → Process.Start info"; "DateTime.Parse str → DateTime.Parse str"]
         Replacement = fun (content: string) ->
             let pattern = Regex(@"([A-Z]\w*\.[A-Z]\w*)\(([^,)]+)\)")
             let matches = pattern.Matches(content)
@@ -249,7 +249,7 @@ let safeUnnecessaryParenthesesPatterns = [
         Code = "FSAC0004"
         Name = "Cast function call (improved)"
         Pattern = Regex(@"\b(float|int|string|bool|byte|sbyte|int16|uint16|int32|uint32|int64|uint64|decimal|char)\s*\(([^)]+)\)", RegexOptions.Compiled)
-        Examples = ["float(42) → float 42"; "int(value + 1) → int (value + 1)"; "string(obj.Method()) → string (obj.Method())"]
+        Examples = ["float 42 → float 42"; "int (value + 1) → int (value + 1)"; "string (obj.Method()) → string (obj.Method())"]
         Replacement = fun (content: string) ->
             let pattern = Regex(@"\b(float|int|string|bool|byte|sbyte|int16|uint16|int32|uint32|int64|uint64|decimal|char)\s*\(([^)]+)\)")
             let matches = pattern.Matches(content)
@@ -295,12 +295,12 @@ let safeUnnecessaryParenthesesPatterns = [
             result
     }
     
-    // パイプライン内での関数呼び出し: |> func(arg) -> |> func arg  
+    // パイプライン内での関数呼び出し: |> func arg -> |> func arg  
     {
         Code = "FSAC0004"
         Name = "Pipeline function call"
         Pattern = Regex(@"\|\>\s*(\w+)\((\w+)\)", RegexOptions.Compiled)
-        Examples = ["value |> float(x) → value |> float x"]
+        Examples = ["value |> float x → value |> float x"]
         Replacement = fun (content: string) ->
             let pattern = Regex(@"\|\>\s*(\w+)\((\w+)\)")
             pattern.Replace(content, "|> $1 $2")
@@ -339,7 +339,7 @@ let redundantQualifierPatterns = [
         Code = "FSAC0002"
         Name = "System module qualifiers"
         Pattern = Regex(@"System\.(String|Int32|DateTime|Boolean)\.(\w+)", RegexOptions.Compiled)
-        Examples = ["System.String.Empty → String.Empty"; "System.Int32.Parse → Int32.Parse"]
+        Examples = ["String.Empty → String.Empty"; "Int32.Parse → Int32.Parse"]
         Replacement = fun (content: string) ->
             let pattern = Regex(@"System\.(String|Int32|DateTime|Boolean)\.(\w+)", RegexOptions.Compiled)
             pattern.Replace(content, "$1.$2")
@@ -583,7 +583,7 @@ Options:
   --help, -h            Show this help message
 
 Fix Levels:
-  conservative          Only safe type cast fixes (float(x) -> float x)
+  conservative          Only safe type cast fixes (float x -> float x)
   standard              + Safe function calls (excluding IDisposable constructors)
   aggressive            + All available fixes (including unused opens)
 

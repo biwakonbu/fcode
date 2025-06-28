@@ -170,17 +170,16 @@ let manager = SessionManager()
 
 #### FSharpLint設定
 
-プロジェクトルートの`.fsharplint.json`で詳細な品質ルールを設定:
+プロジェクトルートの`.fsharplint.json`で標準的な品質ルールを設定:
 
-- **FL0001**: 関数・クラスの長さ制限（関数80行、クラス500行）
-- **FL0002**: 複雑度制限（最大15）
-- **FL0003**: 命名規約（camelCase/PascalCase）
-- **FL0004**: 未使用openステートメント検出
-- **FL0005**: 未使用変数・パラメータ検出
-- **FL0014**: 無効化（IDisposableオブジェクトのnew優先）
-- **FL0020**: 非推奨構文検出
-- **FL0034**: 冗長括弧検出
-- **FL0035**: 冗長修飾子検出
+- **redundantNewKeyword**: 無効化（IDisposableオブジェクトのnew保持）
+- **functionLength**: 関数長制限（最大80行）
+- **cyclomaticComplexity**: 複雑度制限（最大15）
+- **unusedValue**: 未使用変数検出
+- **unusedOpenStatement**: 未使用openステートメント検出
+- **命名規約**: 全ルール有効（capitals、parameters等）
+- **suggestions**: コード改善提案
+- **その他**: 標準品質ルール全般
 
 #### テスト環境設定
 
@@ -191,5 +190,5 @@ if not isCI then Application.Init()
 ```
 
 #### 関連設定ファイル
-- `.fsharplint.json`: 包括的コード品質ルール設定
-- CI/CDパイプライン: F# Compiler警告をエラーとして扱う
+- `.fsharplint.json`: FSharpLint標準形式での品質ルール設定
+- CI/CDパイプライン: F# Compiler + FSharpLint品質チェック

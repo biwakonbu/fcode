@@ -28,6 +28,7 @@
     <!-- Temporarily disabled due to test hanging issue
     <Compile Include="WorkerProcessManagerDynamicWaitTests.fs"/>
     -->
+    <Compile Include="SessionIsolationTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

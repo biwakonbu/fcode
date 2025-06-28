@@ -1,8 +1,8 @@
-module fcode.Tests.UIHelpersTests
+module FCode.Tests.UIHelpersTests
 
 open NUnit.Framework
 open Terminal.Gui
-open TuiPoC.UIHelpers
+open FCode.UIHelpers
 
 [<TestFixture>]
 type UIHelpersTests() =
@@ -10,7 +10,7 @@ type UIHelpersTests() =
     [<SetUp>]
     member _.Setup() =
         // CI環境でのTerminal.Gui初期化スキップ
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if not isCI then
             try
@@ -21,7 +21,7 @@ type UIHelpersTests() =
     [<TearDown>]
     member _.TearDown() =
         // CI環境ではShutdownをスキップ
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if not isCI then
             try
@@ -32,7 +32,7 @@ type UIHelpersTests() =
     [<Test>]
     member _.``findTextViews should find direct TextView``() =
         // Arrange
-        let textView = new TextView()
+        let textView = TextView()
         textView.Text <- "test content"
 
         // Act
@@ -45,8 +45,8 @@ type UIHelpersTests() =
     [<Test>]
     member _.``findTextViews should find TextView inside FrameView ContentView hierarchy``() =
         // Arrange - Program.fsのmakePaneと同じ方法でFrameViewを作成
-        let frameView = new FrameView("test")
-        let textView = new TextView()
+        let frameView = FrameView("test")
+        let textView = TextView()
         textView.Text <- "test content"
         frameView.Add(textView) // これによりContentView階層が作られる
 
@@ -60,7 +60,7 @@ type UIHelpersTests() =
     [<Test>]
     member _.``getTextViewsFromPane should return empty list for pane without TextView``() =
         // Arrange
-        let frameView = new FrameView("empty")
+        let frameView = FrameView("empty")
 
         // Act
         let result = getTextViewsFromPane frameView
@@ -71,10 +71,10 @@ type UIHelpersTests() =
     [<Test>]
     member _.``getTextViewsFromPane should find TextView in ContentView hierarchy``() =
         // Arrange - Program.fsのmakePaneロジックを再現
-        let frameView = new FrameView("test")
+        let frameView = FrameView("test")
         frameView.Border.Effect3D <- false
 
-        let textView = new TextView()
+        let textView = TextView()
         textView.X <- 0
         textView.Y <- 0
         textView.Width <- Dim.Fill()
@@ -94,13 +94,13 @@ type UIHelpersTests() =
     [<Test>]
     member _.``findTextViews should handle multiple nested TextViews``() =
         // Arrange
-        let container = new View()
-        let textView1 = new TextView()
+        let container = View()
+        let textView1 = TextView()
         textView1.Text <- "first"
-        let textView2 = new TextView()
+        let textView2 = TextView()
         textView2.Text <- "second"
 
-        let subContainer = new View()
+        let subContainer = View()
         subContainer.Add(textView2)
         container.Add(textView1)
         container.Add(subContainer)
@@ -117,7 +117,7 @@ type UIHelpersTests() =
     [<Test>]
     member _.``findTextViews should handle empty View without crash``() =
         // Arrange
-        let emptyView = new View()
+        let emptyView = View()
 
         // Act & Assert
         let result = findTextViews emptyView |> Seq.toList

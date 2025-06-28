@@ -168,6 +168,28 @@ let manager = SessionManager()
 
 **理由**: IDisposableオブジェクトではリソース所有権を明確にし、メモリリークを防止するため
 
+#### FSharpLint設定
+
+プロジェクトルートの`.fsharplint.json`で詳細な品質ルールを設定:
+
+- **FL0001**: 関数・クラスの長さ制限（関数80行、クラス500行）
+- **FL0002**: 複雑度制限（最大15）
+- **FL0003**: 命名規約（camelCase/PascalCase）
+- **FL0004**: 未使用openステートメント検出
+- **FL0005**: 未使用変数・パラメータ検出
+- **FL0014**: 無効化（IDisposableオブジェクトのnew優先）
+- **FL0020**: 非推奨構文検出
+- **FL0034**: 冗長括弧検出
+- **FL0035**: 冗長修飾子検出
+
+#### テスト環境設定
+
+CI環境ではTerminal.Gui初期化をスキップ:
+```fsharp
+let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+if not isCI then Application.Init()
+```
+
 #### 関連設定ファイル
-- `.fsharplint.json`: FL0014ルール無効化（IDisposable優先のため）
+- `.fsharplint.json`: 包括的コード品質ルール設定
 - CI/CDパイプライン: F# Compiler警告をエラーとして扱う

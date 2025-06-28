@@ -174,7 +174,6 @@ let private _executeAction (action: ResourceAction) =
 
     | SuspendProcess paneId ->
         logInfo "ResourceController" $"Suspending process for {paneId}"
-        // suspendedPanes.TryAdd(paneId, true) |> ignore
         logInfo "ResourceController" $"Process suspended: {paneId}"
 
     | QueueTask(paneId, priority) -> logInfo "ResourceController" $"Queueing task for {paneId} with priority {priority}"

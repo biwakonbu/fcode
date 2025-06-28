@@ -5,11 +5,88 @@
       "config": {
         "reason": "IDisposableオブジェクトのリソース管理明示のため、F# Compilerの推奨に従う"
       }
+    },
+    "FL0001": {
+      "enabled": true,
+      "config": {
+        "maxLinesInFunction": 80,
+        "maxLinesInClass": 500,
+        "maxCharactersOnLine": 120
+      }
+    },
+    "FL0002": {
+      "enabled": true,
+      "config": {
+        "maxComplexity": 15
+      }
+    },
+    "FL0003": {
+      "enabled": true,
+      "config": {
+        "naming": {
+          "camelCase": {
+            "enabled": true,
+            "rules": ["function", "method", "property", "parameter", "value", "typeParameter"]
+          },
+          "pascalCase": {
+            "enabled": true,
+            "rules": ["type", "module", "exception", "union", "record"]
+          }
+        }
+      }
+    },
+    "FL0004": {
+      "enabled": true,
+      "config": {
+        "reason": "未使用の open ステートメントを検出"
+      }
+    },
+    "FL0005": {
+      "enabled": true,
+      "config": {
+        "reason": "未使用の値やパラメータを検出"
+      }
+    },
+    "FL0020": {
+      "enabled": true,
+      "config": {
+        "reason": "非推奨な構文の使用を検出"
+      }
+    },
+    "FL0034": {
+      "enabled": true,
+      "config": {
+        "reason": "冗長な括弧を検出"
+      }
+    },
+    "FL0035": {
+      "enabled": true,
+      "config": {
+        "reason": "冗長な修飾子を検出"
+      }
     }
   },
   "ignoreFiles": [
     "**/obj/**",
     "**/bin/**",
-    "**/.git/**"
-  ]
+    "**/.git/**",
+    "**/AssemblyInfo.fs"
+  ],
+  "hint": {
+    "enabled": true,
+    "config": {
+      "customRules": [
+        {
+          "name": "prefer-async-workflow",
+          "message": "非同期処理はasync/awaitワークフローを優先してください",
+          "pattern": "Task.Run.*"
+        },
+        {
+          "name": "prefer-option-over-null",
+          "message": "nullチェックの代わりにOptionを使用してください",
+          "pattern": ".*<> null|.*= null"
+        }
+      ]
+    }
+  }
 }

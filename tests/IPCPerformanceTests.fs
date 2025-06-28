@@ -36,7 +36,7 @@ type IPCPerformanceTests() =
             let stopwatch = Stopwatch.StartNew()
 
             let! responses =
-                Array.init totalRequests (fun i -> channel.SendCommandAsync(HealthCheck($"perf-test-{i}")))
+                Array.init totalRequests (fun i -> channel.SendCommandAsync(HealthCheck $"perf-test-{i}"))
                 |> Task.WhenAll
 
             stopwatch.Stop()
@@ -82,7 +82,7 @@ type IPCPerformanceTests() =
             // Act - 個別にレイテンシ測定
             for i = 0 to sampleSize - 1 do
                 let stopwatch = Stopwatch.StartNew()
-                let! _ = channel.SendCommandAsync(HealthCheck($"latency-test-{i}"))
+                let! _ = channel.SendCommandAsync(HealthCheck $"latency-test-{i}")
                 stopwatch.Stop()
                 latencies.[i] <- stopwatch.Elapsed.TotalMilliseconds
 
@@ -131,13 +131,13 @@ type IPCPerformanceTests() =
                     task {
                         let! responses =
                             Array.init requestsPerClient (fun reqId ->
-                                channel.SendCommandAsync(HealthCheck($"client-{clientId}-req-{reqId}")))
+                                channel.SendCommandAsync(HealthCheck $"client-{clientId}-req-{reqId}"))
                             |> Task.WhenAll
 
                         return responses
                     })
 
-            let! allResponses = Task.WhenAll(clientTasks)
+            let! allResponses = Task.WhenAll clientTasks
             stopwatch.Stop()
 
             // Assert
@@ -219,7 +219,7 @@ type IPCPerformanceTests() =
             use channel = createIPCChannel ()
             let! _ = channel.StartAsync()
 
-            let initialMemory = GC.GetTotalMemory(true)
+            let initialMemory = GC.GetTotalMemory true
             logInfo "PERF" $"Starting memory stability test: {testDurationMs}ms duration"
             logInfo "PERF" $"  Initial memory: {initialMemory / 1024L / 1024L}MB"
 
@@ -229,11 +229,11 @@ type IPCPerformanceTests() =
 
             try
                 while not cancellationTokenSource.Token.IsCancellationRequested do
-                    let! _ = channel.SendCommandAsync(HealthCheck($"memory-test-{requestCount}"))
+                    let! _ = channel.SendCommandAsync(HealthCheck $"memory-test-{requestCount}")
                     requestCount <- requestCount + 1
 
                     if requestCount % 20 = 0 then
-                        let currentMemory = GC.GetTotalMemory(false)
+                        let currentMemory = GC.GetTotalMemory false
                         logDebug "PERF" $"Requests: {requestCount}, Memory: {currentMemory / 1024L / 1024L}MB"
 
                     do! Task.Delay(requestInterval, cancellationTokenSource.Token)
@@ -245,7 +245,7 @@ type IPCPerformanceTests() =
             GC.WaitForPendingFinalizers()
             GC.Collect()
 
-            let finalMemory = GC.GetTotalMemory(true)
+            let finalMemory = GC.GetTotalMemory true
             let memoryIncrease = finalMemory - initialMemory
             let metrics = channel.GetMetrics()
 

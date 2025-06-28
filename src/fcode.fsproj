@@ -15,6 +15,10 @@
     <Compile Include="PtyNetManager.fs" />
     <Compile Include="ClaudeCodeProcess.fs" />
     <Compile Include="WorkerProcessManager.fs" />
+    <Compile Include="WorkingDirectoryManager.fs" />
+    <Compile Include="EnvironmentIsolation.fs" />
+    <Compile Include="FileLockManager.fs" />
+    <Compile Include="SessionStateManager.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />
     <Compile Include="Program.fs" />

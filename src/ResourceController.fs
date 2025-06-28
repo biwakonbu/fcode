@@ -46,10 +46,10 @@ type ResourceController(config: ResourceControllerConfig) =
     let mutable isRunning = false
     let mutable monitoringTask = None
 
-    let restartAttempts =
+    let _restartAttempts =
         System.Collections.Concurrent.ConcurrentDictionary<string, int>()
 
-    let lastRestartTime =
+    let _lastRestartTime =
         System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>()
 
     let suspendedPanes =
@@ -70,7 +70,7 @@ type ResourceController(config: ResourceControllerConfig) =
                             if violations.Length > 0 then
                                 logWarning "ResourceController" $"Found {violations.Length} resource violations"
 
-                                for (message, metrics) in violations do
+                                for (message, _metrics) in violations do
                                     logWarning "ResourceController" message
                             // リソース制御アクションは今後実装
 
@@ -119,7 +119,7 @@ type ResourceController(config: ResourceControllerConfig) =
         | _ -> logInfo "ResourceController" $"Action {action} not yet implemented"
 
 // プライベート関数の実装
-let private determineAction (metrics: ResourceMetrics) =
+let private _determineAction (metrics: ResourceMetrics) =
     let paneId = metrics.PaneId
 
     // CPU使用率が高い場合
@@ -140,7 +140,7 @@ let private determineAction (metrics: ResourceMetrics) =
     else
         ForceGarbageCollection paneId
 
-let private executeAction (action: ResourceAction) =
+let private _executeAction (action: ResourceAction) =
     match action with
     | ThrottleCpu(paneId, targetPercent) ->
         logInfo "ResourceController" $"Throttling CPU for {paneId} to {targetPercent}%%"

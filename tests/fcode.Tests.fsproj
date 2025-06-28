@@ -15,6 +15,7 @@
     <Compile Include="ResourceControllerTests.fs"/>
     <Compile Include="ProcessSupervisorTests.fs"/>
     <Compile Include="IPCChannelTests.fs"/>
+    <Compile Include="IPCPerformanceTests.fs"/>
     <Compile Include="WorkerProcessManagerTests.fs"/>
     <Compile Include="ProcessSupervisorStabilityTests.fs"/>
     <!-- Temporarily disabled due to namespace issues

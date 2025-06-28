@@ -17,18 +17,31 @@ let qaScheme = defaultScheme
 let uxScheme = defaultScheme
 let pmScheme = defaultScheme
 
-// Apply color scheme to pane based on role
-let applySchemeByRole (pane: FrameView) (role: string) =
+// テスト可能なビューのインターフェース（テスト用）
+type ITestableView =
+    abstract ColorScheme: ColorScheme with get, set
+    abstract Title: string
+
+// カラースキーム選択ロジック（UI非依存）
+let getSchemeByRole (role: string) =
     match role.ToLower() with
     | "chat"
-    | "会話" -> pane.ColorScheme <- chatScheme
+    | "会話" -> chatScheme
     | "dev1"
     | "dev2"
-    | "dev3" -> pane.ColorScheme <- devScheme
+    | "dev3" -> devScheme
     | "qa1"
-    | "qa2" -> pane.ColorScheme <- qaScheme
-    | "ux" -> pane.ColorScheme <- uxScheme
+    | "qa2" -> qaScheme
+    | "ux" -> uxScheme
     | "pm"
     | "pdm"
-    | "timeline" -> pane.ColorScheme <- pmScheme
-    | _ -> pane.ColorScheme <- devScheme // default
+    | "timeline" -> pmScheme
+    | _ -> devScheme // default
+
+// テスト可能なカラースキーム適用（UI非依存）
+let applySchemeByRoleTestable (view: ITestableView) (role: string) =
+    view.ColorScheme <- getSchemeByRole role
+
+// Apply color scheme to pane based on role (既存のTerminal.Gui用)
+let applySchemeByRole (pane: FrameView) (role: string) =
+    pane.ColorScheme <- getSchemeByRole role

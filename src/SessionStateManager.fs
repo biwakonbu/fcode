@@ -401,14 +401,16 @@ module SessionStateManager =
                     |> Array.groupBy (fun s -> s.PaneId)
                     |> Array.map (fun (pane, sessions) -> (pane, sessions.Length))
                     |> Map.ofArray
-                   OldestSession = 
+                   OldestSession =
                     if allSessions.Length > 0 then
                         allSessions |> Array.map (fun s -> s.CreatedAt) |> Array.min |> Some
-                    else None
-                   NewestActivity = 
+                    else
+                        None
+                   NewestActivity =
                     if allSessions.Length > 0 then
                         allSessions |> Array.map (fun s -> s.LastActivity) |> Array.max |> Some
-                    else None
+                    else
+                        None
                    AverageMessagesPerSession =
                     if allSessions.Length > 0 then
                         float (allSessions |> Array.sumBy (fun s -> s.ConversationHistory.Length))

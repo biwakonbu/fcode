@@ -29,7 +29,7 @@ type WorkerProcessManagerTests() =
         | None -> ()
 
     [<Test>]
-    member _.WorkerManager_StartWorker_ReturnsTrue() =
+    member _.WorkerManagerStartWorkerReturnsTrue() =
         match mockTextView with
         | Some textView ->
             // Arrange
@@ -45,7 +45,7 @@ type WorkerProcessManagerTests() =
         | None -> Assert.Fail("TextView not initialized")
 
     [<Test>]
-    member _.WorkerManager_StopWorker_ReturnsTrue() =
+    member _.WorkerManagerStopWorkerReturnsTrue() =
         match mockTextView with
         | Some textView ->
             // Arrange
@@ -63,7 +63,7 @@ type WorkerProcessManagerTests() =
         | None -> Assert.Fail("TextView not initialized")
 
     [<Test>]
-    member _.WorkerManager_SendInput_WhenWorkerActive_ReturnsTrue() =
+    member _.WorkerManagerSendInputWhenWorkerActiveReturnsTrue() =
         match mockTextView with
         | Some textView ->
             // Arrange
@@ -85,7 +85,7 @@ type WorkerProcessManagerTests() =
         | None -> Assert.Fail("TextView not initialized")
 
     [<Test>]
-    member _.WorkerManager_GetWorkerStatus_ReturnsCorrectStatus() =
+    member _.WorkerManagerGetWorkerStatusReturnsCorrectStatus() =
         match mockTextView with
         | Some textView ->
             // Arrange
@@ -106,7 +106,7 @@ type WorkerProcessManagerTests() =
         | None -> Assert.Fail("TextView not initialized")
 
     [<Test>]
-    member _.WorkerManager_GetActiveWorkerCount_ReturnsCorrectCount() =
+    member _.WorkerManagerGetActiveWorkerCountReturnsCorrectCount() =
         match mockTextView with
         | Some textView ->
             // Arrange
@@ -127,7 +127,7 @@ type WorkerProcessManagerTests() =
         | None -> Assert.Fail("TextView not initialized")
 
     [<Test>]
-    member _.WorkerManager_CleanupAllWorkers_StopsAllWorkers() =
+    member _.WorkerManagerCleanupAllWorkersStopsAllWorkers() =
         match mockTextView with
         | Some textView ->
             // Arrange - Start multiple workers
@@ -150,7 +150,7 @@ type WorkerProcessManagerTests() =
         | None -> Assert.Fail("TextView not initialized")
 
     [<Test>]
-    member _.WorkerManager_SupervisorLifecycle_WorksCorrectly() =
+    member _.WorkerManagerSupervisorLifecycleWorksCorrectly() =
         // Arrange & Act
         workerManager.StartSupervisor()
 
@@ -162,7 +162,7 @@ type WorkerProcessManagerTests() =
         Assert.Pass("Supervisor stopped successfully")
 
     [<Test>]
-    member _.WorkerManager_MultipleWorkersSimultaneously_WorksCorrectly() =
+    member _.WorkerManagerMultipleWorkersSimultaneouslyWorksCorrectly() =
         match mockTextView with
         | Some textView ->
             // Arrange
@@ -187,7 +187,7 @@ type WorkerProcessManagerTests() =
     // FC-004品質改善: 動的待機機能のテスト
 
     [<Test>]
-    member _.WaitForSocketFile_WithExistingFile_ReturnsTrue() =
+    member _.WaitForSocketFileWithExistingFileReturnsTrue() =
         task {
             // Arrange
             let testSocketPath = Path.Combine(Path.GetTempPath(), "test-socket-exists.sock")
@@ -205,7 +205,7 @@ type WorkerProcessManagerTests() =
         }
 
     [<Test>]
-    member _.WaitForSocketFile_WithNonExistingFile_ReturnsFalse() =
+    member _.WaitForSocketFileWithNonExistingFileReturnsFalse() =
         task {
             // Arrange
             let testSocketPath =
@@ -219,7 +219,7 @@ type WorkerProcessManagerTests() =
         }
 
     [<Test>]
-    member _.WaitForSocketFile_WithDelayedFile_ReturnsTrue() =
+    member _.WaitForSocketFileWithDelayedFileReturnsTrue() =
         task {
             // Arrange
             let testSocketPath = Path.Combine(Path.GetTempPath(), "test-socket-delayed.sock")

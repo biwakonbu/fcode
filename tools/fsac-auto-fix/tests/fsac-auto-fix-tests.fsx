@@ -386,7 +386,8 @@ let runTestSuite (testCases: TestCase list) (suiteName: string) : TestResult lis
 
 let runAllTests () =
     printfn "🔬 F# FSAC Auto-Fix Tool Test Suite"
-    printfn $"📅 Test Run: {DateTime.Now.ToString(\"yyyy-MM-dd HH:mm:ss\")}"
+    let now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+    printfn $"📅 Test Run: {now}"
     printfn ""
     
     let mutable allResults = []

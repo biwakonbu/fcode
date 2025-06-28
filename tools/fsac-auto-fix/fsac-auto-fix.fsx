@@ -96,6 +96,68 @@ let iDisposableTypes = Set.ofList [
 let needsNewKeyword (typeName: string) : bool =
     iDisposableTypes.Contains typeName
 
+// 安全性チェック関数群
+
+// 文字列・コメント検出関数（改良版）
+let isInStringOrComment (content: string) (index: int) : bool =
+    try
+        let beforeContent = content.Substring(0, index)
+        
+        // 文字列内チェック（エスケープ文字考慮）
+        let mutable inString = false
+        let mutable escape = false
+        for c in beforeContent do
+            match c with
+            | '\\' when not escape -> escape <- true
+            | '"' when not escape -> inString <- not inString
+            | _ -> escape <- false
+        
+        // コメント内チェック
+        let lastLineStart = max 0 (beforeContent.LastIndexOf('\n') + 1)
+        let currentLine = beforeContent.Substring(lastLineStart)
+        let inComment = currentLine.Contains("//")
+        
+        inString || inComment
+    with
+    | _ -> true  // エラー時は安全側に倒してスキップ
+
+// 複雑な式の検出（優先順位問題を起こしやすい）
+let hasComplexExpression (expr: string) : bool =
+    expr.Contains("+") || expr.Contains("-") || expr.Contains("*") || expr.Contains("/") ||
+    expr.Contains("&&") || expr.Contains("||") || expr.Contains("=") ||
+    expr.Contains("<") || expr.Contains(">") || expr.Contains(".") ||
+    expr.Contains(",") || expr.Contains("[") || expr.Contains("{") ||
+    expr.Contains("if ") || expr.Contains("match ") || expr.Contains("let ")
+
+// プロパティアクセスチェーン検出
+let hasPropertyChain (content: string) (index: int) : bool =
+    try
+        let afterIndex = index + 10 // マッチ後の数文字をチェック
+        if afterIndex < content.Length then
+            let afterContent = content.Substring(afterIndex, min 20 (content.Length - afterIndex))
+            afterContent.Contains(".")
+        else
+            false
+    with
+    | _ -> false
+
+// ネストした括弧の検出
+let hasNestedParentheses (expr: string) : bool =
+    let openCount = expr.ToCharArray() |> Array.filter (fun c -> c = '(') |> Array.length
+    let closeCount = expr.ToCharArray() |> Array.filter (fun c -> c = ')') |> Array.length
+    openCount > 0 || closeCount > 0
+
+// キーワード周辺の検出（match, if, let等）
+let isNearKeyword (content: string) (index: int) : bool =
+    try
+        let beforeIndex = max 0 (index - 20)
+        let beforeContent = content.Substring(beforeIndex, index - beforeIndex)
+        beforeContent.Contains("match ") || beforeContent.Contains("if ") ||
+        beforeContent.Contains("elif ") || beforeContent.Contains("while ") ||
+        beforeContent.Contains("for ") || beforeContent.Contains("let ")
+    with
+    | _ -> false
+
 // FSAC0004: 不要な括弧除去パターン
 let safeUnnecessaryParenthesesPatterns = [
     // 単純な関数呼び出し（IDisposableコンストラクタを除外）: func(arg) -> func arg
@@ -115,10 +177,14 @@ let safeUnnecessaryParenthesesPatterns = [
                 let funcName = m.Groups.[1].Value
                 let arg = m.Groups.[2].Value
                 
-                // newキーワードがある場合、またはIDisposableコンストラクタの場合はスキップ
-                let beforeMatch = if m.Index > 3 then content.Substring(m.Index - 4, 4) else ""
-                if not (beforeMatch.Contains("new ") || needsNewKeyword funcName) then
-                    result <- result.Substring(0, m.Index) + $"{funcName} {arg}" + result.Substring(m.Index + m.Length)
+                // 安全性チェック（複数条件）
+                if not (isInStringOrComment content m.Index) &&
+                   not (hasPropertyChain content m.Index) &&
+                   not (isNearKeyword content m.Index) then
+                    // newキーワードがある場合、またはIDisposableコンストラクタの場合はスキップ
+                    let beforeMatch = if m.Index > 3 then content.Substring(m.Index - 4, 4) else ""
+                    if not (beforeMatch.Contains("new ") || needsNewKeyword funcName) then
+                        result <- result.Substring(0, m.Index) + $"{funcName} {arg}" + result.Substring(m.Index + m.Length)
             
             result
     }
@@ -131,7 +197,20 @@ let safeUnnecessaryParenthesesPatterns = [
         Examples = ["Process.Start(info) → Process.Start info"; "DateTime.Parse(str) → DateTime.Parse str"]
         Replacement = fun (content: string) ->
             let pattern = Regex(@"([A-Z]\w*\.[A-Z]\w*)\(([^,)]+)\)")
-            pattern.Replace(content, "$1 $2")
+            let matches = pattern.Matches(content)
+            let mutable result = content
+            
+            for i = matches.Count - 1 downto 0 do
+                let m = matches.[i]
+                // 安全性チェック（複数条件）
+                if not (isInStringOrComment content m.Index) &&
+                   not (hasPropertyChain content m.Index) &&
+                   not (hasComplexExpression m.Groups.[2].Value) then
+                    let methodCall = m.Groups.[1].Value
+                    let arg = m.Groups.[2].Value
+                    result <- result.Substring(0, m.Index) + $"{methodCall} {arg}" + result.Substring(m.Index + m.Length)
+            
+            result
     }
     
     // インスタンスメソッド呼び出し: obj.Method(arg) -> obj.Method arg（改良版）
@@ -148,15 +227,19 @@ let safeUnnecessaryParenthesesPatterns = [
             // 後ろから前に処理
             for i = matches.Count - 1 downto 0 do
                 let m = matches.[i]
-                let methodCall = m.Groups.[1].Value
-                let arg = m.Groups.[2].Value.Trim()
-                
-                // 空の引数の場合は括弧を完全に削除
-                if String.IsNullOrEmpty(arg) then
-                    result <- result.Substring(0, m.Index) + methodCall + result.Substring(m.Index + m.Length)
-                // 単一引数の場合は括弧を削除
-                else
-                    result <- result.Substring(0, m.Index) + $"{methodCall} {arg}" + result.Substring(m.Index + m.Length)
+                // 安全性チェック（複数条件）
+                if not (isInStringOrComment content m.Index) &&
+                   not (hasPropertyChain content m.Index) &&
+                   not (hasComplexExpression m.Groups.[2].Value) then
+                    let methodCall = m.Groups.[1].Value
+                    let arg = m.Groups.[2].Value.Trim()
+                    
+                    // 空の引数の場合は括弧を完全に削除
+                    if String.IsNullOrEmpty(arg) then
+                        result <- result.Substring(0, m.Index) + methodCall + result.Substring(m.Index + m.Length)
+                    // 単一引数の場合は括弧を削除
+                    else
+                        result <- result.Substring(0, m.Index) + $"{methodCall} {arg}" + result.Substring(m.Index + m.Length)
             
             result
     }
@@ -175,15 +258,17 @@ let safeUnnecessaryParenthesesPatterns = [
             // 後ろから前に処理（インデックスが変わらないように）
             for i = matches.Count - 1 downto 0 do
                 let m = matches.[i]
-                let castType = m.Groups.[1].Value
-                let expr = m.Groups.[2].Value
-                
-                // 複雑な式（演算子、メソッド呼び出し、複数引数を含む）は括弧を保持
-                if expr.Contains("+") || expr.Contains("-") || expr.Contains("*") || expr.Contains("/") || 
-                   expr.Contains(".") || expr.Contains(",") then
-                    result <- result.Substring(0, m.Index) + $"{castType} ({expr})" + result.Substring(m.Index + m.Length)
-                else
-                    result <- result.Substring(0, m.Index) + $"{castType} {expr}" + result.Substring(m.Index + m.Length)
+                // 安全性チェック（複数条件）
+                if not (isInStringOrComment content m.Index) &&
+                   not (isNearKeyword content m.Index) then
+                    let castType = m.Groups.[1].Value
+                    let expr = m.Groups.[2].Value
+                    
+                    // 複雑な式は括弧を保持、単純な式のみ変換
+                    if hasComplexExpression expr then
+                        result <- result.Substring(0, m.Index) + $"{castType} ({expr})" + result.Substring(m.Index + m.Length)
+                    else
+                        result <- result.Substring(0, m.Index) + $"{castType} {expr}" + result.Substring(m.Index + m.Length)
             
             result
     }
@@ -235,11 +320,14 @@ let safeUnnecessaryParenthesesPatterns = [
             // 後ろから前に処理
             for i = matches.Count - 1 downto 0 do
                 let m = matches.[i]
-                let methodCall = m.Groups.[1].Value
-                let nextAccess = m.Groups.[2].Value
-                
-                // 括弧で囲んで優先順位を明確に
-                result <- result.Substring(0, m.Index) + $"({methodCall}).{nextAccess}" + result.Substring(m.Index + m.Length)
+                // 安全性チェック（複数条件）
+                if not (isInStringOrComment content m.Index) &&
+                   not (hasNestedParentheses m.Groups.[1].Value) then
+                    let methodCall = m.Groups.[1].Value
+                    let nextAccess = m.Groups.[2].Value
+                    
+                    // 括弧で囲んで優先順位を明確に
+                    result <- result.Substring(0, m.Index) + $"({methodCall}).{nextAccess}" + result.Substring(m.Index + m.Length)
             
             result
     }
@@ -271,6 +359,20 @@ let unusedOpenPatterns = [
     }
 ]
 
+// 安全なパターンと危険なパターンの分離
+let safePatterns = [
+    1  // Safe static method call (improved)
+    3  // Cast function call (improved)
+    5  // Pipeline function call
+]
+
+let riskPatterns = [
+    0  // Safe simple function call
+    2  // Safe instance method call (improved)
+    4  // Match expression function call
+    6  // Method chain precedence protection
+]
+
 // 段階的修正パターン
 let getFixPatternsByLevel (level: FixLevel) (targetDiagnostic: string) =
     let allPatterns = safeUnnecessaryParenthesesPatterns @ redundantQualifierPatterns @ unusedOpenPatterns
@@ -282,18 +384,16 @@ let getFixPatternsByLevel (level: FixLevel) (targetDiagnostic: string) =
         // レベルに応じたパターン選択
         match level with
         | Conservative ->
-            // 最も安全な修正のみ（型キャスト、静的メソッド呼び出し）
-            [
-                safeUnnecessaryParenthesesPatterns.[1]  // Safe static method call (improved)
-                safeUnnecessaryParenthesesPatterns.[3]  // Cast function call (improved) 
-                safeUnnecessaryParenthesesPatterns.[5]  // Pipeline function call
-                safeUnnecessaryParenthesesPatterns.[6]  // Method chain precedence protection
-            ] @ redundantQualifierPatterns
+            // 最も安全な修正のみ（静的メソッド、型キャストのみ）
+            safePatterns |> List.map (fun i -> safeUnnecessaryParenthesesPatterns.[i]) 
+            |> List.append redundantQualifierPatterns
         | Standard ->
-            // 標準的な修正（IDisposable除外の関数呼び出し含む）
-            safeUnnecessaryParenthesesPatterns @ redundantQualifierPatterns
+            // 標準的な修正（安全パターン + 一部リスクパターン）
+            let safeList = safePatterns |> List.map (fun i -> safeUnnecessaryParenthesesPatterns.[i])
+            let limitedRisk = [safeUnnecessaryParenthesesPatterns.[0]]  // 単純関数呼び出しのみ
+            safeList @ limitedRisk @ redundantQualifierPatterns
         | Aggressive ->
-            // すべての修正（未使用open文含む）
+            // すべての修正（全リスク許容）
             safeUnnecessaryParenthesesPatterns @ redundantQualifierPatterns @ unusedOpenPatterns
 
 // ===============================================

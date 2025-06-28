@@ -446,7 +446,7 @@ type ProcessSupervisor(config: SupervisorConfig) =
 
             let proc = Process.Start(processInfo)
 
-            if proc = null then
+            if isNull proc then
                 logError "Supervisor" $"Failed to start process for pane: {paneId}"
                 None
             else

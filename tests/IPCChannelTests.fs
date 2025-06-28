@@ -44,7 +44,7 @@ type IPCChannelTests() =
                     MaxRetryAttempts = 2
                     RetryDelayMs = 100 }
 
-            use channel = IPCChannel(config)
+            use channel = new IPCChannel(config)
             let! _ = channel.StartAsync()
 
             // Simulate failure with invalid command
@@ -104,7 +104,7 @@ type IPCChannelTests() =
                     BackpressureThreshold = 5
                     BackpressurePolicy = DropOldest }
 
-            use channel = IPCChannel(config)
+            use channel = new IPCChannel(config)
             let! _ = channel.StartAsync()
 
             // Act - Send many requests quickly to trigger backpressure

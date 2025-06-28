@@ -143,9 +143,9 @@ type ColorSchemesTests() =
 
     [<Test>]
     member _.``複数ペインへの同時適用テスト``() =
-        let dev1Pane = FrameView("dev1")
-        let dev2Pane = FrameView("dev2")
-        let qa1Pane = FrameView("qa1")
+        let dev1Pane = new FrameView("dev1")
+        let dev2Pane = new FrameView("dev2")
+        let qa1Pane = new FrameView("qa1")
 
         // 複数ペインに異なるカラースキームを適用
         applySchemeByRole dev1Pane "dev1"

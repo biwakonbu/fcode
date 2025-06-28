@@ -63,7 +63,7 @@ module FileLockManager =
         member _.RemoveLock(lockId: string) =
             match locks.TryRemove(lockId) with
             | true, lock ->
-                fileToLocks.AddOrUpdate(lock.FilePath, Set.empty, fun _ existing -> existing.Remove(lockId))
+                fileToLocks.AddOrUpdate(lock.FilePath, Set.empty<string>, fun _ existing -> existing.Remove(lockId))
                 |> ignore
 
                 Some lock
@@ -116,6 +116,37 @@ module FileLockManager =
         let hash = Math.Abs(filePath.GetHashCode()).ToString("X8")
         $"lock-{paneId}-{hash}-{timestamp}"
 
+    // ロック情報ファイル保存（内部関数）
+    let private saveLockToFile (config: LockManagerConfig) (lock: FileLock) =
+        try
+            if not (Directory.Exists(config.LocksDirectory)) then
+                Directory.CreateDirectory(config.LocksDirectory) |> ignore
+
+            let lockFile = Path.Combine(config.LocksDirectory, $"{lock.LockId}.json")
+
+            let json =
+                JsonSerializer.Serialize(lock, JsonSerializerOptions(WriteIndented = true))
+
+            File.WriteAllText(lockFile, json)
+
+            Ok()
+        with ex ->
+            Logger.logException "FileLockManager" $"ロックファイル保存エラー: {lock.LockId}" ex
+            Error $"保存エラー: {ex.Message}"
+
+    // ロックファイル削除（内部関数）
+    let private deleteLockFile (config: LockManagerConfig) (lockId: string) =
+        try
+            let lockFile = Path.Combine(config.LocksDirectory, $"{lockId}.json")
+
+            if File.Exists(lockFile) then
+                File.Delete(lockFile)
+
+            Ok()
+        with ex ->
+            Logger.logException "FileLockManager" $"ロックファイル削除エラー: {lockId}" ex
+            Error $"削除エラー: {ex.Message}"
+
     // ロック競合チェック
     let private checkLockConflict (filePath: string) (requestType: LockType) (requestingPane: string) =
         let existingLocks = lockRegistry.GetLocksForFile(filePath)
@@ -166,7 +197,7 @@ module FileLockManager =
                       ConflictingLocks = conflicts
                       ConflictReason = $"{conflicts.Length}個の競合ロックが存在" }
 
-                Logger.logWarn "FileLockManager" $"ロック競合検出: {paneId} -> {absolutePath} ({lockType})"
+                Logger.logWarning "FileLockManager" $"ロック競合検出: {paneId} -> {absolutePath} ({lockType})"
                 LockConflict(conflicts.[0].PaneId, conflicts.[0].LockType)
             else
                 let lock =
@@ -188,7 +219,7 @@ module FileLockManager =
                 LockAcquired lockId
 
         with ex ->
-            Logger.logError "FileLockManager" $"ロック取得エラー: {paneId} -> {filePath}" ex
+            Logger.logException "FileLockManager" $"ロック取得エラー: {paneId} -> {filePath}" ex
             LockError $"ロック取得例外: {ex.Message}"
 
     // ファイルロック解放
@@ -202,10 +233,10 @@ module FileLockManager =
                 Logger.logInfo "FileLockManager" $"ロック解放成功: {lock.PaneId} -> {lock.FilePath} [ID: {lockId}]"
                 Ok()
             | None ->
-                Logger.logWarn "FileLockManager" $"解放対象ロック未存在: {lockId}"
+                Logger.logWarning "FileLockManager" $"解放対象ロック未存在: {lockId}"
                 Error $"ロック未存在: {lockId}"
         with ex ->
-            Logger.logError "FileLockManager" $"ロック解放エラー: {lockId}" ex
+            Logger.logException "FileLockManager" $"ロック解放エラー: {lockId}" ex
             Error $"解放例外: {ex.Message}"
 
     // ハートビート更新
@@ -215,10 +246,10 @@ module FileLockManager =
                 Logger.logDebug "FileLockManager" $"ハートビート更新: {lockId}"
                 Ok()
             else
-                Logger.logWarn "FileLockManager" $"ハートビート更新失敗 - ロック未存在: {lockId}"
+                Logger.logWarning "FileLockManager" $"ハートビート更新失敗 - ロック未存在: {lockId}"
                 Error $"ロック未存在: {lockId}"
         with ex ->
-            Logger.logError "FileLockManager" $"ハートビート更新エラー: {lockId}" ex
+            Logger.logException "FileLockManager" $"ハートビート更新エラー: {lockId}" ex
             Error $"ハートビート例外: {ex.Message}"
 
     // ロック期間延長
@@ -237,10 +268,10 @@ module FileLockManager =
                 Logger.logInfo "FileLockManager" $"ロック期間延長: {lockId} (+{additionalSeconds}秒)"
                 Ok()
             | None ->
-                Logger.logWarn "FileLockManager" $"延長対象ロック未存在: {lockId}"
+                Logger.logWarning "FileLockManager" $"延長対象ロック未存在: {lockId}"
                 Error $"ロック未存在: {lockId}"
         with ex ->
-            Logger.logError "FileLockManager" $"ロック延長エラー: {lockId}" ex
+            Logger.logException "FileLockManager" $"ロック延長エラー: {lockId}" ex
             Error $"延長例外: {ex.Message}"
 
     // 期限切れロックのクリーンアップ
@@ -266,7 +297,7 @@ module FileLockManager =
             Logger.logInfo "FileLockManager" $"期限切れロッククリーンアップ完了: {cleanedCount}個削除"
             Ok cleanedCount
         with ex ->
-            Logger.logError "FileLockManager" $"クリーンアップエラー" ex
+            Logger.logException "FileLockManager" $"クリーンアップエラー" ex
             Error $"クリーンアップ例外: {ex.Message}"
 
     // ペイン別ロック一覧取得
@@ -278,7 +309,7 @@ module FileLockManager =
             Logger.logDebug "FileLockManager" $"ペインロック一覧取得: {paneId} - {paneLocks.Length}個"
             Ok paneLocks
         with ex ->
-            Logger.logError "FileLockManager" $"ペインロック取得エラー: {paneId}" ex
+            Logger.logException "FileLockManager" $"ペインロック取得エラー: {paneId}" ex
             Error $"取得例外: {ex.Message}"
 
     // ファイル別ロック一覧取得
@@ -290,7 +321,7 @@ module FileLockManager =
             Logger.logDebug "FileLockManager" $"ファイルロック一覧取得: {absolutePath} - {fileLocks.Length}個"
             Ok fileLocks
         with ex ->
-            Logger.logError "FileLockManager" $"ファイルロック取得エラー: {filePath}" ex
+            Logger.logException "FileLockManager" $"ファイルロック取得エラー: {filePath}" ex
             Error $"取得例外: {ex.Message}"
 
     // ロック統計情報取得
@@ -320,39 +351,8 @@ module FileLockManager =
             Logger.logDebug "FileLockManager" $"ロック統計取得完了: {stats.TotalLocks}個のロック"
             Ok stats
         with ex ->
-            Logger.logError "FileLockManager" $"統計取得エラー" ex
+            Logger.logException "FileLockManager" $"統計取得エラー" ex
             Error $"統計例外: {ex.Message}"
-
-    // ロック情報ファイル保存（内部関数）
-    let private saveLockToFile (config: LockManagerConfig) (lock: FileLock) =
-        try
-            if not (Directory.Exists(config.LocksDirectory)) then
-                Directory.CreateDirectory(config.LocksDirectory) |> ignore
-
-            let lockFile = Path.Combine(config.LocksDirectory, $"{lock.LockId}.json")
-
-            let json =
-                JsonSerializer.Serialize(lock, JsonSerializerOptions(WriteIndented = true))
-
-            File.WriteAllText(lockFile, json)
-
-            Ok()
-        with ex ->
-            Logger.logError "FileLockManager" $"ロックファイル保存エラー: {lock.LockId}" ex
-            Error $"保存エラー: {ex.Message}"
-
-    // ロックファイル削除（内部関数）
-    let private deleteLockFile (config: LockManagerConfig) (lockId: string) =
-        try
-            let lockFile = Path.Combine(config.LocksDirectory, $"{lockId}.json")
-
-            if File.Exists(lockFile) then
-                File.Delete(lockFile)
-
-            Ok()
-        with ex ->
-            Logger.logError "FileLockManager" $"ロックファイル削除エラー: {lockId}" ex
-            Error $"削除エラー: {ex.Message}"
 
     // 永続化されたロック復元
     let restorePersistedLocks (config: LockManagerConfig) =
@@ -381,11 +381,11 @@ module FileLockManager =
                         else
                             File.Delete(lockFile)
                     with ex ->
-                        Logger.logWarn "FileLockManager" $"ロックファイル復元失敗: {lockFile} - {ex.Message}"
+                        Logger.logWarning "FileLockManager" $"ロックファイル復元失敗: {lockFile} - {ex.Message}"
                         File.Delete(lockFile) // 破損ファイル削除
 
                 Logger.logInfo "FileLockManager" $"永続ロック復元完了: {restoredCount}個復元"
                 Ok restoredCount
         with ex ->
-            Logger.logError "FileLockManager" $"ロック復元エラー" ex
+            Logger.logException "FileLockManager" $"ロック復元エラー" ex
             Error $"復元例外: {ex.Message}"

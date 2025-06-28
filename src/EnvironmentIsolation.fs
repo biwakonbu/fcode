@@ -99,7 +99,7 @@ module EnvironmentIsolation =
             | null -> None
             | value -> Some value
         with ex ->
-            Logger.logWarn "EnvironmentIsolation" $"環境変数取得エラー: {varName} - {ex.Message}"
+            Logger.logWarning "EnvironmentIsolation" $"環境変数取得エラー: {varName} - {ex.Message}"
             None
 
     // 継承すべき環境変数の収集
@@ -122,7 +122,7 @@ module EnvironmentIsolation =
             Logger.logInfo "EnvironmentIsolation" $"ロール別環境変数適用: {role} - {roleVars.Count}個"
             roleVars
         | None ->
-            Logger.logWarn "EnvironmentIsolation" $"ロール別設定未定義: {role}"
+            Logger.logWarning "EnvironmentIsolation" $"ロール別設定未定義: {role}"
             Map.empty
 
     // 分離環境の作成
@@ -167,7 +167,7 @@ module EnvironmentIsolation =
                 Logger.logInfo "EnvironmentIsolation" $"分離環境作成完了: {paneId} ({validRole}) - {customVars.Count}個のカスタム変数"
                 Ok environment
         with ex ->
-            Logger.logError "EnvironmentIsolation" $"分離環境作成エラー: {paneId}" ex
+            Logger.logException "EnvironmentIsolation" $"分離環境作成エラー: {paneId}" ex
             Error $"環境作成エラー: {ex.Message}"
 
     // 環境変数辞書の構築
@@ -188,7 +188,7 @@ module EnvironmentIsolation =
             Logger.logDebug "EnvironmentIsolation" $"環境辞書構築完了: {environment.PaneId} - {envDict.Count}個の変数"
             Ok envDict
         with ex ->
-            Logger.logError "EnvironmentIsolation" $"環境辞書構築エラー: {environment.PaneId}" ex
+            Logger.logException "EnvironmentIsolation" $"環境辞書構築エラー: {environment.PaneId}" ex
             Error $"辞書構築エラー: {ex.Message}"
 
     // 環境変数の動的更新
@@ -211,7 +211,7 @@ module EnvironmentIsolation =
                 Logger.logInfo "EnvironmentIsolation" $"環境変数更新: {environment.PaneId}.{varName}={value}"
                 Ok(updatedEnvironment, UpdateSuccess)
             elif config.SharedVars.Contains(varName) then
-                Logger.logWarn "EnvironmentIsolation" $"共有変数への更新試行: {varName} (ペイン: {environment.PaneId})"
+                Logger.logWarning "EnvironmentIsolation" $"共有変数への更新試行: {varName} (ペイン: {environment.PaneId})"
                 Ok(environment, VariableConflict varName)
             else
                 // 新しい分離変数として追加
@@ -225,7 +225,7 @@ module EnvironmentIsolation =
                 Logger.logInfo "EnvironmentIsolation" $"新規分離変数追加: {environment.PaneId}.{varName}={value}"
                 Ok(updatedEnvironment, UpdateSuccess)
         with ex ->
-            Logger.logError "EnvironmentIsolation" $"環境変数更新エラー: {environment.PaneId}.{varName}" ex
+            Logger.logException "EnvironmentIsolation" $"環境変数更新エラー: {environment.PaneId}.{varName}" ex
             Error $"更新エラー: {ex.Message}"
 
     // 環境変数の削除
@@ -242,10 +242,10 @@ module EnvironmentIsolation =
                 Logger.logInfo "EnvironmentIsolation" $"環境変数削除: {environment.PaneId}.{varName}"
                 Ok updatedEnvironment
             else
-                Logger.logWarn "EnvironmentIsolation" $"削除対象変数未存在: {environment.PaneId}.{varName}"
+                Logger.logWarning "EnvironmentIsolation" $"削除対象変数未存在: {environment.PaneId}.{varName}"
                 Ok environment
         with ex ->
-            Logger.logError "EnvironmentIsolation" $"環境変数削除エラー: {environment.PaneId}.{varName}" ex
+            Logger.logException "EnvironmentIsolation" $"環境変数削除エラー: {environment.PaneId}.{varName}" ex
             Error $"削除エラー: {ex.Message}"
 
     // 環境の状態保存
@@ -261,7 +261,7 @@ module EnvironmentIsolation =
             Logger.logDebug "EnvironmentIsolation" $"環境状態保存完了: {environment.PaneId}"
             Ok()
         with ex ->
-            Logger.logError "EnvironmentIsolation" $"環境状態保存エラー: {environment.PaneId}" ex
+            Logger.logException "EnvironmentIsolation" $"環境状態保存エラー: {environment.PaneId}" ex
             Error $"保存エラー: {ex.Message}"
 
     // 環境の状態復元
@@ -278,7 +278,7 @@ module EnvironmentIsolation =
                 Logger.logDebug "EnvironmentIsolation" $"環境状態ファイル未存在: {paneId}"
                 Ok None
         with ex ->
-            Logger.logError "EnvironmentIsolation" $"環境状態復元エラー: {paneId}" ex
+            Logger.logException "EnvironmentIsolation" $"環境状態復元エラー: {paneId}" ex
             Error $"復元エラー: {ex.Message}"
 
     // 環境の比較・差分検出
@@ -312,7 +312,7 @@ module EnvironmentIsolation =
 
             Ok comparison
         with ex ->
-            Logger.logError "EnvironmentIsolation" $"環境比較エラー: {env1.PaneId} vs {env2.PaneId}" ex
+            Logger.logException "EnvironmentIsolation" $"環境比較エラー: {env1.PaneId} vs {env2.PaneId}" ex
             Error $"比較エラー: {ex.Message}"
 
     // 環境の妥当性検証
@@ -345,5 +345,5 @@ module EnvironmentIsolation =
                 Error errorMessage
 
         with ex ->
-            Logger.logError "EnvironmentIsolation" $"環境妥当性検証例外: {environment.PaneId}" ex
+            Logger.logException "EnvironmentIsolation" $"環境妥当性検証例外: {environment.PaneId}" ex
             Error $"検証例外: {ex.Message}"

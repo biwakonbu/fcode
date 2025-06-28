@@ -103,7 +103,7 @@ module SessionStateManager =
             let hexString = Convert.ToHexString(hashBytes)
             hexString.[..15] // 16文字のチェックサム
         with ex ->
-            Logger.logError "SessionStateManager" $"チェックサム計算エラー: {state.PaneId}" ex
+            Logger.logException "SessionStateManager" $"チェックサム計算エラー: {state.PaneId}" ex
             "CHECKSUM_ERROR"
 
     // メッセージID生成
@@ -143,7 +143,7 @@ module SessionStateManager =
             Logger.logInfo "SessionStateManager" $"新規セッション状態作成: {paneId} [ID: {sessionId}]"
             Ok stateWithChecksum
         with ex ->
-            Logger.logError "SessionStateManager" $"セッション状態作成エラー: {paneId}" ex
+            Logger.logException "SessionStateManager" $"セッション状態作成エラー: {paneId}" ex
             Error $"作成エラー: {ex.Message}"
 
     // セッション状態ファイルパス取得
@@ -190,7 +190,7 @@ module SessionStateManager =
             Logger.logInfo "SessionStateManager" $"セッション状態保存: {state.PaneId} - {state.ConversationHistory.Length}メッセージ"
             Ok stateWithUpdatedChecksum
         with ex ->
-            Logger.logError "SessionStateManager" $"セッション状態保存エラー: {state.PaneId}" ex
+            Logger.logException "SessionStateManager" $"セッション状態保存エラー: {state.PaneId}" ex
             Error $"保存エラー: {ex.Message}"
 
     // セッション状態読み込み
@@ -217,7 +217,7 @@ module SessionStateManager =
                 let currentChecksum = calculateStateChecksum state
 
                 if state.StateChecksum <> currentChecksum then
-                    Logger.logWarn
+                    Logger.logWarning
                         "SessionStateManager"
                         $"チェックサム不一致: {paneId} - 保存時:{state.StateChecksum} 現在:{currentChecksum}"
                     // チェックサム更新して続行
@@ -233,7 +233,7 @@ module SessionStateManager =
                 Logger.logInfo "SessionStateManager" $"セッション状態ファイル未存在: {paneId}"
                 Ok None
         with ex ->
-            Logger.logError "SessionStateManager" $"セッション状態読み込みエラー: {paneId}" ex
+            Logger.logException "SessionStateManager" $"セッション状態読み込みエラー: {paneId}" ex
             Error $"読み込みエラー: {ex.Message}"
 
     // セッション初期化または復元
@@ -261,7 +261,7 @@ module SessionStateManager =
                     createNewSessionState config paneId workingDir environment
                 | Error e -> Error e
         with ex ->
-            Logger.logError "SessionStateManager" $"セッション初期化エラー: {paneId}" ex
+            Logger.logException "SessionStateManager" $"セッション初期化エラー: {paneId}" ex
             Error $"初期化エラー: {ex.Message}"
 
     // メッセージ追加
@@ -294,10 +294,10 @@ module SessionStateManager =
                 Logger.logDebug "SessionStateManager" $"メッセージ追加: {paneId} ({role}) - {content.Length}文字"
                 Ok updatedSession
             | None ->
-                Logger.logWarn "SessionStateManager" $"メッセージ追加失敗 - セッション未存在: {paneId}"
+                Logger.logWarning "SessionStateManager" $"メッセージ追加失敗 - セッション未存在: {paneId}"
                 Error $"セッション未存在: {paneId}"
         with ex ->
-            Logger.logError "SessionStateManager" $"メッセージ追加エラー: {paneId}" ex
+            Logger.logException "SessionStateManager" $"メッセージ追加エラー: {paneId}" ex
             Error $"メッセージ追加例外: {ex.Message}"
 
     // ファイルハンドル管理
@@ -315,10 +315,10 @@ module SessionStateManager =
                 Logger.logDebug "SessionStateManager" $"ファイルハンドル更新: {paneId} - {handles.Count}個"
                 Ok updatedSession
             | None ->
-                Logger.logWarn "SessionStateManager" $"ファイルハンドル更新失敗 - セッション未存在: {paneId}"
+                Logger.logWarning "SessionStateManager" $"ファイルハンドル更新失敗 - セッション未存在: {paneId}"
                 Error $"セッション未存在: {paneId}"
         with ex ->
-            Logger.logError "SessionStateManager" $"ファイルハンドル更新エラー: {paneId}" ex
+            Logger.logException "SessionStateManager" $"ファイルハンドル更新エラー: {paneId}" ex
             Error $"更新例外: {ex.Message}"
 
     // 環境変数更新
@@ -336,10 +336,10 @@ module SessionStateManager =
                 Logger.logDebug "SessionStateManager" $"環境変数更新: {paneId} - {environment.Count}個"
                 Ok updatedSession
             | None ->
-                Logger.logWarn "SessionStateManager" $"環境変数更新失敗 - セッション未存在: {paneId}"
+                Logger.logWarning "SessionStateManager" $"環境変数更新失敗 - セッション未存在: {paneId}"
                 Error $"セッション未存在: {paneId}"
         with ex ->
-            Logger.logError "SessionStateManager" $"環境変数更新エラー: {paneId}" ex
+            Logger.logException "SessionStateManager" $"環境変数更新エラー: {paneId}" ex
             Error $"更新例外: {ex.Message}"
 
     // 期限切れセッション削除
@@ -364,7 +364,7 @@ module SessionStateManager =
             Logger.logInfo "SessionStateManager" $"期限切れセッションクリーンアップ完了: {cleanupCount}個削除"
             Ok cleanupCount
         with ex ->
-            Logger.logError "SessionStateManager" $"クリーンアップエラー" ex
+            Logger.logException "SessionStateManager" $"クリーンアップエラー" ex
             Error $"クリーンアップ例外: {ex.Message}"
 
     // 全セッション保存
@@ -379,12 +379,12 @@ module SessionStateManager =
                 | Ok _ -> savedCount <- savedCount + 1
                 | Error e ->
                     errorCount <- errorCount + 1
-                    Logger.logWarn "SessionStateManager" $"セッション保存失敗: {session.PaneId} - {e}"
+                    Logger.logWarning "SessionStateManager" $"セッション保存失敗: {session.PaneId} - {e}"
 
             Logger.logInfo "SessionStateManager" $"全セッション保存完了: {savedCount}個成功, {errorCount}個失敗"
             Ok(savedCount, errorCount)
         with ex ->
-            Logger.logError "SessionStateManager" $"全セッション保存エラー" ex
+            Logger.logException "SessionStateManager" $"全セッション保存エラー" ex
             Error $"保存例外: {ex.Message}"
 
     // セッション統計取得
@@ -401,8 +401,14 @@ module SessionStateManager =
                     |> Array.groupBy (fun s -> s.PaneId)
                     |> Array.map (fun (pane, sessions) -> (pane, sessions.Length))
                     |> Map.ofArray
-                   OldestSession = allSessions |> Array.map (fun s -> s.CreatedAt) |> Array.tryMin
-                   NewestActivity = allSessions |> Array.map (fun s -> s.LastActivity) |> Array.tryMax
+                   OldestSession = 
+                    if allSessions.Length > 0 then
+                        allSessions |> Array.map (fun s -> s.CreatedAt) |> Array.min |> Some
+                    else None
+                   NewestActivity = 
+                    if allSessions.Length > 0 then
+                        allSessions |> Array.map (fun s -> s.LastActivity) |> Array.max |> Some
+                    else None
                    AverageMessagesPerSession =
                     if allSessions.Length > 0 then
                         float (allSessions |> Array.sumBy (fun s -> s.ConversationHistory.Length))
@@ -413,5 +419,5 @@ module SessionStateManager =
             Logger.logDebug "SessionStateManager" $"セッション統計取得完了: {stats.TotalActiveSessions}個のアクティブセッション"
             Ok stats
         with ex ->
-            Logger.logError "SessionStateManager" $"統計取得エラー" ex
+            Logger.logException "SessionStateManager" $"統計取得エラー" ex
             Error $"統計例外: {ex.Message}"

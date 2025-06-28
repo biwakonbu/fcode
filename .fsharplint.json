@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "FL0014": {
+      "enabled": false,
+      "config": {
+        "reason": "IDisposableオブジェクトのリソース管理明示のため、F# Compilerの推奨に従う"
+      }
+    }
+  },
+  "ignoreFiles": [
+    "**/obj/**",
+    "**/bin/**",
+    "**/.git/**"
+  ]
+}

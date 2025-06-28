@@ -48,7 +48,7 @@ type ColorSchemesTests() =
 
     [<Test>]
     member _.``開発者ペイン用カラースキーム適用テスト``() =
-        let frameView = FrameView("test")
+        let frameView = new FrameView("test")
 
         // dev1ペインのカラースキーム適用
         applySchemeByRole frameView "dev1"
@@ -64,7 +64,7 @@ type ColorSchemesTests() =
 
     [<Test>]
     member _.``QAペイン用カラースキーム適用テスト``() =
-        let frameView = FrameView("test")
+        let frameView = new FrameView("test")
 
         // qa1ペインのカラースキーム適用
         applySchemeByRole frameView "qa1"
@@ -76,14 +76,14 @@ type ColorSchemesTests() =
 
     [<Test>]
     member _.``UXペイン用カラースキーム適用テスト``() =
-        let frameView = FrameView("test")
+        let frameView = new FrameView("test")
 
         applySchemeByRole frameView "ux"
         Assert.That(frameView.ColorScheme, Is.EqualTo(uxScheme), "uxにuxSchemeが適用されること")
 
     [<Test>]
     member _.``PMペイン用カラースキーム適用テスト``() =
-        let frameView = FrameView("test")
+        let frameView = new FrameView("test")
 
         // pm役割のテスト
         applySchemeByRole frameView "pm"
@@ -99,7 +99,7 @@ type ColorSchemesTests() =
 
     [<Test>]
     member _.``会話ペイン用カラースキーム適用テスト``() =
-        let frameView = FrameView("test")
+        let frameView = new FrameView("test")
 
         // chat役割のテスト
         applySchemeByRole frameView "chat"
@@ -111,7 +111,7 @@ type ColorSchemesTests() =
 
     [<Test>]
     member _.``大文字小文字を無視したカラースキーム適用テスト``() =
-        let frameView = FrameView("test")
+        let frameView = new FrameView("test")
 
         // 大文字でのテスト
         applySchemeByRole frameView "DEV1"
@@ -123,7 +123,7 @@ type ColorSchemesTests() =
 
     [<Test>]
     member _.``未定義役割のデフォルトカラースキーム適用テスト``() =
-        let frameView = FrameView("test")
+        let frameView = new FrameView("test")
 
         // 未定義の役割
         applySchemeByRole frameView "unknown"

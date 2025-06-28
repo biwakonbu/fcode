@@ -18,7 +18,7 @@ type WorkerProcessManagerTests() =
     member _.Setup() =
         // Terminal.Guiの初期化をスキップ（テスト環境では困難）
         // 代わりにモックのTextViewを使用
-        mockTextView <- Some(TextView())
+        mockTextView <- Some(new TextView())
 
     [<TearDown>]
     member _.TearDown() =

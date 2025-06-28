@@ -1,8 +1,8 @@
-module fcode.Tests.ClaudeCodeProcessTests
+module FCode.Tests.ClaudeCodeProcessTests
 
 open NUnit.Framework
 open Terminal.Gui
-open TuiPoC.ClaudeCodeProcess
+open FCode.ClaudeCodeProcess
 open System.IO
 
 [<TestFixture>]
@@ -13,7 +13,7 @@ type ClaudeCodeProcessTests() =
     [<SetUp>]
     member _.Setup() =
         // CI環境でのTerminal.Gui初期化スキップ
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if not isCI then
             try
@@ -95,7 +95,7 @@ type ClaudeCodeProcessTests() =
     [<Test>]
     member _.``重複セッション起動テスト - モック``() =
         // CI環境ではスキップ（実際のプロセス起動が必要）
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if isCI then
             Assert.Ignore("Skipped in CI environment - actual process launching required")
@@ -107,14 +107,14 @@ type ClaudeCodeProcessTests() =
                 let paneId = "test_pane"
                 let workingDir = Directory.GetCurrentDirectory()
                 // Claude CLIが存在しない環境でも例外が発生しないことを確認
-                let mockTextView = new TextView()
+                let mockTextView = TextView()
                 Assert.DoesNotThrow(fun () -> manager.StartSession(paneId, workingDir, mockTextView) |> ignore)
             | None -> Assert.Fail("SessionManagerが初期化されていない")
 
     [<Test>]
     member _.``無効なディレクトリでのセッション起動テスト``() =
         // CI環境ではスキップ（実際のプロセス起動が必要）
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if isCI then
             Assert.Ignore("Skipped in CI environment - actual process launching required")
@@ -124,6 +124,6 @@ type ClaudeCodeProcessTests() =
                 let paneId = "test_pane"
                 let invalidDir = "/nonexistent/directory"
                 // 無効なディレクトリでのセッション起動は例外を適切に処理すること
-                let mockTextView = new TextView()
+                let mockTextView = TextView()
                 Assert.DoesNotThrow(fun () -> manager.StartSession(paneId, invalidDir, mockTextView) |> ignore)
             | None -> Assert.Fail("SessionManagerが初期化されていない")

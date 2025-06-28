@@ -12,7 +12,7 @@ type ProcessSupervisorTests() =
     member _.``ProcessSupervisor初期化テスト``() =
         // Arrange & Act
         let config = defaultConfig
-        use supervisor = new ProcessSupervisor(config)
+        use supervisor = ProcessSupervisor(config)
 
         // Assert
         Assert.That(config.HeartbeatIntervalMs, Is.EqualTo(2000))
@@ -285,7 +285,7 @@ type ProcessSupervisorTests() =
     [<Test>]
     member _.``グローバル関数の存在確認テスト``() =
         // CI環境ではスキップ（System.Management依存）
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if isCI then
             Assert.Ignore("Skipped in CI environment due to System.Management dependencies")
@@ -300,7 +300,7 @@ type ProcessSupervisorTests() =
     [<Test>]
     member _.``Worker管理関数のテスト``() =
         // CI環境ではスキップ（System.Management依存）
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if isCI then
             Assert.Ignore("Skipped in CI environment due to System.Management dependencies")
@@ -370,7 +370,7 @@ type ProcessSupervisorTests() =
         buffer.Add(30.0)
 
         // Assert
-        let average = buffer.GetAverage(fun x -> x)
+        let average = buffer.GetAverage(id)
         Assert.That(average, Is.EqualTo(20.0).Within(0.01))
 
     [<Test>]

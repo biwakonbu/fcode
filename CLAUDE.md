@@ -145,3 +145,29 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 
 - **重複回避**: github issue や PR を立てる時は重複が無いか確認してから対応して
 - **PR管理**: PR は issue の実装を対応した場合関連付けておいて
+
+## コーディング規約
+
+### F# スタイルガイド
+
+#### `new` キーワードの使用方針
+プロジェクトでは F# Compiler の推奨に従い、IDisposableオブジェクトのリソース管理を明示的に表現する方針を採用：
+
+**IDisposableオブジェクト** - `new` キーワード必須:
+```fsharp
+let frameView = new FrameView("test")
+let textView = new TextView()
+let supervisor = new ProcessSupervisor(config)
+```
+
+**通常のオブジェクト** - `new` キーワード省略:
+```fsharp
+let handler = EmacsKeyHandler(panes, sessionManager)
+let manager = SessionManager()
+```
+
+**理由**: IDisposableオブジェクトではリソース所有権を明確にし、メモリリークを防止するため
+
+#### 関連設定ファイル
+- `.fsharplint.json`: FL0014ルール無効化（IDisposable優先のため）
+- CI/CDパイプライン: F# Compiler警告をエラーとして扱う

@@ -12,7 +12,7 @@ type ProcessSupervisorTests() =
     member _.``ProcessSupervisor初期化テスト``() =
         // Arrange & Act
         let config = defaultConfig
-        use supervisor = ProcessSupervisor(config)
+        use supervisor = new ProcessSupervisor(config)
 
         // Assert
         Assert.That(config.HeartbeatIntervalMs, Is.EqualTo(2000))

@@ -32,7 +32,7 @@ type UIHelpersTests() =
     [<Test>]
     member _.``findTextViews should find direct TextView``() =
         // Arrange
-        let textView = TextView()
+        let textView = new TextView()
         textView.Text <- "test content"
 
         // Act
@@ -45,8 +45,8 @@ type UIHelpersTests() =
     [<Test>]
     member _.``findTextViews should find TextView inside FrameView ContentView hierarchy``() =
         // Arrange - Program.fsのmakePaneと同じ方法でFrameViewを作成
-        let frameView = FrameView("test")
-        let textView = TextView()
+        let frameView = new FrameView("test")
+        let textView = new TextView()
         textView.Text <- "test content"
         frameView.Add(textView) // これによりContentView階層が作られる
 
@@ -60,7 +60,7 @@ type UIHelpersTests() =
     [<Test>]
     member _.``getTextViewsFromPane should return empty list for pane without TextView``() =
         // Arrange
-        let frameView = FrameView("empty")
+        let frameView = new FrameView("empty")
 
         // Act
         let result = getTextViewsFromPane frameView
@@ -71,10 +71,10 @@ type UIHelpersTests() =
     [<Test>]
     member _.``getTextViewsFromPane should find TextView in ContentView hierarchy``() =
         // Arrange - Program.fsのmakePaneロジックを再現
-        let frameView = FrameView("test")
+        let frameView = new FrameView("test")
         frameView.Border.Effect3D <- false
 
-        let textView = TextView()
+        let textView = new TextView()
         textView.X <- 0
         textView.Y <- 0
         textView.Width <- Dim.Fill()
@@ -94,13 +94,13 @@ type UIHelpersTests() =
     [<Test>]
     member _.``findTextViews should handle multiple nested TextViews``() =
         // Arrange
-        let container = View()
-        let textView1 = TextView()
+        let container = new View()
+        let textView1 = new TextView()
         textView1.Text <- "first"
-        let textView2 = TextView()
+        let textView2 = new TextView()
         textView2.Text <- "second"
 
-        let subContainer = View()
+        let subContainer = new View()
         subContainer.Add(textView2)
         container.Add(textView1)
         container.Add(subContainer)
@@ -117,7 +117,7 @@ type UIHelpersTests() =
     [<Test>]
     member _.``findTextViews should handle empty View without crash``() =
         // Arrange
-        let emptyView = View()
+        let emptyView = new View()
 
         // Act & Assert
         let result = findTextViews emptyView |> Seq.toList

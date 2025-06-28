@@ -16,7 +16,7 @@ type KeyBindingsTests() =
         if not isCI then
             Application.Init()
 
-        let panes = Array.init 8 (fun i -> FrameView("pane" + i.ToString()))
+        let panes = Array.init 8 (fun i -> new FrameView("pane" + i.ToString()))
         panes
 
     let createMockSessionManager () = SessionManager()

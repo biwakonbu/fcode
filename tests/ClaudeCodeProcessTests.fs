@@ -1,8 +1,8 @@
-module fcode.Tests.ClaudeCodeProcessTests
+module FCode.Tests.ClaudeCodeProcessTests
 
 open NUnit.Framework
 open Terminal.Gui
-open TuiPoC.ClaudeCodeProcess
+open FCode.ClaudeCodeProcess
 open System.IO
 
 [<TestFixture>]
@@ -13,7 +13,7 @@ type ClaudeCodeProcessTests() =
     [<SetUp>]
     member _.Setup() =
         // CI環境でのTerminal.Gui初期化スキップ
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if not isCI then
             try
@@ -95,7 +95,7 @@ type ClaudeCodeProcessTests() =
     [<Test>]
     member _.``重複セッション起動テスト - モック``() =
         // CI環境ではスキップ（実際のプロセス起動が必要）
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if isCI then
             Assert.Ignore("Skipped in CI environment - actual process launching required")
@@ -114,7 +114,7 @@ type ClaudeCodeProcessTests() =
     [<Test>]
     member _.``無効なディレクトリでのセッション起動テスト``() =
         // CI環境ではスキップ（実際のプロセス起動が必要）
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if isCI then
             Assert.Ignore("Skipped in CI environment - actual process launching required")

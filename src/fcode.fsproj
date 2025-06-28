@@ -9,6 +9,8 @@
     <Compile Include="ColorSchemes.fs" />
     <Compile Include="UnixDomainSocketManager.fs" />
     <Compile Include="IPCChannel.fs" />
+    <Compile Include="ResourceMonitor.fs" />
+    <Compile Include="ResourceController.fs" />
     <Compile Include="ProcessSupervisor.fs" />
     <Compile Include="PtyNetManager.fs" />
     <Compile Include="ClaudeCodeProcess.fs" />

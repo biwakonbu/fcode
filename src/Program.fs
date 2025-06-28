@@ -10,14 +10,14 @@ open FCode.WorkerProcessManager
 open FCode.UIHelpers
 
 [<EntryPoint>]
-let main _argv =
+let main argv =
     try
         logInfo "Application" "=== fcode TUI Application Starting ==="
-        let argsString = System.String.Join(" ", _argv)
+        let argsString = System.String.Join(" ", argv)
         logInfo "Application" $"Command line args: {argsString}"
 
         // Check if running in CI environment
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if isCI then
             logInfo "Application" "Running in CI environment - skipping Terminal.Gui initialization"
@@ -207,7 +207,7 @@ let main _argv =
             let focusablePanes = [| convo; dev1; dev2; dev3; qa1; qa2; ux; timeline |]
 
             // Create Emacs key handler
-            let emacsKeyHandler = new EmacsKeyHandler(focusablePanes, sessionManager)
+            let emacsKeyHandler = EmacsKeyHandler(focusablePanes, sessionManager)
 
             // Add Emacs-style key handling
             let keyHandler =

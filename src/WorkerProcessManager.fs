@@ -53,7 +53,7 @@ let waitForIPCConnection (socketPath: string) (maxWaitMs: int) =
 
             if socketReady then
                 let config = defaultUdsConfig socketPath
-                let client = new UdsClient(config)
+                let client = UdsClient(config)
 
                 // 接続テストを試行
                 let mutable connected = false
@@ -146,7 +146,7 @@ type WorkerProcessManager() =
 
                             if connectionReady then
                                 let config = defaultUdsConfig socketPath
-                                let client = new UdsClient(config)
+                                let client = UdsClient(config)
                                 let! connection = client.ConnectAsync()
                                 logInfo "WorkerManager" $"IPC connection established for pane: {paneId}"
 

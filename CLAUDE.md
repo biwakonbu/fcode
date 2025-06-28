@@ -145,3 +145,50 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 
 - **重複回避**: github issue や PR を立てる時は重複が無いか確認してから対応して
 - **PR管理**: PR は issue の実装を対応した場合関連付けておいて
+
+## コーディング規約
+
+### F# スタイルガイド
+
+#### `new` キーワードの使用方針
+プロジェクトでは F# Compiler の推奨に従い、IDisposableオブジェクトのリソース管理を明示的に表現する方針を採用：
+
+**IDisposableオブジェクト** - `new` キーワード必須:
+```fsharp
+let frameView = new FrameView("test")
+let textView = new TextView()
+let supervisor = new ProcessSupervisor(config)
+```
+
+**通常のオブジェクト** - `new` キーワード省略:
+```fsharp
+let handler = EmacsKeyHandler(panes, sessionManager)
+let manager = SessionManager()
+```
+
+**理由**: IDisposableオブジェクトではリソース所有権を明確にし、メモリリークを防止するため
+
+#### FSharpLint設定
+
+プロジェクトルートの`.fsharplint.json`で標準的な品質ルールを設定:
+
+- **redundantNewKeyword**: 無効化（IDisposableオブジェクトのnew保持）
+- **functionLength**: 関数長制限（最大80行）
+- **cyclomaticComplexity**: 複雑度制限（最大15）
+- **unusedValue**: 未使用変数検出
+- **unusedOpenStatement**: 未使用openステートメント検出
+- **命名規約**: 全ルール有効（capitals、parameters等）
+- **suggestions**: コード改善提案
+- **その他**: 標準品質ルール全般
+
+#### テスト環境設定
+
+CI環境ではTerminal.Gui初期化をスキップ:
+```fsharp
+let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+if not isCI then Application.Init()
+```
+
+#### 関連設定ファイル
+- `.fsharplint.json`: FSharpLint標準形式での品質ルール設定
+- CI/CDパイプライン: F# Compiler + FSharpLint品質チェック

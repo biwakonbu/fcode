@@ -4,8 +4,6 @@ open System
 open System.Collections.Concurrent
 open System.Diagnostics
 open System.IO
-open System.Net.Sockets
-open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open FCode.Logger
@@ -209,7 +207,7 @@ let createErrorCounter () =
 
 let incrementErrorCount (counter: ErrorCounter) (errorType: string) =
     let now = DateTime.Now
-    counter.LastErrorTime := now
+    counter.LastErrorTime.Value <- now
     counter.ErrorHistory.Add(now)
     counter.TotalErrors <- counter.TotalErrors + 1
 
@@ -448,7 +446,7 @@ type ProcessSupervisor(config: SupervisorConfig) =
 
             let proc = Process.Start(processInfo)
 
-            if proc = null then
+            if isNull proc then
                 logError "Supervisor" $"Failed to start process for pane: {paneId}"
                 None
             else
@@ -874,12 +872,12 @@ type ProcessSupervisor(config: SupervisorConfig) =
                   IPCErrors = counter.IPCErrors
                   ProcessCrashes = counter.ProcessCrashes
                   TimeoutErrors = counter.TimeoutErrors
-                  LastErrorTime = !counter.LastErrorTime
+                  LastErrorTime = counter.LastErrorTime.Value
                   ErrorRate = float counter.TotalErrors }
         | false, _ -> None
 
     // 接続健全性を定期的にチェック
-    member this.StartConnectionHealthMonitoring() =
+    member _.StartConnectionHealthMonitoring() =
         Task.Run(
             Func<Task>(fun () ->
                 task {

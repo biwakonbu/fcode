@@ -1,68 +1,132 @@
 {
+  "globals": {
+    "numIndentationSpaces": 4
+  },
   "rules": {
-    "FL0014": {
-      "enabled": false,
-      "config": {
-        "reason": "IDisposableオブジェクトのリソース管理明示のため、F# Compilerの推奨に従う"
-      }
+    "redundantNewKeyword": {
+      "enabled": false
     },
-    "FL0001": {
+    "functionReimplementation": {
+      "enabled": true
+    },
+    "canBeReplacedWithComposition": {
+      "enabled": true
+    },
+    "reimplementsFunction": {
+      "enabled": true
+    },
+    "uselessBinding": {
+      "enabled": true
+    },
+    "favourIgnoreOverLetWild": {
+      "enabled": true
+    },
+    "wildcardNamedWithAsPattern": {
+      "enabled": true
+    },
+    "unusedValue": {
+      "enabled": true
+    },
+    "unusedOpenStatement": {
+      "enabled": true
+    },
+    "suggestions": {
+      "enabled": true
+    },
+    "numberOfItemsInTuple": {
       "enabled": true,
       "config": {
-        "maxLinesInFunction": 80,
-        "maxLinesInClass": 500,
-        "maxCharactersOnLine": 120
+        "maxItems": 4
       }
     },
-    "FL0002": {
+    "functionLength": {
+      "enabled": true,
+      "config": {
+        "maxLines": 80
+      }
+    },
+    "memberNamesNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "publicValuesNamesNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "nonPublicValuesNamesNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "exceptionNamesNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "typeNamesNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "interfaceNamesNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "unionCasesNamesNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "moduleNamesNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "literalNamesNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "namespaceNamesNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "parametersNeedNotBeginWithCaps": {
+      "enabled": true
+    },
+    "cyclomaticComplexity": {
       "enabled": true,
       "config": {
         "maxComplexity": 15
       }
     },
-    "FL0003": {
+    "maxNumberOfItemsInTuple": {
       "enabled": true,
       "config": {
-        "naming": {
-          "camelCase": {
-            "enabled": true,
-            "rules": ["function", "method", "property", "parameter", "value", "typeParameter"]
-          },
-          "pascalCase": {
-            "enabled": true,
-            "rules": ["type", "module", "exception", "union", "record"]
-          }
-        }
+        "maxItems": 4
       }
     },
-    "FL0004": {
+    "maxNumberOfFunctionParameters": {
       "enabled": true,
       "config": {
-        "reason": "未使用の open ステートメントを検出"
+        "maxItems": 5
       }
     },
-    "FL0005": {
+    "maxNumberOfMembers": {
       "enabled": true,
       "config": {
-        "reason": "未使用の値やパラメータを検出"
+        "maxItems": 32
       }
     },
-    "FL0020": {
+    "maxNumberOfBooleanOperatorsInCondition": {
       "enabled": true,
       "config": {
-        "reason": "非推奨な構文の使用を検出"
+        "maxItems": 4
       }
     },
-    "FL0034": {
-      "enabled": true,
-      "config": {
-        "reason": "冗長な括弧を検出"
-      }
+    "favourReRaise": {
+      "enabled": true
     },
-    "FL0035": {
+    "raiseWithTooManyArguments": {
+      "enabled": true
+    },
+    "failwithWithSingleArgument": {
+      "enabled": true
+    },
+    "invalidOpWithSingleArgument": {
+      "enabled": true
+    },
+    "nullArgWithSingleArgument": {
+      "enabled": true
+    },
+    "indentationUniquelyEnoughToFormALevel": {
       "enabled": true,
       "config": {
-        "reason": "冗長な修飾子を検出"
+        "mustStartFromFirstColumn": false
       }
     }
   },
@@ -71,22 +135,5 @@
     "**/bin/**",
     "**/.git/**",
     "**/AssemblyInfo.fs"
-  ],
-  "hint": {
-    "enabled": true,
-    "config": {
-      "customRules": [
-        {
-          "name": "prefer-async-workflow",
-          "message": "非同期処理はasync/awaitワークフローを優先してください",
-          "pattern": "Task.Run.*"
-        },
-        {
-          "name": "prefer-option-over-null",
-          "message": "nullチェックの代わりにOptionを使用してください",
-          "pattern": ".*<> null|.*= null"
-        }
-      ]
-    }
-  }
+  ]
 }

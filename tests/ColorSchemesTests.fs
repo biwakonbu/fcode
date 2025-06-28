@@ -1,4 +1,4 @@
-module fcode.Tests.ColorSchemesTests
+module FCode.Tests.ColorSchemesTests
 
 open NUnit.Framework
 open Terminal.Gui
@@ -10,7 +10,7 @@ type ColorSchemesTests() =
     [<SetUp>]
     member _.Setup() =
         // CI環境でのTerminal.Gui初期化スキップ
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if not isCI then
             try
@@ -21,7 +21,7 @@ type ColorSchemesTests() =
     [<TearDown>]
     member _.TearDown() =
         // CI環境ではShutdownをスキップ
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if not isCI then
             try

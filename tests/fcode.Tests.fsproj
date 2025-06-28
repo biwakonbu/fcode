@@ -11,6 +11,8 @@
   <ItemGroup>
     <Compile Include="KeyBindingsTests.fs"/>
     <Compile Include="ColorSchemesTests.fs"/>
+    <Compile Include="ResourceMonitorTests.fs"/>
+    <Compile Include="ResourceControllerTests.fs"/>
     <Compile Include="ProcessSupervisorTests.fs"/>
     <Compile Include="IPCChannelTests.fs"/>
     <Compile Include="WorkerProcessManagerTests.fs"/>

@@ -22,7 +22,7 @@ type ProcessSupervisorStabilityTests() =
     member _.TearDown() = supervisor.StopSupervisor()
 
     [<Test>]
-    member _.Supervisor_StartAndStop_WorksCorrectly() =
+    member _.SupervisorStartAndStopWorksCorrectly() =
         // Act
         supervisor.StartSupervisor()
 
@@ -34,7 +34,7 @@ type ProcessSupervisorStabilityTests() =
         Assert.Pass("Supervisor stopped successfully")
 
     [<Test>]
-    member _.Supervisor_SendIPCCommand_WithRetry_HandlesFailures() =
+    member _.SupervisorSendIPCCommandWithRetryHandlesFailures() =
         task {
             // Arrange
             supervisor.StartSupervisor()
@@ -50,7 +50,7 @@ type ProcessSupervisorStabilityTests() =
         }
 
     [<Test>]
-    member _.Supervisor_MultipleWorkers_CanBeManaged() =
+    member _.SupervisorMultipleWorkersCanBeManaged() =
         // Arrange
         supervisor.StartSupervisor()
         let workerIds = [ "worker1"; "worker2"; "worker3" ]
@@ -62,7 +62,7 @@ type ProcessSupervisorStabilityTests() =
             Assert.IsTrue(result || not result, $"Worker {workerId} start attempt completed")
 
     [<Test>]
-    member _.Supervisor_WorkerStatus_ReturnsValidData() =
+    member _.SupervisorWorkerStatusReturnsValidData() =
         // Arrange
         supervisor.StartSupervisor()
         let workerId = "status-test"
@@ -77,7 +77,7 @@ type ProcessSupervisorStabilityTests() =
         | None -> Assert.Pass("Worker status not found (expected in test env)")
 
     [<Test>]
-    member _.Supervisor_IPCMetrics_AreAccessible() =
+    member _.SupervisorIPCMetricsAreAccessible() =
         // Arrange
         supervisor.StartSupervisor()
 
@@ -93,7 +93,7 @@ type ProcessSupervisorStabilityTests() =
         | None -> Assert.Pass("IPC metrics not available (expected in test env)")
 
     [<Test>]
-    member _.Supervisor_ConnectionHealthMonitoring_StartsWithoutError() =
+    member _.SupervisorConnectionHealthMonitoringStartsWithoutError() =
         // Arrange & Act
         supervisor.StartSupervisor()
 
@@ -104,7 +104,7 @@ type ProcessSupervisorStabilityTests() =
         Assert.Pass("Connection health monitoring started successfully")
 
     [<Test>]
-    member _.Supervisor_StressTest_MultipleCommands() =
+    member _.SupervisorStressTestMultipleCommands() =
         task {
             // Arrange
             supervisor.StartSupervisor()
@@ -126,7 +126,7 @@ type ProcessSupervisorStabilityTests() =
         }
 
     [<Test>]
-    member _.Supervisor_FailureRecovery_HandlesExceptions() =
+    member _.SupervisorFailureRecoveryHandlesExceptions() =
         task {
             // Arrange
             supervisor.StartSupervisor()
@@ -141,7 +141,7 @@ type ProcessSupervisorStabilityTests() =
         }
 
     [<Test>]
-    member _.Supervisor_ConcurrentAccess_IsSafe() =
+    member _.SupervisorConcurrentAccessIsSafe() =
         task {
             // Arrange
             supervisor.StartSupervisor()
@@ -162,7 +162,7 @@ type ProcessSupervisorStabilityTests() =
         }
 
     [<Test>]
-    member _.Supervisor_LongRunning_MaintainsStability() =
+    member _.SupervisorLongRunningMaintainsStability() =
         task {
             // Arrange
             supervisor.StartSupervisor()
@@ -179,7 +179,7 @@ type ProcessSupervisorStabilityTests() =
     // FC-004品質改善: 新しいメトリクス機能のテスト
 
     [<Test>]
-    member _.CircularBuffer_AddAndRetrive_WorksCorrectly() =
+    member _.CircularBufferAddAndRetriveWorksCorrectly() =
         // Arrange
         let buffer = CircularBuffer<int>(5)
 
@@ -196,7 +196,7 @@ type ProcessSupervisorStabilityTests() =
         Assert.AreEqual(8.0, average, "Average of [6,7,8,9,10] should be 8")
 
     [<Test>]
-    member _.Supervisor_GetCpuUsageStats_ReturnsCorrectFormat() =
+    member _.SupervisorGetCpuUsageStatsReturnsCorrectFormat() =
         // Arrange
         supervisor.StartSupervisor()
         let testDir = System.IO.Directory.GetCurrentDirectory()
@@ -216,7 +216,7 @@ type ProcessSupervisorStabilityTests() =
         | None -> Assert.Pass("CPU stats not available (expected initially)")
 
     [<Test>]
-    member _.Supervisor_GetResponseTimeStats_ReturnsValidData() =
+    member _.SupervisorGetResponseTimeStatsReturnsValidData() =
         // Arrange
         supervisor.StartSupervisor()
         let testDir = System.IO.Directory.GetCurrentDirectory()
@@ -235,7 +235,7 @@ type ProcessSupervisorStabilityTests() =
         | None -> Assert.Fail("Response stats should be available for started worker")
 
     [<Test>]
-    member _.Supervisor_GetErrorStatistics_TracksErrors() =
+    member _.SupervisorGetErrorStatisticsTracksErrors() =
         // Arrange
         supervisor.StartSupervisor()
         let testDir = System.IO.Directory.GetCurrentDirectory()
@@ -256,7 +256,7 @@ type ProcessSupervisorStabilityTests() =
         | None -> Assert.Fail("Error stats should be available for started worker")
 
     [<Test>]
-    member _.Supervisor_SendIPCCommandWithMetrics_RecordsResponseTime() =
+    member _.SupervisorSendIPCCommandWithMetricsRecordsResponseTime() =
         task {
             // Arrange
             supervisor.StartSupervisor()

@@ -1,8 +1,8 @@
-module fcode.Tests.UIHelpersTests
+module FCode.Tests.UIHelpersTests
 
 open NUnit.Framework
 open Terminal.Gui
-open TuiPoC.UIHelpers
+open FCode.UIHelpers
 
 [<TestFixture>]
 type UIHelpersTests() =
@@ -10,7 +10,7 @@ type UIHelpersTests() =
     [<SetUp>]
     member _.Setup() =
         // CI環境でのTerminal.Gui初期化スキップ
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if not isCI then
             try
@@ -21,7 +21,7 @@ type UIHelpersTests() =
     [<TearDown>]
     member _.TearDown() =
         // CI環境ではShutdownをスキップ
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if not isCI then
             try

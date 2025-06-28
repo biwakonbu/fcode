@@ -1,4 +1,4 @@
-module fcode.Tests.KeyBindingsTests
+module FCode.Tests.KeyBindingsTests
 
 open NUnit.Framework
 open Terminal.Gui
@@ -11,7 +11,7 @@ type KeyBindingsTests() =
 
     let createMockFrameViews () =
         // CI環境でのTerminal.Gui初期化スキップ
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if not isCI then
             Application.Init()
@@ -19,12 +19,12 @@ type KeyBindingsTests() =
         let panes = Array.init 8 (fun i -> new FrameView("pane" + i.ToString()))
         panes
 
-    let createMockSessionManager () = new SessionManager()
+    let createMockSessionManager () = SessionManager()
 
     [<SetUp>]
     member _.Setup() =
         // CI環境でのTerminal.Gui初期化スキップ
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if not isCI then
             try
@@ -74,14 +74,14 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``EmacsKeyHandlerの初期化テスト``() =
         let panes = createMockFrameViews ()
-        let handler = new EmacsKeyHandler(panes, createMockSessionManager ())
+        let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
         Assert.That(handler.CurrentPaneIndex, Is.EqualTo(0), "初期ペインインデックスは0であること")
 
     [<Test>]
     member _.``ペインインデックス設定テスト``() =
         let panes = createMockFrameViews ()
-        let handler = new EmacsKeyHandler(panes, createMockSessionManager ())
+        let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
         // 有効なインデックス設定
         handler.SetCurrentPaneIndex(3)
@@ -98,13 +98,13 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``シングルキーバインドテスト``() =
         // CI環境ではスキップ（Terminal.Gui Application.Refresh依存）
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if isCI then
             Assert.Ignore("Skipped in CI environment due to Terminal.Gui Application.Refresh dependencies")
         else
             let panes = createMockFrameViews ()
-            let handler = new EmacsKeyHandler(panes, createMockSessionManager ())
+            let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
             // Ctrl+L (Refresh) のテスト
             let refreshKey = KeyEvent(Key.CtrlMask ||| Key.L, KeyModifiers())
@@ -115,7 +115,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``マルチキーシーケンステスト``() =
         let panes = createMockFrameViews ()
-        let handler = new EmacsKeyHandler(panes, createMockSessionManager ())
+        let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
         // Ctrl+X の最初のキー
         let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
@@ -133,7 +133,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``キーシーケンスタイムアウトテスト``() =
         let panes = createMockFrameViews ()
-        let handler = new EmacsKeyHandler(panes, createMockSessionManager ())
+        let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
         // Ctrl+X を送信
         let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
@@ -149,7 +149,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``ダイレクトペイン移動テスト``() =
         let panes = createMockFrameViews ()
-        let handler = new EmacsKeyHandler(panes, createMockSessionManager ())
+        let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
         // Ctrl+X 3 でペイン3に移動
         let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
@@ -164,7 +164,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``前ペイン移動テスト``() =
         let panes = createMockFrameViews ()
-        let handler = new EmacsKeyHandler(panes, createMockSessionManager ())
+        let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
         // 初期状態でペイン2に設定
         handler.SetCurrentPaneIndex(2)
@@ -182,7 +182,7 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``ペイン移動の循環テスト``() =
         let panes = createMockFrameViews ()
-        let handler = new EmacsKeyHandler(panes, createMockSessionManager ())
+        let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
         // 最後のペイン(7)に設定
         handler.SetCurrentPaneIndex(7)
@@ -208,13 +208,13 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``Ctrl-X Ctrl-C終了コマンドテスト``() =
         // CI環境ではスキップ（Terminal.Gui Application.RequestStop依存）
-        let isCI = System.Environment.GetEnvironmentVariable("CI") <> null
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
         if isCI then
             Assert.Ignore("Skipped in CI environment due to Terminal.Gui Application.RequestStop dependencies")
         else
             let panes = createMockFrameViews ()
-            let handler = new EmacsKeyHandler(panes, createMockSessionManager ())
+            let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
             // Ctrl+X Ctrl+C による終了コマンドをテスト
             let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())

@@ -15,7 +15,7 @@ type IPCChannelTests() =
         ()
 
     [<Test>]
-    member _.BasicIPCChannel_SendCommand_ReturnsResponse() =
+    member _.BasicIPCChannelSendCommandReturnsResponse() =
         task {
             // Arrange
             use channel = createIPCChannel ()
@@ -36,7 +36,7 @@ type IPCChannelTests() =
         }
 
     [<Test>]
-    member _.IPCChannel_SendCommandWithRetry_RetriesOnFailure() =
+    member _.IPCChannelSendCommandWithRetryRetriesOnFailure() =
         task {
             // Arrange
             let config =
@@ -61,7 +61,7 @@ type IPCChannelTests() =
         }
 
     [<Test>]
-    member _.IPCChannel_HealthCheck_ReturnsHealthStatus() =
+    member _.IPCChannelHealthCheckReturnsHealthStatus() =
         task {
             // Arrange
             use channel = createIPCChannel ()
@@ -75,7 +75,7 @@ type IPCChannelTests() =
         }
 
     [<Test>]
-    member _.IPCChannel_GetMetrics_ReturnsValidMetrics() =
+    member _.IPCChannelGetMetricsReturnsValidMetrics() =
         task {
             // Arrange
             use channel = createIPCChannel ()
@@ -95,7 +95,7 @@ type IPCChannelTests() =
         }
 
     [<Test>]
-    member _.IPCChannel_BackpressureHandling_DropsRequestsWhenThresholdExceeded() =
+    member _.IPCChannelBackpressureHandlingDropsRequestsWhenThresholdExceeded() =
         task {
             // Arrange
             let config =
@@ -122,7 +122,7 @@ type IPCChannelTests() =
         }
 
     [<Test>]
-    member _.IPCChannel_ConcurrentRequests_HandlesSafely() =
+    member _.IPCChannelConcurrentRequestsHandlesSafely() =
         task {
             // Arrange
             use channel = createIPCChannel ()
@@ -144,7 +144,7 @@ type IPCChannelTests() =
         }
 
     [<Test>]
-    member _.IPCChannel_SessionLifecycle_WorksCorrectly() =
+    member _.IPCChannelSessionLifecycleWorksCorrectly() =
         task {
             // Arrange
             use channel = createIPCChannel ()
@@ -186,7 +186,7 @@ type IPCChannelTests() =
         }
 
     [<Test>]
-    member _.IPCChannel_Stop_CleansUpProperly() =
+    member _.IPCChannelStopCleansUpProperly() =
         task {
             // Arrange
             use channel = createIPCChannel ()

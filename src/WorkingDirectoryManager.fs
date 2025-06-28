@@ -52,7 +52,7 @@ module WorkingDirectoryManager =
             Logger.logInfo "WorkingDirectoryManager" $"セキュアディレクトリ作成完了: {path}"
             Ok()
         with ex ->
-            Logger.logError "WorkingDirectoryManager" $"ディレクトリ作成失敗: {path}" ex
+            Logger.logException "WorkingDirectoryManager" $"ディレクトリ作成失敗: {path}" ex
             Error $"ディレクトリ作成エラー: {ex.Message}"
 
     // ペイン専用ワークスペース作成
@@ -99,7 +99,7 @@ module WorkingDirectoryManager =
                 Error $"ワークスペース作成失敗: {errorMessage}"
 
         with ex ->
-            Logger.logError "WorkingDirectoryManager" $"ワークスペース作成例外: {paneId}" ex
+            Logger.logException "WorkingDirectoryManager" $"ワークスペース作成例外: {paneId}" ex
             Error $"ワークスペース作成例外: {ex.Message}"
 
     // ディスク使用量計算
@@ -112,7 +112,7 @@ module WorkingDirectoryManager =
             else
                 0.0
         with ex ->
-            Logger.logError "WorkingDirectoryManager" $"ディスク使用量計算エラー: {path}" ex
+            Logger.logException "WorkingDirectoryManager" $"ディスク使用量計算エラー: {path}" ex
             0.0
 
     // ペインのディスク使用量チェック
@@ -128,13 +128,13 @@ module WorkingDirectoryManager =
                   ExceedsLimit = exceedsLimit }
 
             if exceedsLimit then
-                Logger.logWarn "WorkingDirectoryManager" $"ディスク使用量上限超過: {workspace.PaneId} - {sizeMB:F2}MB"
+                Logger.logWarning "WorkingDirectoryManager" $"ディスク使用量上限超過: {workspace.PaneId} - {sizeMB:F2}MB"
             else
                 Logger.logDebug "WorkingDirectoryManager" $"ディスク使用量正常: {workspace.PaneId} - {sizeMB:F2}MB"
 
             Ok usageInfo
         with ex ->
-            Logger.logError "WorkingDirectoryManager" $"ディスク使用量チェックエラー: {workspace.PaneId}" ex
+            Logger.logException "WorkingDirectoryManager" $"ディスク使用量チェックエラー: {workspace.PaneId}" ex
             Error $"ディスク使用量チェックエラー: {ex.Message}"
 
     // 古いファイル・ディレクトリのクリーンアップ
@@ -175,7 +175,7 @@ module WorkingDirectoryManager =
             Ok(deletedCount, freedSpaceMB)
 
         with ex ->
-            Logger.logError "WorkingDirectoryManager" $"クリーンアップエラー: {workspace.PaneId}" ex
+            Logger.logException "WorkingDirectoryManager" $"クリーンアップエラー: {workspace.PaneId}" ex
             Error $"クリーンアップエラー: {ex.Message}"
 
     // ワークスペース情報の保存
@@ -191,7 +191,7 @@ module WorkingDirectoryManager =
             Logger.logDebug "WorkingDirectoryManager" $"ワークスペース情報保存完了: {workspace.PaneId}"
             Ok()
         with ex ->
-            Logger.logError "WorkingDirectoryManager" $"ワークスペース情報保存エラー: {workspace.PaneId}" ex
+            Logger.logException "WorkingDirectoryManager" $"ワークスペース情報保存エラー: {workspace.PaneId}" ex
             Error $"保存エラー: {ex.Message}"
 
     // ワークスペース情報の読み込み
@@ -209,7 +209,7 @@ module WorkingDirectoryManager =
                 Logger.logDebug "WorkingDirectoryManager" $"ワークスペース情報ファイル未存在: {paneId}"
                 Ok None
         with ex ->
-            Logger.logError "WorkingDirectoryManager" $"ワークスペース情報読み込みエラー: {paneId}" ex
+            Logger.logException "WorkingDirectoryManager" $"ワークスペース情報読み込みエラー: {paneId}" ex
             Error $"読み込みエラー: {ex.Message}"
 
     // ペインワークスペースの初期化または復元
@@ -226,7 +226,7 @@ module WorkingDirectoryManager =
                     Ok existingWorkspace
                 else
                     // ディレクトリが存在しない場合は再作成
-                    Logger.logWarn "WorkingDirectoryManager" $"ワークスペースディレクトリ消失、再作成: {paneId}"
+                    Logger.logWarning "WorkingDirectoryManager" $"ワークスペースディレクトリ消失、再作成: {paneId}"
                     createPaneWorkspace config paneId
             | Ok None ->
                 // 新規ワークスペース作成
@@ -234,7 +234,7 @@ module WorkingDirectoryManager =
                 createPaneWorkspace config paneId
             | Error e -> Error e
         with ex ->
-            Logger.logError "WorkingDirectoryManager" $"ワークスペース初期化エラー: {paneId}" ex
+            Logger.logException "WorkingDirectoryManager" $"ワークスペース初期化エラー: {paneId}" ex
             Error $"初期化エラー: {ex.Message}"
 
     // 全ペインのワークスペース状況取得
@@ -248,13 +248,13 @@ module WorkingDirectoryManager =
                 | Ok workspace ->
                     match checkDiskUsage config workspace with
                     | Ok usageInfo -> statusList.Add((workspace, usageInfo))
-                    | Error e -> Logger.logWarn "WorkingDirectoryManager" $"ペイン{paneId}の使用量チェック失敗: {e}"
-                | Error e -> Logger.logWarn "WorkingDirectoryManager" $"ペイン{paneId}のワークスペース取得失敗: {e}"
+                    | Error e -> Logger.logWarning "WorkingDirectoryManager" $"ペイン{paneId}の使用量チェック失敗: {e}"
+                | Error e -> Logger.logWarning "WorkingDirectoryManager" $"ペイン{paneId}のワークスペース取得失敗: {e}"
 
             Logger.logInfo "WorkingDirectoryManager" $"全ワークスペース状況取得完了: {statusList.Count}個"
             Ok(statusList.ToArray())
         with ex ->
-            Logger.logError "WorkingDirectoryManager" $"全ワークスペース状況取得エラー" ex
+            Logger.logException "WorkingDirectoryManager" $"全ワークスペース状況取得エラー" ex
             Error $"状況取得エラー: {ex.Message}"
 
     // ワークスペースの完全削除
@@ -267,8 +267,8 @@ module WorkingDirectoryManager =
                 Logger.logInfo "WorkingDirectoryManager" $"ワークスペース削除完了: {paneId}"
                 Ok()
             else
-                Logger.logWarn "WorkingDirectoryManager" $"削除対象ワークスペース未存在: {paneId}"
+                Logger.logWarning "WorkingDirectoryManager" $"削除対象ワークスペース未存在: {paneId}"
                 Ok()
         with ex ->
-            Logger.logError "WorkingDirectoryManager" $"ワークスペース削除エラー: {paneId}" ex
+            Logger.logException "WorkingDirectoryManager" $"ワークスペース削除エラー: {paneId}" ex
             Error $"削除エラー: {ex.Message}"

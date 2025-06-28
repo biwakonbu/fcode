@@ -40,12 +40,12 @@ jobs:
       run: |
         dotnet build src/fcode.fsproj --configuration Debug --verbosity normal --property TreatWarningsAsErrors=true
     
-    # 3. テスト実行 (一時的に無効化 - テストファイル修正後に有効化)
-    # - name: Run tests
-    #   run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
-    #   env:
-    #     TERM: xterm
-    #     CI: true
+    # 3. テスト実行
+    - name: Run tests
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
+      env:
+        TERM: xterm
+        CI: true
     
     # - name: Upload test results
     #   uses: actions/upload-artifact@v4
@@ -85,12 +85,12 @@ jobs:
       run: |
         dotnet restore src/fcode.fsproj
     
-    # - name: Run tests on macOS
-    #   run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
-    #   env:
-    #     TERM: xterm
-    #     CI: true
-    # 
+    - name: Run tests on macOS
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
+      env:
+        TERM: xterm
+        CI: true
+    
     # - name: Upload macOS test results
     #   uses: actions/upload-artifact@v4
     #   if: always()

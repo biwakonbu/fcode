@@ -8,6 +8,7 @@ open System.Text
 open Terminal.Gui
 open FCode.Logger
 open FCode.QAPromptManager
+open FCode.UXPromptManager
 
 type ClaudeSession =
     { Process: Process option
@@ -94,7 +95,26 @@ type SessionManager() =
 
                         logQAPromptApplication paneId qaRole
                         logInfo "SessionManager" $"QA専用設定適用完了: {getQARoleDisplayName qaRole}"
-                    | None -> logDebug "SessionManager" $"Standard role configuration for pane: {paneId}"
+                    | None ->
+                        // FC-007: UX専用プロンプト設定とUX特化環境変数
+                        match getUXRoleFromPaneId paneId with
+                        | Some uxRole ->
+                            let uxConfig = getUXPromptConfig uxRole
+                            let uxEnvVars = getUXEnvironmentVariables uxRole
+
+                            // UX専用環境変数設定
+                            uxEnvVars
+                            |> List.iter (fun (key, value) ->
+                                startInfo.Environment.[key] <- value
+                                logDebug "SessionManager" $"Setting UX env var: {key}={value}")
+
+                            // UX専用プロンプト設定をClaude引数に追加
+                            let uxPromptArg = $"--system-prompt \"{uxConfig.SystemPrompt}\""
+                            startInfo.Arguments <- uxPromptArg
+
+                            logUXPromptApplication paneId uxRole
+                            logInfo "SessionManager" $"UX専用設定適用完了: {getUXRoleDisplayName uxRole}"
+                        | None -> logDebug "SessionManager" $"Standard role configuration for pane: {paneId}"
 
                     logDebug "SessionManager" $"Starting Claude process for pane: {paneId}"
                     let proc = Process.Start(startInfo)

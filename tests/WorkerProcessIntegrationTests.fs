@@ -13,6 +13,7 @@ open FCode.Logger
 // ===============================================
 
 [<TestFixture>]
+[<Category("Integration")>]
 type WorkerProcessIntegrationTests() =
 
     let testWorkingDir = Path.Combine(Path.GetTempPath(), "fcode-test")

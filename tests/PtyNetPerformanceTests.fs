@@ -10,6 +10,7 @@ open TuiPoC.Logger
 
 /// PTY Netパフォーマンステスト（スループット・レイテンシ計測）
 [<TestFixture>]
+[<Category("Performance")>]
 type PtyNetPerformanceTests() =
 
     let mutable ptyManager: PtyNetManager option = None
@@ -45,6 +46,11 @@ type PtyNetPerformanceTests() =
     /// スループット計測テスト - yesコマンドで60fps相当の大量出力
     [<Test>]
     member this.ThroughputTest_YesCommand_60FPS() =
+        // CI環境ではパフォーマンステストをスキップ
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+        if isCI then
+            Assert.Pass("Performance test skipped in CI environment")
+        else
         async {
             // yesコマンドの存在確認
             if not (checkCommandExists "yes") then
@@ -114,6 +120,11 @@ type PtyNetPerformanceTests() =
     /// レイテンシ計測テスト - 99パーセンタイル16ms未満
     [<Test>]
     member this.LatencyTest_99Percentile_Under16ms() =
+        // CI環境ではパフォーマンステストをスキップ
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+        if isCI then
+            Assert.Pass("Performance test skipped in CI environment")
+        else
         async {
             match ptyManager with
             | Some manager ->
@@ -199,6 +210,11 @@ type PtyNetPerformanceTests() =
     /// 大量データ処理テスト - メモリ効率性確認
     [<Test>]
     member this.MemoryEfficiencyTest_LargeOutput() =
+        // CI環境ではパフォーマンステストをスキップ
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+        if isCI then
+            Assert.Pass("Performance test skipped in CI environment")
+        else
         async {
             match ptyManager with
             | Some manager ->

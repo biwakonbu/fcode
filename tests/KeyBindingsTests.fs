@@ -7,6 +7,7 @@ open FCode.ClaudeCodeProcess
 open System
 
 [<TestFixture>]
+[<Category("Unit")>]
 type KeyBindingsTests() =
 
     let createMockFrameViews () =

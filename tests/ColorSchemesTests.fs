@@ -6,6 +6,7 @@ open FCode.ColorSchemes
 open FCode.Tests.TestHelpers
 
 [<TestFixture>]
+[<Category("Unit")>]
 type ColorSchemesTests() =
 
     [<SetUp>]

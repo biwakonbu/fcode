@@ -14,6 +14,8 @@
     <Compile Include="QAEndToEndTests.fs"/>
     <Compile Include="UXPromptManagerTests.fs"/>
     <Compile Include="UXEndToEndTests.fs"/>
+    <Compile Include="PMPromptManagerTests.fs"/>
+    <Compile Include="PMEndToEndTests.fs"/>
     <Compile Include="KeyBindingsTests.fs"/>
     <Compile Include="ColorSchemesTests.fs"/>
     <Compile Include="ResourceMonitorTests.fs"/>

@@ -82,7 +82,13 @@ let main argv =
                     textView.Height <- Dim.Fill()
                     textView.ReadOnly <- true
                     textView.Text <- $"[DEBUG] {title}ペイン - TextView初期化完了\n[DEBUG] Claude Code初期化準備中..."
+                    
+                    // Terminal.Gui 1.15.0の推奨方法: Add()メソッド使用
                     fv.Add(textView)
+                    
+                    // 追加後に適切にレイアウト
+                    textView.SetNeedsDisplay()
+                    fv.SetNeedsDisplay()
                     
                     // TextView直接参照用マップに追加
                     paneTextViews <- paneTextViews.Add(title, textView)
@@ -90,6 +96,10 @@ let main argv =
                     logInfo "UI" $"TextView added to pane: {title} - Subviews count: {fv.Subviews.Count}"
                     logDebug "UI" $"TextView type: {textView.GetType().Name}"
                     logInfo "UI" $"TextView stored in direct reference map for pane: {title}"
+                    
+                    // 追加の検証: 追加されたTextViewが実際に見つかるかテスト
+                    let verifyTextViews = getTextViewsFromPane fv
+                    logInfo "UI" $"Verification: Found {verifyTextViews.Length} TextViews in newly created pane {title}"
 
                 logDebug "UI" $"Pane created: {title}"
                 fv
@@ -196,24 +206,27 @@ let main argv =
                     logError "AutoStart" debugMsg
                     System.Console.WriteLine(debugMsg)
                     
-                    // フォールバック: 従来の検索方法も試行
-                    logInfo "AutoStart" $"Attempting fallback TextView search for pane: {paneId}"
-                    let textViews = 
-                        pane.Subviews
-                        |> Seq.collect findTextViews
-                        |> Seq.toList
+                    // 根本調査: UI構造の詳細ダンプ
+                    logInfo "AutoStart" $"=== ROOT CAUSE INVESTIGATION for {paneId} ==="
+                    logInfo "AutoStart" $"Dumping complete UI structure for pane: {paneId}"
+                    dumpViewHierarchy pane 0
+                    
+                    // 改良されたfindTextViews関数でフォールバック検索
+                    logInfo "AutoStart" $"Attempting improved TextView search for pane: {paneId}"
+                    let textViews = getTextViewsFromPane pane
                     
                     match textViews with
                     | textView :: _ ->
-                        logInfo "AutoStart" $"TextView found via fallback search for pane: {paneId}"
+                        logInfo "AutoStart" $"TextView found via improved search for pane: {paneId}"
                         try
-                            textView.Text <- $"[FALLBACK] {paneId}ペイン - TextView発見（フォールバック検索）"
+                            textView.Text <- $"[IMPROVED] {paneId}ペイン - TextView発見（改良検索）"
                             textView.SetNeedsDisplay()
                             Application.Refresh()
                         with ex ->
-                            logError "AutoStart" $"Fallback TextView access failed for {paneId}: {ex.Message}"
+                            logError "AutoStart" $"Improved TextView access failed for {paneId}: {ex.Message}"
                     | [] ->
-                        logError "AutoStart" $"No TextView found even with fallback search for pane: {paneId}"
+                        logError "AutoStart" $"No TextView found even with improved search for pane: {paneId}"
+                        logError "AutoStart" $"=== ROOT CAUSE: UI structure investigation completed ==="
 
             // UI初期化完了後の遅延自動起動機能で実行するため、即座の自動起動は削除
             logInfo "AutoStart" "Immediate auto-start disabled - will use delayed auto-start after UI completion"

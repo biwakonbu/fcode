@@ -19,17 +19,17 @@
     <Compile Include="IPCPerformanceTests.fs"/>
     <Compile Include="WorkerProcessManagerTests.fs"/>
     <Compile Include="ProcessSupervisorStabilityTests.fs"/>
-    <!-- Temporarily disabled due to namespace issues
     <Compile Include="ClaudeCodeProcessTests.fs"/>
     <Compile Include="UIHelpersTests.fs"/>
+    <!-- Temporarily disabled due to namespace issues
     <Compile Include="PtyNetPerformanceTests.fs"/>
     <Compile Include="PtyNetSigwinchTests.fs"/>
     <Compile Include="PtyNetRealWorldTests.fs"/>
     -->
     <Compile Include="WorkerProcessIntegrationTests.fs"/>
-    <!-- Temporarily disabled due to test hanging issue
     <Compile Include="WorkerProcessManagerDynamicWaitTests.fs"/>
-    -->
+    <Compile Include="EndToEndIntegrationTests.fs"/>
+    <Compile Include="ResourceManagementTests.fs"/>
     <Compile Include="SessionIsolationTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>

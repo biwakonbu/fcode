@@ -6,7 +6,6 @@ open FCode.Logger
 open FCode.ColorSchemes
 open FCode.KeyBindings
 open FCode.ClaudeCodeProcess
-open FCode.WorkerProcessManager
 open FCode.UIHelpers
 
 [<EntryPoint>]
@@ -28,10 +27,8 @@ let main argv =
             Application.Init()
             logInfo "Application" "Terminal.Gui initialized successfully"
 
-            // Start ProcessSupervisor for worker process management
-            logInfo "Application" "Starting ProcessSupervisor for worker process management"
-            workerManager.StartSupervisor()
-            logInfo "Application" "ProcessSupervisor started successfully"
+            // No need to start supervisor - using direct Claude CLI integration
+            logInfo "Application" "Using direct Claude CLI integration (no ProcessSupervisor required)"
 
             let top = Application.Top
             logDebug "Application" "Got Application.Top"
@@ -188,7 +185,7 @@ let main argv =
                         Application.Refresh()
 
                         let workingDir = System.Environment.CurrentDirectory
-                        let success = workerManager.StartWorker(paneId, workingDir, textView)
+                        let success = sessionManager.StartSession(paneId, workingDir, textView)
 
                         if not success then
                             logError "AutoStart" $"Failed to start Claude Code for pane: {paneId}"
@@ -301,9 +298,7 @@ let main argv =
             logInfo "Application" "TUI application loop ended"
 
             // Cleanup
-            logInfo "Application" "Cleaning up Worker Processes and sessions"
-            workerManager.CleanupAllWorkers()
-            workerManager.StopSupervisor()
+            logInfo "Application" "Cleaning up sessions"
             sessionManager.CleanupAllSessions()
 
             Application.Shutdown()

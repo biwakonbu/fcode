@@ -40,9 +40,9 @@ jobs:
       run: |
         dotnet build src/fcode.fsproj --configuration Debug --verbosity normal --property TreatWarningsAsErrors=true
     
-    # 3. テスト実行
+    # 3. テスト実行 (5分タイムアウト)
     - name: Run tests
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
+      run: timeout 300 dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
       env:
         TERM: xterm
         CI: true
@@ -86,7 +86,7 @@ jobs:
         dotnet restore src/fcode.fsproj
     
     - name: Run tests on macOS
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
+      run: timeout 300 dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults
       env:
         TERM: xterm
         CI: true

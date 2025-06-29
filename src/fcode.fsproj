@@ -13,6 +13,7 @@
     <Compile Include="ResourceController.fs" />
     <Compile Include="ProcessSupervisor.fs" />
     <Compile Include="PtyNetManager.fs" />
+    <Compile Include="QAPromptManager.fs" />
     <Compile Include="ClaudeCodeProcess.fs" />
     <Compile Include="WorkerProcessManager.fs" />
     <Compile Include="WorkingDirectoryManager.fs" />

@@ -56,6 +56,15 @@ dotnet run --project src/fcode.fsproj
 # テスト実行
 dotnet test tests/fcode.Tests.fsproj
 
+# Unitテストのみ実行（CI環境と同様）
+dotnet test tests/fcode.Tests.fsproj --filter "TestCategory=Unit"
+
+# パフォーマンステスト実行（手動実行用）
+dotnet test tests/fcode.Tests.fsproj --filter "TestCategory=Performance"
+
+# 統合テスト実行
+dotnet test tests/fcode.Tests.fsproj --filter "TestCategory=Integration"
+
 # カバレッジレポート付きテスト
 dotnet test tests/fcode.Tests.fsproj --collect:"XPlat Code Coverage"
 
@@ -194,6 +203,32 @@ CI環境ではTerminal.Gui初期化をスキップ:
 ```fsharp
 let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 if not isCI then Application.Init()
+```
+
+### テスト実行方針
+
+#### テストカテゴリ分類
+- **Unit**: 基本的な単体テスト（CI環境で常時実行）
+- **Integration**: 統合テスト（手動実行、E2Eテスト含む）
+- **Performance**: パフォーマンステスト（手動実行、開発時のみ）
+- **Stability**: 長時間稼働・安定性テスト（手動実行）
+
+#### CI環境での実行
+CIでは安定性重視でUnitテストのみ実行：
+```bash
+dotnet test --filter "TestCategory=Unit" --blame-hang-timeout 60000ms
+```
+
+#### 手動実行時の使い分け
+```bash
+# 全テスト実行（開発時）
+dotnet test tests/fcode.Tests.fsproj
+
+# パフォーマンス検証時
+dotnet test --filter "TestCategory=Performance"
+
+# 統合テスト実行時
+dotnet test --filter "TestCategory=Integration"
 ```
 
 ### CI/CD テストアーキテクチャ

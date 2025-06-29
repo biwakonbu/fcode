@@ -232,7 +232,7 @@ type IPCChannelTests() =
             let metrics = channel.GetMetrics()
             Assert.Greater(metrics.ProcessedRequests, 0L, "いくつかのリクエストは処理される")
             Assert.Greater(metrics.DroppedRequests, 0L, "いくつかのリクエストはドロップされる")
-            
+
             // 全体の応答数を確認
             Assert.AreEqual(10, responses.Length, "全リクエストに対する応答が返される")
         }
@@ -282,6 +282,7 @@ type IPCChannelTests() =
 
             // Act - ブロッキング動作により全リクエストが処理されることを確認
             let startTime = DateTime.Now
+
             let requestTasks =
                 [| for i in 1..5 do
                        yield channel.SendCommandAsync(HealthCheck($"block-{i}")) |]
@@ -292,7 +293,7 @@ type IPCChannelTests() =
             // Assert
             Assert.AreEqual(5, responses.Length, "全リクエストが処理される")
             Assert.Greater(elapsed, 100.0, "ブロッキングにより時間がかかる")
-            
+
             let metrics = channel.GetMetrics()
             Assert.AreEqual(0L, metrics.DroppedRequests, "ブロッキングポリシーではドロップされない")
         }
@@ -322,8 +323,7 @@ type IPCChannelTests() =
 
                 let! _ = Task.WhenAll(requestTasks)
                 ()
-            with
-            | ex ->
+            with ex ->
                 exceptionThrown <- true
                 FCode.Logger.logDebug "IPCChannelTest" $"Expected exception caught: {ex.Message}"
 
@@ -358,11 +358,11 @@ type IPCChannelTests() =
 
             // Assert
             Assert.AreEqual(requestCount, responses.Length, "全リクエストに応答が返る")
-            
+
             let metrics = channel.GetMetrics()
             Assert.Greater(metrics.ProcessedRequests, 0L, "リクエストが処理される")
             Assert.LessOrEqual(elapsed, 10000.0, "10秒以内に完了")
-            
+
             FCode.Logger.logInfo "IPCChannelTest" $"性能テスト結果: {requestCount}リクエスト in {elapsed}ms"
             FCode.Logger.logInfo "IPCChannelTest" $"平均遅延: {metrics.AverageLatencyMs}ms"
         }
@@ -390,7 +390,7 @@ type IPCChannelTests() =
             // Assert - タイムアウト後でもリソースが適切に解放されることを確認
             let metrics = channel.GetMetrics()
             Assert.GreaterOrEqual(metrics.ErrorCount, 0L, "タイムアウトエラーが記録される")
-            
+
             // 新しいリクエストが正常に処理されることを確認
             let! newResponse = channel.SendCommandAsync(HealthCheck("after-timeout"))
             Assert.IsNotNull(newResponse, "タイムアウト後も正常に動作する")
@@ -401,7 +401,7 @@ type IPCChannelTests() =
     member _.``IPCChannelメトリクス精度テスト``() =
         task {
             // Arrange
-            use channel = createIPCChannel()
+            use channel = createIPCChannel ()
             let! _ = channel.StartAsync()
 
             // Act - 複数の操作を実行してメトリクスを生成
@@ -417,5 +417,7 @@ type IPCChannelTests() =
             Assert.GreaterOrEqual(metrics.ErrorCount, 0L, "エラー数は非負")
             Assert.GreaterOrEqual(metrics.DroppedRequests, 0L, "ドロップ数は非負")
 
-            FCode.Logger.logInfo "IPCChannelTest" $"メトリクス詳細: 処理={metrics.ProcessedRequests}, 遅延={metrics.AverageLatencyMs}ms, エラー={metrics.ErrorCount}"
+            FCode.Logger.logInfo
+                "IPCChannelTest"
+                $"メトリクス詳細: 処理={metrics.ProcessedRequests}, 遅延={metrics.AverageLatencyMs}ms, エラー={metrics.ErrorCount}"
         }

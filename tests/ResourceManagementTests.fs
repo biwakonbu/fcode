@@ -30,10 +30,13 @@ type ResourceManagementTests() =
     [<TearDown>]
     member _.TearDown() =
         // 全てのテストリソースをクリーンアップ
-        testResources |> List.iter (fun resource ->
+        testResources
+        |> List.iter (fun resource ->
             try
                 resource.Dispose()
-            with _ -> ())
+            with _ ->
+                ())
+
         testResources <- []
 
         // 全WorkerとSessionをクリーンアップ
@@ -62,7 +65,7 @@ type ResourceManagementTests() =
         // 中間メモリ使用量測定
         GC.Collect()
         let midMemory = GC.GetTotalMemory(false)
-        
+
         // すべてのTextViewを解放
         createdTextViews |> Seq.iter (fun tv -> tv.Dispose())
         createdTextViews.Clear()
@@ -97,14 +100,21 @@ type ResourceManagementTests() =
 
             // ファイルハンドル使用状況をチェック（プロセス統計）
             let currentProcess = Process.GetCurrentProcess()
-            let handleCount = try currentProcess.HandleCount with _ -> -1
+
+            let handleCount =
+                try
+                    currentProcess.HandleCount
+                with _ ->
+                    -1
 
             FCode.Logger.logInfo "ResourceTest" $"プロセスハンドル数: {handleCount}"
 
             // すべてのファイルを削除
-            tempFiles |> Seq.iter (fun path ->
+            tempFiles
+            |> Seq.iter (fun path ->
                 try
-                    if File.Exists(path) then File.Delete(path)
+                    if File.Exists(path) then
+                        File.Delete(path)
                 with ex ->
                     FCode.Logger.logWarning "ResourceTest" $"ファイル削除失敗: {path} - {ex.Message}")
 
@@ -116,10 +126,13 @@ type ResourceManagementTests() =
 
         finally
             // 確実なクリーンアップ
-            tempFiles |> Seq.iter (fun path ->
+            tempFiles
+            |> Seq.iter (fun path ->
                 try
-                    if File.Exists(path) then File.Delete(path)
-                with _ -> ())
+                    if File.Exists(path) then
+                        File.Delete(path)
+                with _ ->
+                    ())
 
     [<Test>]
     [<Category("Unit")>]
@@ -133,7 +146,7 @@ type ResourceManagementTests() =
                 // Act - 複数のソケットファイルを作成・削除
                 for i in 1..socketCount do
                     let socketPath = Path.Combine(Path.GetTempPath(), $"test-socket-{i}.sock")
-                    
+
                     // ダミーソケットファイル作成
                     File.WriteAllText(socketPath, "test socket")
                     socketPaths.Add(socketPath)
@@ -142,9 +155,11 @@ type ResourceManagementTests() =
                     do! Task.Delay(10)
 
                 // ソケットファイルを削除
-                socketPaths |> Seq.iter (fun path ->
+                socketPaths
+                |> Seq.iter (fun path ->
                     try
-                        if File.Exists(path) then File.Delete(path)
+                        if File.Exists(path) then
+                            File.Delete(path)
                     with ex ->
                         FCode.Logger.logWarning "ResourceTest" $"ソケットファイル削除失敗: {path} - {ex.Message}")
 
@@ -154,10 +169,13 @@ type ResourceManagementTests() =
 
             finally
                 // 確実なクリーンアップ
-                socketPaths |> Seq.iter (fun path ->
+                socketPaths
+                |> Seq.iter (fun path ->
                     try
-                        if File.Exists(path) then File.Delete(path)
-                    with _ -> ())
+                        if File.Exists(path) then
+                            File.Delete(path)
+                    with _ ->
+                        ())
         }
 
     [<Test>]
@@ -182,12 +200,16 @@ type ResourceManagementTests() =
             while (DateTime.Now - startTime).TotalMilliseconds < float testDurationMs do
                 try
                     // Worker起動・停止サイクル
-                    let startSuccess = workerManager.StartWorker($"{testPaneId}-{operationCount}", workingDir, stabilityTextView)
+                    let startSuccess =
+                        workerManager.StartWorker($"{testPaneId}-{operationCount}", workingDir, stabilityTextView)
+
                     do! Task.Delay(operationIntervalMs / 2)
-                    
+
                     if startSuccess then
                         let stopSuccess = workerManager.StopWorker($"{testPaneId}-{operationCount}")
-                        if not stopSuccess then errorCount <- errorCount + 1
+
+                        if not stopSuccess then
+                            errorCount <- errorCount + 1
                     else
                         errorCount <- errorCount + 1
 
@@ -203,7 +225,9 @@ type ResourceManagementTests() =
             Assert.LessOrEqual(errorRate, 20.0, "エラー率が20%以下") // 80%の成功率を要求
             Assert.Greater(operationCount, 5, "最低5回の操作が実行される")
 
-            FCode.Logger.logInfo "ResourceTest" $"長時間稼働結果: 操作回数={operationCount}, エラー={errorCount}, エラー率={errorRate:F1}%%"
+            FCode.Logger.logInfo
+                "ResourceTest"
+                $"長時間稼働結果: 操作回数={operationCount}, エラー={errorCount}, エラー率={errorRate:F1}%%"
         }
 
     [<Test>]
@@ -237,14 +261,16 @@ type ResourceManagementTests() =
             let taskCount = 100
 
             // Act - 大量のTaskを作成・実行
-            let tasks = [|
-                for i in 1..taskCount do
-                    yield Task.Run(System.Func<Task>(fun () ->
-                        task {
-                            do! Task.Delay(10) // 短時間待機
-                            FCode.Logger.logDebug "ResourceTest" $"Task {i} completed"
-                        }))
-            |]
+            let tasks =
+                [| for i in 1..taskCount do
+                       yield
+                           Task.Run(
+                               System.Func<Task>(fun () ->
+                                   task {
+                                       do! Task.Delay(10) // 短時間待機
+                                       FCode.Logger.logDebug "ResourceTest" $"Task {i} completed"
+                                   })
+                           ) |]
 
             // すべてのTaskの完了を待機
             do! Task.WhenAll(tasks)
@@ -257,7 +283,9 @@ type ResourceManagementTests() =
             let threadIncrease = finalThreadCount - initialThreadCount
             Assert.LessOrEqual(threadIncrease, 10, "スレッド数の増加が10以下") // 許容範囲
 
-            FCode.Logger.logInfo "ResourceTest" $"スレッド数: 初期={initialThreadCount}, 最終={finalThreadCount}, 増加={threadIncrease}"
+            FCode.Logger.logInfo
+                "ResourceTest"
+                $"スレッド数: 初期={initialThreadCount}, 最終={finalThreadCount}, 増加={threadIncrease}"
         }
 
     [<Test>]
@@ -278,13 +306,17 @@ type ResourceManagementTests() =
             let initialThreads = Process.GetCurrentProcess().Threads.Count
 
             // Act - 複数コンポーネントの統合動作
-            
+
             // 1. WorkerManager操作
-            let workerSuccess = workerManager.StartWorker(testPaneId, workingDir, integrationTextView)
+            let workerSuccess =
+                workerManager.StartWorker(testPaneId, workingDir, integrationTextView)
+
             do! Task.Delay(500)
 
             // 2. SessionManager操作
-            let sessionSuccess = sessionManager.StartSession($"session-{testPaneId}", workingDir, integrationTextView)
+            let sessionSuccess =
+                sessionManager.StartSession($"session-{testPaneId}", workingDir, integrationTextView)
+
             do! Task.Delay(500)
 
             // 3. UIHelpers操作
@@ -299,7 +331,7 @@ type ResourceManagementTests() =
             // 4. クリーンアップ
             let _ = sessionManager.StopSession($"session-{testPaneId}")
             let _ = workerManager.StopWorker(testPaneId)
-            
+
             // 最終リソース状態測定
             do! Task.Delay(1000)
             GC.Collect()

@@ -165,7 +165,7 @@ type UIHelpersTests() =
         let subView2 = new TextView()
         subView2.Text <- "hierarchy content"
         let subView3 = new FrameView("nested")
-        
+
         container.Add(subView1)
         container.Add(subView2)
         container.Add(subView3)
@@ -183,7 +183,7 @@ type UIHelpersTests() =
         textView1.Text <- "first combined"
         let textView2 = new TextView()
         textView2.Text <- "second combined"
-        
+
         frameView.Add(textView1)
         let subContainer = new View()
         subContainer.Add(textView2)
@@ -223,7 +223,7 @@ type UIHelpersTests() =
         textView1.Text <- "type conversion test 1"
         let textView2 = new TextView()
         textView2.Text <- "type conversion test 2"
-        
+
         // 異なる型のViewを混在させる
         complexView.Add(textView1)
         complexView.Add(new View()) // 中間View
@@ -252,14 +252,14 @@ type UIHelpersTests() =
                 for i in 1..5 do // 各階層に5つのView
                     let childView = new View()
                     parent.Add(childView)
-                    
+
                     // いくつかにはTextViewを配置
                     if i % 2 = 0 && !textViewIndex < textViewCount then
                         let textView = new TextView()
                         textView.Text <- $"performance test {!textViewIndex}"
                         childView.Add(textView)
                         incr textViewIndex
-                    
+
                     // 再帰的に子階層を作成
                     createDeepHierarchy childView (depth + 1) textViewIndex
 
@@ -274,7 +274,7 @@ type UIHelpersTests() =
         // Assert
         Assert.Greater(result.Length, 0, "大量階層でもTextViewが発見される")
         Assert.LessOrEqual(elapsed, 5000.0, "5秒以内に完了する") // パフォーマンス要件
-        
+
         FCode.Logger.logInfo "UIHelpersTest" $"大量階層テスト: {result.Length}個のTextViewを{elapsed}msで発見"
 
     [<Test>]
@@ -288,7 +288,7 @@ type UIHelpersTests() =
 
         // Act & Assert - null処理で例外が発生しないこと
         Assert.DoesNotThrow(fun () -> dumpViewHierarchy container 0)
-        
+
         // 階層ダンプ後も検索機能が正常に動作すること
         let result = getTextViewsFromPane container
         Assert.AreEqual(1, result.Length, "null処理後も検索機能が正常動作")
@@ -314,11 +314,11 @@ type UIHelpersTests() =
         let childView = new View()
         let textView = new TextView()
         textView.Text <- "circular reference test"
-        
+
         parentView.Add(childView)
         childView.Add(textView)
         // 注意: Terminal.Guiは循環参照を自動防止するため、実際の循環は作れない
-        
+
         // Act - 深い構造でもスタックオーバーフローしないこと
         let result = findTextViews parentView |> Seq.toList
 
@@ -367,7 +367,7 @@ type UIHelpersTests() =
         let createMockPane (title: string) =
             let fv = new FrameView(title)
             fv.Border.Effect3D <- false
-            
+
             let textView = new TextView()
             textView.X <- 0
             textView.Y <- 0
@@ -375,24 +375,26 @@ type UIHelpersTests() =
             textView.Height <- Dim.Fill()
             textView.ReadOnly <- true
             textView.Text <- $"[DEBUG] {title}ペイン - TextView初期化完了"
-            
+
             fv.Add(textView)
             fv
 
-        let testPanes = [
-            createMockPane "dev1"
-            createMockPane "dev2"
-            createMockPane "qa1"
-            createMockPane "ux"
-        ]
+        let testPanes =
+            [ createMockPane "dev1"
+              createMockPane "dev2"
+              createMockPane "qa1"
+              createMockPane "ux" ]
 
         // Act - 各ペインでTextView発見テスト
-        let results = testPanes |> List.map (fun pane -> 
-            let textViews = getTextViewsFromPane pane
-            (pane.Title, textViews.Length, textViews))
+        let results =
+            testPanes
+            |> List.map (fun pane ->
+                let textViews = getTextViewsFromPane pane
+                (pane.Title, textViews.Length, textViews))
 
         // Assert - 全ペインでTextViewが正確に発見されること
-        results |> List.iter (fun (title, count, textViews) ->
+        results
+        |> List.iter (fun (title, count, textViews) ->
             Assert.AreEqual(1, count, $"{title}ペインでTextViewが1個発見される")
             // NStack.ustringの型問題により、シンプルなアサーションに変更
             Assert.IsNotNull(textViews.[0].Text, $"{title}ペインのテキストが設定されている"))

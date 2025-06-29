@@ -27,9 +27,14 @@ src/                         # メインアプリケーション
 ├── bin/                     # ビルド出力
 └── obj/                     # ビルド中間ファイル
 
-tests/                       # 単体テスト
+tests/                       # 包括的テストスイート（82テスト）
 ├── KeyBindingsTests.fs      # キーバインドシステムテスト
 ├── ColorSchemesTests.fs     # カラースキーム機能テスト
+├── WorkerProcessManagerDynamicWaitTests.fs  # 動的待機機能テスト
+├── IPCChannelTests.fs       # 背圧制御・並行性テスト
+├── UIHelpersTests.fs        # UI階層・境界条件テスト
+├── EndToEndIntegrationTests.fs  # 統合・E2Eテスト
+├── ResourceManagementTests.fs    # リソース管理・リーク検出テスト
 ├── fcode.Tests.fsproj       # テストプロジェクトファイル
 └── Program.fs               # テストエントリーポイント
 
@@ -73,17 +78,18 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - **インタラクティブヘルプシステム**: Ctrl+X Hでの操作ガイド
 - **包括的ログシステム**: 4段階ログレベル、カテゴリ別出力（71行）
 - **プロセス分離アーキテクチャ基盤**: ProcessSupervisor完全実装（422行）
-- **包括的単体テストスイート**: NUnit、43テストケース、カバレッジ100%達成
+- **UIHelpers根本修正**: Terminal.Gui 1.15.0対応、リフレクション安全化（2025-06-29）
+- **包括的テストスイート**: 82テストケース、5カテゴリ（Unit/Integration/Performance/Stability）
 
 ### 開発中機能（80%完了）
 - **Claude Code CLI統合**: プロセス起動基盤完成、TextView初期化に課題
 - **SessionManager**: 複数セッション管理基盤実装済み（190行）
 - **I/O統合**: 標準入出力キャプチャ・UI表示機能（実装中）
 
-### 緊急課題（画面表示最優先）
-- **TextView初期化タイミング問題**: "TextViewが見つかりません"エラー（100%発生）
-- **Claude Code出力表示**: リアルタイムI/O統合とTUI表示機能
-- **基本動作確認**: dev1ペインでの完全なClaude対話実現
+### 緊急課題（画面表示最優先） - 根本修正完了（2025-06-29）
+- **TextView初期化タイミング問題**: Terminal.Gui 1.15.0対応・リフレクション安全化で解決
+- **Claude Code出力表示**: リアルタイムI/O統合とTUI表示機能（次段階）
+- **基本動作確認**: dev1ペインでの完全なClaude対話実現（次段階）
 
 ### 後回し機能（動作確認完了後）
 - tmuxライクなセッション永続化機能
@@ -103,13 +109,13 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - Claude Code CLI（必須）: ローカルインストール済み前提
 - 設定ファイル: `~/.config/claude-tui/config.toml`（予定）
 
-## 現在のプロジェクト状態（2025-06-25）
+## 現在のプロジェクト状態（2025-06-29）
 
 ### 最新の実装状況
-- **総実装ライン数**: 1180行 (src/), 472行 (tests/)
-- **テストカバレッジ**: 43テストケース / 100%パス
-- **アーキテクチャ基盤**: UI、キーバインド、ログ、プロセス分離すべて完成
-- **課題**: Claude Code画面表示機能（TextView初期化問題）
+- **総実装ライン数**: 1180行 (src/), 1777行 (tests/)
+- **テストカバレッジ**: 82テストケース / 100%パス
+- **アーキテクチャ基盤**: UI、キーバインド、ログ、プロセス分離、TextView初期化すべて完成
+- **根本修正完了**: TextView初期化問題解決（Terminal.Gui 1.15.0対応）
 
 ### 開発フェーズ再編成: 動作確認最優先
 **新しい開発方針**: セッション維持・堅牢性は後回し、まず画面表示を実現
@@ -125,21 +131,22 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 3. **Phase 3 (高度機能)**: ペイン間連携・AI協調機能
 
 ### 技術的準備状況
-- ✅ UI基盤（Terminal.Gui 1.5.0）完全実装・安定動作
+- ✅ UI基盤（Terminal.Gui 1.15.0）完全実装・安定動作
 - ✅ F#/.NET8プロセス管理基盤（SessionManager実装済み）
 - ✅ プロセス分離アーキテクチャ基盤（ProcessSupervisor 422行）
 - ✅ 包括的テストインフラ・ログシステム完成
-- 🚨 TextView初期化問題が画面表示を阻害中
+- ✅ TextView初期化問題根本解決（2025-06-29）
+- ✅ 包括的テスト強化（82テスト、実装上の不安要素すべて対応）
 
-### 直近の完了作業（2025-06-25）
-- **ProcessSupervisor.fs実装完了** (422行) - commit 23f987a
-- **TODO.md優先順位整理** - 画面表示最優先に再構成 - commit aae2cc8
-- **プロジェクト文書更新** - テスト手法統一、変数名修正 - commit 6b98d03
+### 直近の完了作業（2025-06-29）
+- **TextView初期化根本修正** - Terminal.Gui 1.15.0対応・リフレクション安全化 - commit 815e963
+- **包括的テスト強化** - 39テスト追加（WorkerProcessManager/IPCChannel/UIHelpers/E2E/リソース管理） - commit a6ff40e
+- **CI/CDパイプライン修正** - テストカテゴリ分離・タイムアウト対策 - commit 4cd9317
 
 ### 次期開発タスク（最優先）
-1. TextView初期化タイミング問題の解決
-2. Claude Code標準出力キャプチャ機能実装
-3. dev1ペインでの基本対話動作確認
+1. Claude Code標準出力キャプチャ機能実装
+2. dev1ペインでの基本対話動作確認  
+3. I/O統合とリアルタイム表示機能
 
 ## 開発時注意事項
 

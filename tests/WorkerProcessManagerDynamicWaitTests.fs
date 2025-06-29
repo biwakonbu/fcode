@@ -166,13 +166,17 @@ type WorkerProcessManagerDynamicWaitTests() =
             let task3 = waitForSocketFile socket3 maxWaitMs
 
             // 異なるタイミングでファイルを作成
-            Task.Run(System.Func<Task>(fun () -> task {
-                do! Task.Delay(200)
-                File.WriteAllText(socket1, "socket1")
-                do! Task.Delay(300)
-                File.WriteAllText(socket2, "socket2")
-                // socket3は作成しない（タイムアウトテスト）
-            })) |> ignore
+            Task.Run(
+                System.Func<Task>(fun () ->
+                    task {
+                        do! Task.Delay(200)
+                        File.WriteAllText(socket1, "socket1")
+                        do! Task.Delay(300)
+                        File.WriteAllText(socket2, "socket2")
+                    // socket3は作成しない（タイムアウトテスト）
+                    })
+            )
+            |> ignore
 
             let! results = Task.WhenAll([| task1; task2; task3 |])
 
@@ -182,8 +186,10 @@ type WorkerProcessManagerDynamicWaitTests() =
             Assert.That(results.[2], Is.False, "socket3は作成されないのでタイムアウト")
 
             // Cleanup
-            [socket1; socket2; socket3] |> List.iter (fun path ->
-                if File.Exists(path) then File.Delete(path))
+            [ socket1; socket2; socket3 ]
+            |> List.iter (fun path ->
+                if File.Exists(path) then
+                    File.Delete(path))
         }
 
     [<Test>]
@@ -206,7 +212,8 @@ type WorkerProcessManagerDynamicWaitTests() =
             Assert.That(elapsed, Is.GreaterThan(1000.0), "リトライにより1秒以上かかる")
 
             // Cleanup
-            if File.Exists(testSocket) then File.Delete(testSocket)
+            if File.Exists(testSocket) then
+                File.Delete(testSocket)
         }
 
     [<Test>]
@@ -253,10 +260,14 @@ type WorkerProcessManagerDynamicWaitTests() =
             let waitTask = waitForSocketFile nonExistentPath maxWaitMs
 
             // 短時間でファイルを作成
-            Task.Run(System.Func<Task>(fun () -> task {
-                do! Task.Delay(100)
-                File.WriteAllText(nonExistentPath, "long wait test")
-            })) |> ignore
+            Task.Run(
+                System.Func<Task>(fun () ->
+                    task {
+                        do! Task.Delay(100)
+                        File.WriteAllText(nonExistentPath, "long wait test")
+                    })
+            )
+            |> ignore
 
             let! result = waitTask
             let elapsed = (DateTime.Now - startTime).TotalMilliseconds
@@ -266,7 +277,8 @@ type WorkerProcessManagerDynamicWaitTests() =
             Assert.That(elapsed, Is.LessThan(1000.0), "実際には短時間で完了")
 
             // Cleanup
-            if File.Exists(nonExistentPath) then File.Delete(nonExistentPath)
+            if File.Exists(nonExistentPath) then
+                File.Delete(nonExistentPath)
         }
 
     [<Test>]
@@ -281,14 +293,18 @@ type WorkerProcessManagerDynamicWaitTests() =
             let waitTask = waitForSocketFile competitionSocket maxWaitMs
 
             // ファイルの作成・削除・再作成を繰り返す
-            Task.Run(System.Func<Task>(fun () -> task {
-                do! Task.Delay(200)
-                File.WriteAllText(competitionSocket, "temp1")
-                do! Task.Delay(100)
-                File.Delete(competitionSocket)
-                do! Task.Delay(100)
-                File.WriteAllText(competitionSocket, "final")
-            })) |> ignore
+            Task.Run(
+                System.Func<Task>(fun () ->
+                    task {
+                        do! Task.Delay(200)
+                        File.WriteAllText(competitionSocket, "temp1")
+                        do! Task.Delay(100)
+                        File.Delete(competitionSocket)
+                        do! Task.Delay(100)
+                        File.WriteAllText(competitionSocket, "final")
+                    })
+            )
+            |> ignore
 
             let! result = waitTask
 
@@ -296,7 +312,8 @@ type WorkerProcessManagerDynamicWaitTests() =
             Assert.That(result, Is.True, "最終的にファイルが存在するため成功")
 
             // Cleanup
-            if File.Exists(competitionSocket) then File.Delete(competitionSocket)
+            if File.Exists(competitionSocket) then
+                File.Delete(competitionSocket)
         }
 
     [<Test>]

@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="TestHelpers.fs"/>
     <Compile Include="QAPromptManagerTests.fs"/>
+    <Compile Include="QAEndToEndTests.fs"/>
     <Compile Include="KeyBindingsTests.fs"/>
     <Compile Include="ColorSchemesTests.fs"/>
     <Compile Include="ResourceMonitorTests.fs"/>

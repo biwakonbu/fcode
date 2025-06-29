@@ -11,6 +11,7 @@ open FCode.Logger
 
 /// FC-002性能要件検証: 1万req/s、99パーセンタイル<2ms
 [<TestFixture>]
+[<Category("Performance")>]
 type IPCPerformanceTests() =
 
     [<SetUp>]

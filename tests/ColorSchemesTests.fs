@@ -3,31 +3,17 @@ module FCode.Tests.ColorSchemesTests
 open NUnit.Framework
 open Terminal.Gui
 open FCode.ColorSchemes
+open FCode.Tests.TestHelpers
 
 [<TestFixture>]
+[<Category("Unit")>]
 type ColorSchemesTests() =
 
     [<SetUp>]
-    member _.Setup() =
-        // CI環境でのTerminal.Gui初期化スキップ
-        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
-
-        if not isCI then
-            try
-                Application.Init()
-            with _ ->
-                () // Already initialized
+    member _.Setup() = initializeTerminalGui ()
 
     [<TearDown>]
-    member _.TearDown() =
-        // CI環境ではShutdownをスキップ
-        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
-
-        if not isCI then
-            try
-                Application.Shutdown()
-            with _ ->
-                () // Not initialized or already shutdown
+    member _.TearDown() = shutdownTerminalGui ()
 
     [<Test>]
     member _.``カラースキーム定義の存在テスト``() =
@@ -48,89 +34,89 @@ type ColorSchemesTests() =
 
     [<Test>]
     member _.``開発者ペイン用カラースキーム適用テスト``() =
-        let frameView = new FrameView("test")
+        let frameView = createTestableFrameView "test"
 
         // dev1ペインのカラースキーム適用
-        applySchemeByRole frameView "dev1"
+        applySchemeByRoleTestable frameView "dev1"
         Assert.That(frameView.ColorScheme, Is.EqualTo(devScheme), "dev1にdevSchemeが適用されること")
 
         // dev2ペインのカラースキーム適用
-        applySchemeByRole frameView "dev2"
+        applySchemeByRoleTestable frameView "dev2"
         Assert.That(frameView.ColorScheme, Is.EqualTo(devScheme), "dev2にdevSchemeが適用されること")
 
         // dev3ペインのカラースキーム適用
-        applySchemeByRole frameView "dev3"
+        applySchemeByRoleTestable frameView "dev3"
         Assert.That(frameView.ColorScheme, Is.EqualTo(devScheme), "dev3にdevSchemeが適用されること")
 
     [<Test>]
     member _.``QAペイン用カラースキーム適用テスト``() =
-        let frameView = new FrameView("test")
+        let frameView = createTestableFrameView "test"
 
         // qa1ペインのカラースキーム適用
-        applySchemeByRole frameView "qa1"
+        applySchemeByRoleTestable frameView "qa1"
         Assert.That(frameView.ColorScheme, Is.EqualTo(qaScheme), "qa1にqaSchemeが適用されること")
 
         // qa2ペインのカラースキーム適用
-        applySchemeByRole frameView "qa2"
+        applySchemeByRoleTestable frameView "qa2"
         Assert.That(frameView.ColorScheme, Is.EqualTo(qaScheme), "qa2にqaSchemeが適用されること")
 
     [<Test>]
     member _.``UXペイン用カラースキーム適用テスト``() =
-        let frameView = new FrameView("test")
+        let frameView = createTestableFrameView "test"
 
-        applySchemeByRole frameView "ux"
+        applySchemeByRoleTestable frameView "ux"
         Assert.That(frameView.ColorScheme, Is.EqualTo(uxScheme), "uxにuxSchemeが適用されること")
 
     [<Test>]
     member _.``PMペイン用カラースキーム適用テスト``() =
-        let frameView = new FrameView("test")
+        let frameView = createTestableFrameView "test"
 
         // pm役割のテスト
-        applySchemeByRole frameView "pm"
+        applySchemeByRoleTestable frameView "pm"
         Assert.That(frameView.ColorScheme, Is.EqualTo(pmScheme), "pmにpmSchemeが適用されること")
 
         // pdm役割のテスト
-        applySchemeByRole frameView "pdm"
+        applySchemeByRoleTestable frameView "pdm"
         Assert.That(frameView.ColorScheme, Is.EqualTo(pmScheme), "pdmにpmSchemeが適用されること")
 
         // timeline役割のテスト
-        applySchemeByRole frameView "timeline"
+        applySchemeByRoleTestable frameView "timeline"
         Assert.That(frameView.ColorScheme, Is.EqualTo(pmScheme), "timelineにpmSchemeが適用されること")
 
     [<Test>]
     member _.``会話ペイン用カラースキーム適用テスト``() =
-        let frameView = new FrameView("test")
+        let frameView = createTestableFrameView "test"
 
         // chat役割のテスト
-        applySchemeByRole frameView "chat"
+        applySchemeByRoleTestable frameView "chat"
         Assert.That(frameView.ColorScheme, Is.EqualTo(chatScheme), "chatにchatSchemeが適用されること")
 
         // 日本語の「会話」役割のテスト
-        applySchemeByRole frameView "会話"
+        applySchemeByRoleTestable frameView "会話"
         Assert.That(frameView.ColorScheme, Is.EqualTo(chatScheme), "会話にchatSchemeが適用されること")
 
     [<Test>]
     member _.``大文字小文字を無視したカラースキーム適用テスト``() =
-        let frameView = new FrameView("test")
+        let frameView = createTestableFrameView "test"
 
         // 大文字でのテスト
-        applySchemeByRole frameView "DEV1"
+        applySchemeByRoleTestable frameView "DEV1"
         Assert.That(frameView.ColorScheme, Is.EqualTo(devScheme), "DEV1（大文字）にdevSchemeが適用されること")
 
         // 混合ケースでのテスト
-        applySchemeByRole frameView "Qa1"
+        applySchemeByRoleTestable frameView "Qa1"
         Assert.That(frameView.ColorScheme, Is.EqualTo(qaScheme), "Qa1（混合ケース）にqaSchemeが適用されること")
 
     [<Test>]
     member _.``未定義役割のデフォルトカラースキーム適用テスト``() =
-        let frameView = new FrameView("test")
+        let frameView = createTestableFrameView "test"
 
         // 未定義の役割
-        applySchemeByRole frameView "unknown"
+        applySchemeByRoleTestable frameView "unknown"
         Assert.That(frameView.ColorScheme, Is.EqualTo(devScheme), "未定義役割にはdevScheme（デフォルト）が適用されること")
 
         // 空文字列
-        applySchemeByRole frameView ""
+        applySchemeByRoleTestable frameView ""
         Assert.That(frameView.ColorScheme, Is.EqualTo(devScheme), "空文字列にはdevScheme（デフォルト）が適用されること")
 
     [<Test>]
@@ -143,14 +129,14 @@ type ColorSchemesTests() =
 
     [<Test>]
     member _.``複数ペインへの同時適用テスト``() =
-        let dev1Pane = new FrameView("dev1")
-        let dev2Pane = new FrameView("dev2")
-        let qa1Pane = new FrameView("qa1")
+        let dev1Pane = createTestableFrameView "dev1"
+        let dev2Pane = createTestableFrameView "dev2"
+        let qa1Pane = createTestableFrameView "qa1"
 
         // 複数ペインに異なるカラースキームを適用
-        applySchemeByRole dev1Pane "dev1"
-        applySchemeByRole dev2Pane "dev2"
-        applySchemeByRole qa1Pane "qa1"
+        applySchemeByRoleTestable dev1Pane "dev1"
+        applySchemeByRoleTestable dev2Pane "dev2"
+        applySchemeByRoleTestable qa1Pane "qa1"
 
         // それぞれが適切なスキームを持つことを確認
         Assert.That(dev1Pane.ColorScheme, Is.EqualTo(devScheme), "dev1Paneが適切なスキーム")

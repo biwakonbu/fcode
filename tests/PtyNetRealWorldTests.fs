@@ -9,6 +9,7 @@ open TuiPoC.Logger
 
 /// 実用的なコマンドでのPTY動作確認テスト
 [<TestFixture>]
+[<Category("Integration")>]
 type PtyNetRealWorldTests() =
 
     let mutable ptyManager: PtyNetManager option = None

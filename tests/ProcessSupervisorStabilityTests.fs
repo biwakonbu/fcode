@@ -11,6 +11,7 @@ open FCode.Logger
 // FC-004品質改善: 新しいメトリクス機能のテスト
 
 [<TestFixture>]
+[<Category("Stability")>]
 type ProcessSupervisorStabilityTests() =
 
     [<SetUp>]

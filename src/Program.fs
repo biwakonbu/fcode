@@ -61,6 +61,9 @@ let main argv =
             right.Width <- Dim.Fill()
             right.Height <- Dim.Fill()
 
+            // TextView直接参照用マップ
+            let mutable paneTextViews = Map.empty<string, TextView>
+
             // Helper function to create a pane with a given title and TextView
             let makePane title =
                 logDebug "UI" $"Creating pane: {title}"
@@ -79,9 +82,24 @@ let main argv =
                     textView.Height <- Dim.Fill()
                     textView.ReadOnly <- true
                     textView.Text <- $"[DEBUG] {title}ペイン - TextView初期化完了\n[DEBUG] Claude Code初期化準備中..."
+
+                    // Terminal.Gui 1.15.0の推奨方法: Add()メソッド使用
                     fv.Add(textView)
+
+                    // 追加後に適切にレイアウト
+                    textView.SetNeedsDisplay()
+                    fv.SetNeedsDisplay()
+
+                    // TextView直接参照用マップに追加
+                    paneTextViews <- paneTextViews.Add(title, textView)
+
                     logInfo "UI" $"TextView added to pane: {title} - Subviews count: {fv.Subviews.Count}"
                     logDebug "UI" $"TextView type: {textView.GetType().Name}"
+                    logInfo "UI" $"TextView stored in direct reference map for pane: {title}"
+
+                    // 追加の検証: 追加されたTextViewが実際に見つかるかテスト
+                    let verifyTextViews = getTextViewsFromPane fv
+                    logInfo "UI" $"Verification: Found {verifyTextViews.Length} TextViews in newly created pane {title}"
 
                 logDebug "UI" $"Pane created: {title}"
                 fv
@@ -158,50 +176,61 @@ let main argv =
 
             let startClaudeCodeForPane (paneId: string, pane: FrameView) =
                 logInfo "AutoStart" $"Starting Claude Code for pane: {paneId}"
-                logDebug "AutoStart" $"Pane {paneId} has {pane.Subviews.Count} subviews"
 
-                let textViews =
-                    pane.Subviews
-                    |> Seq.mapi (fun i view ->
-                        logDebug "AutoStart" $"Subview {i}: {view.GetType().Name}"
-                        view)
-                    |> Seq.collect findTextViews
-                    |> Seq.toList
+                // 直接参照マップからTextViewを取得
+                match paneTextViews.TryFind(paneId) with
+                | Some textView ->
+                    logInfo "AutoStart" $"TextView found via direct reference for pane: {paneId}"
 
-                logDebug "AutoStart" $"Found {textViews.Length} TextViews in pane: {paneId}"
-
-                match textViews with
-                | textView :: _ ->
-                    logDebug "AutoStart" $"TextView found for pane: {paneId}"
-                    textView.Text <- $"[DEBUG] {paneId}ペイン - TextView発見、Claude Code起動開始..."
-                    textView.SetNeedsDisplay()
-                    Application.Refresh()
-
-                    let workingDir = System.Environment.CurrentDirectory
-                    let success = workerManager.StartWorker(paneId, workingDir, textView)
-
-                    if not success then
-                        logError "AutoStart" $"Failed to start Claude Code for pane: {paneId}"
-                        textView.Text <- $"[ERROR] {paneId}ペイン - Claude Code起動失敗"
+                    try
+                        textView.Text <- $"[DEBUG] {paneId}ペイン - TextView発見、Claude Code起動開始..."
                         textView.SetNeedsDisplay()
                         Application.Refresh()
-                    else
-                        logInfo "AutoStart" $"Successfully started Claude Code for pane: {paneId}"
-                | [] ->
-                    // TextViewが見つからない場合のデバッグ情報
-                    let debugMsg = $"[ERROR] {paneId}ペイン - TextViewが見つかりません"
+
+                        let workingDir = System.Environment.CurrentDirectory
+                        let success = workerManager.StartWorker(paneId, workingDir, textView)
+
+                        if not success then
+                            logError "AutoStart" $"Failed to start Claude Code for pane: {paneId}"
+                            textView.Text <- $"[ERROR] {paneId}ペイン - Claude Code起動失敗"
+                            textView.SetNeedsDisplay()
+                            Application.Refresh()
+                        else
+                            logInfo "AutoStart" $"Successfully started Claude Code for pane: {paneId}"
+                    with ex ->
+                        logError "AutoStart" $"Exception during Claude Code start for {paneId}: {ex.Message}"
+
+                | None ->
+                    // TextViewが見つからない場合（直接参照マップにない）
+                    let debugMsg = $"[ERROR] {paneId}ペイン - TextView direct reference not found"
                     logError "AutoStart" debugMsg
                     System.Console.WriteLine(debugMsg)
 
-            // 各エージェントペインでClaude Codeを起動 (dev1-3, qa1-2を有効化)
-            logInfo "AutoStart" "Starting Claude Code auto-start process for dev and qa panes"
+                    // 根本調査: UI構造の詳細ダンプ
+                    logInfo "AutoStart" $"=== ROOT CAUSE INVESTIGATION for {paneId} ==="
+                    logInfo "AutoStart" $"Dumping complete UI structure for pane: {paneId}"
+                    dumpViewHierarchy pane 0
 
-            let activeAgentPanes =
-                agentPanes
-                |> List.filter (fun (id, _) -> id.StartsWith("dev") || id.StartsWith("qa"))
+                    // 改良されたfindTextViews関数でフォールバック検索
+                    logInfo "AutoStart" $"Attempting improved TextView search for pane: {paneId}"
+                    let textViews = getTextViewsFromPane pane
 
-            activeAgentPanes |> List.iter startClaudeCodeForPane
-            logInfo "AutoStart" $"Claude Code auto-start completed for {activeAgentPanes.Length} active panes"
+                    match textViews with
+                    | textView :: _ ->
+                        logInfo "AutoStart" $"TextView found via improved search for pane: {paneId}"
+
+                        try
+                            textView.Text <- $"[IMPROVED] {paneId}ペイン - TextView発見（改良検索）"
+                            textView.SetNeedsDisplay()
+                            Application.Refresh()
+                        with ex ->
+                            logError "AutoStart" $"Improved TextView access failed for {paneId}: {ex.Message}"
+                    | [] ->
+                        logError "AutoStart" $"No TextView found even with improved search for pane: {paneId}"
+                        logError "AutoStart" $"=== ROOT CAUSE: UI structure investigation completed ==="
+
+            // UI初期化完了後の遅延自動起動機能で実行するため、即座の自動起動は削除
+            logInfo "AutoStart" "Immediate auto-start disabled - will use delayed auto-start after UI completion"
 
             // Create focus management for panes
             let focusablePanes = [| convo; dev1; dev2; dev3; qa1; qa2; ux; timeline |]
@@ -232,11 +261,21 @@ let main argv =
                     // メインスレッドでUI操作を実行
                     Application.MainLoop.Invoke(fun () ->
                         logInfo "AutoStart" "Executing delayed Claude Code auto-start for dev and qa panes"
+                        logInfo "AutoStart" "UI should be fully initialized at this point"
 
                         // dev1-3, qa1-2ペインを順次起動（500ms間隔で負荷分散）
                         let activeAgentPanes =
                             agentPanes
                             |> List.filter (fun (id, _) -> id.StartsWith("dev") || id.StartsWith("qa"))
+
+                        logInfo
+                            "AutoStart"
+                            $"Found {activeAgentPanes.Length} active agent panes for delayed auto-start"
+
+                        // 各ペインの状態を事前チェック
+                        activeAgentPanes
+                        |> List.iter (fun (paneId, pane) ->
+                            logInfo "AutoStart" $"Pre-check pane {paneId}: Subviews={pane.Subviews.Count}")
 
                         activeAgentPanes
                         |> List.iteri (fun i (paneId, pane) ->
@@ -244,7 +283,10 @@ let main argv =
                                 System.Threading.Thread.Sleep(i * 500) // 500ms間隔で起動
 
                                 Application.MainLoop.Invoke(fun () ->
-                                    logInfo "AutoStart" $"Starting delayed auto-start for {paneId}"
+                                    logInfo
+                                        "AutoStart"
+                                        $"Starting delayed auto-start for {paneId} (step {i + 1}/{activeAgentPanes.Length})"
+
                                     startClaudeCodeForPane (paneId, pane)
                                     logInfo "AutoStart" $"Delayed auto-start completed for {paneId}"))
                             |> ignore)

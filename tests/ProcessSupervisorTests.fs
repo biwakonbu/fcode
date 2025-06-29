@@ -389,7 +389,7 @@ type ProcessSupervisorTests() =
         Assert.That(counter.IPCErrors, Is.EqualTo(2))
         Assert.That(counter.ProcessCrashes, Is.EqualTo(1))
         Assert.That(counter.TimeoutErrors, Is.EqualTo(1))
-        Assert.That(!counter.LastErrorTime, Is.Not.EqualTo(DateTime.MinValue))
+        Assert.That(counter.LastErrorTime.Value, Is.Not.EqualTo(DateTime.MinValue))
 
     [<Test>]
     member _.``ResponseTimeTracker機能テスト``() =

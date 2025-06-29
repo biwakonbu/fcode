@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<TestSequence>
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.PMペイン用カラースキーム適用テスト" DisplayName="PMペイン用カラースキーム適用テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.QAペイン用カラースキーム適用テスト" DisplayName="QAペイン用カラースキーム適用テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.UXペイン用カラースキーム適用テスト" DisplayName="UXペイン用カラースキーム適用テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.カラースキームの属性設定テスト" DisplayName="カラースキームの属性設定テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.カラースキーム定義の存在テスト" DisplayName="カラースキーム定義の存在テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.カラースキーム統一テスト" DisplayName="カラースキーム統一テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.会話ペイン用カラースキーム適用テスト" DisplayName="会話ペイン用カラースキーム適用テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.開発者ペイン用カラースキーム適用テスト" DisplayName="開発者ペイン用カラースキーム適用テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.大文字小文字を無視したカラースキーム適用テスト" DisplayName="大文字小文字を無視したカラースキーム適用テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.複数ペインへの同時適用テスト" DisplayName="複数ペインへの同時適用テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.ColorSchemesTests+ColorSchemesTests.未定義役割のデフォルトカラースキーム適用テスト" DisplayName="未定義役割のデフォルトカラースキーム適用テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.IPCChannelTests+IPCChannelTests.IPCChannelタイムアウト時のリソース解放テスト" DisplayName="IPCChannelタイムアウト時のリソース解放テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="True" />
+  <Test Name="FCode.Tests.IPCChannelTests+IPCChannelTests.IPCChannelメトリクス精度テスト" DisplayName="IPCChannelメトリクス精度テスト" Source="/home/biwakonbu/github/fcode/tests/bin/Debug/net8.0/fcode.Tests.dll" Completed="False" />
+</TestSequence>

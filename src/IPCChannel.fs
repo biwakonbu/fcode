@@ -261,7 +261,7 @@ type IPCChannel(config: IPCChannelConfig) =
             raise (InvalidOperationException("IPC Channel is already running"))
 
         let task = processRequests ()
-        processingTask := Some task
+        processingTask.Value <- Some task
         logInfo "IPC" "IPC Channel started"
         task
 

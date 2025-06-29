@@ -154,6 +154,6 @@ type PtyNetManager() =
             currentSession <- None
         | None -> ()
 
-    /// リソース解放
+    // リソース解放
     interface IDisposable with
         member this.Dispose() = this.CloseSession()

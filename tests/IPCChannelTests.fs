@@ -99,6 +99,7 @@ type IPCChannelTests() =
         task {
             // CI環境ではスキップ（背圧制御問題あり）
             let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
             if isCI then
                 Assert.Pass("CI environment: skipped due to backpressure issues")
             // Arrange
@@ -130,6 +131,7 @@ type IPCChannelTests() =
         task {
             // CI環境ではスキップ（並行性問題あり）
             let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
             if isCI then
                 Assert.Pass("CI environment: skipped due to concurrency issues")
             // Arrange
@@ -220,6 +222,7 @@ type IPCChannelTests() =
         task {
             // CI環境ではスキップ（背圧制御問題あり）
             let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
             if isCI then
                 Assert.Pass("CI environment: skipped due to backpressure issues")
             // Arrange
@@ -255,6 +258,7 @@ type IPCChannelTests() =
         task {
             // CI環境ではスキップ（背圧制御問題あり）
             let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
             if isCI then
                 Assert.Pass("CI environment: skipped due to backpressure issues")
             // Arrange
@@ -287,6 +291,7 @@ type IPCChannelTests() =
         task {
             // CI環境ではスキップ（ブロッキング問題あり）
             let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
             if isCI then
                 Assert.Pass("CI environment: skipped due to blocking issues")
             // Arrange
@@ -324,6 +329,7 @@ type IPCChannelTests() =
         task {
             // CI環境ではスキップ（リソース問題あり）
             let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
             if isCI then
                 Assert.Pass("CI environment: skipped due to resource issues")
             // Arrange
@@ -397,6 +403,7 @@ type IPCChannelTests() =
         task {
             // CI環境ではスキップ（タイムアウト問題あり）
             let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
             if isCI then
                 Assert.Pass("CI environment: skipped due to timeout issues")
             // Arrange

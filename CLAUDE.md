@@ -46,6 +46,13 @@ docs/                        # プロジェクト文書
 
 ## 開発環境セットアップ
 
+### Pre-commitフック自動設定済み
+コミット時に自動的にフォーマット・リントチェックが実行されます：
+- Fantomas: F#コードフォーマット
+- FSharpLint: F#コード品質チェック
+
+手動実行：`./scripts/format-and-lint.sh`
+
 ```bash
 # ビルド
 dotnet build src/fcode.fsproj
@@ -67,6 +74,9 @@ dotnet test tests/fcode.Tests.fsproj --filter "TestCategory=Integration"
 
 # カバレッジレポート付きテスト
 dotnet test tests/fcode.Tests.fsproj --collect:"XPlat Code Coverage"
+
+# コード品質チェック（フォーマット＋リント）
+./scripts/format-and-lint.sh
 
 # 単一ファイルパブリッシュ
 dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true

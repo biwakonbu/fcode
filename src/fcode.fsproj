@@ -18,6 +18,8 @@
     <Compile Include="EnvironmentIsolation.fs" />
     <Compile Include="FileLockManager.fs" />
     <Compile Include="SessionStateManager.fs" />
+    <Compile Include="SessionPersistenceManager.fs" />
+    <Compile Include="DetachAttachManager.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />
     <Compile Include="Program.fs" />

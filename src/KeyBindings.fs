@@ -17,6 +17,10 @@ type KeyAction =
     | StartClaudeCode
     | StopClaudeCode
     | Cancel
+    | DetachSession
+    | SaveSession
+    | ShowSessionList
+    | RecoveryMenu
 
 // キーシーケンス状態管理
 type KeySequenceState =
@@ -50,9 +54,15 @@ let emacsKeyBindings =
       // ヘルプ表示 (Ctrl+X H)
       ([ Key.CtrlMask ||| Key.X; Key.H ], ShowHelp)
 
-      // Claude Code制御 (Ctrl+X S / Ctrl+X K)
-      ([ Key.CtrlMask ||| Key.X; Key.S ], StartClaudeCode)
+      // Claude Code制御 (Ctrl+X C / Ctrl+X K)
+      ([ Key.CtrlMask ||| Key.X; Key.CtrlMask ||| Key.S ], StartClaudeCode)
       ([ Key.CtrlMask ||| Key.X; Key.K ], StopClaudeCode)
+
+      // セッション永続化機能 (Ctrl+X D, Ctrl+X S, Ctrl+X L, Ctrl+X Ctrl+R)
+      ([ Key.CtrlMask ||| Key.X; Key.D ], DetachSession)
+      ([ Key.CtrlMask ||| Key.X; Key.S ], SaveSession)
+      ([ Key.CtrlMask ||| Key.X; Key.L ], ShowSessionList)
+      ([ Key.CtrlMask ||| Key.X; Key.CtrlMask ||| Key.R ], RecoveryMenu)
 
       // 数字キーによるダイレクト移動 (Ctrl+X 0-7)
       ([ Key.CtrlMask ||| Key.X; Key.D0 ], FocusPane 0)
@@ -82,8 +92,14 @@ Emacs風キーバインド:
   Ctrl+X V       : 会話ペイン表示切替
 
 Claude Code制御:
-  Ctrl+X S       : 現在ペインでClaude Code起動
+  Ctrl+X Ctrl+S  : 現在ペインでClaude Code起動
   Ctrl+X K       : 現在ペインのClaude Code終了
+
+セッション永続化:
+  Ctrl+X D       : セッションデタッチ (背景実行)
+  Ctrl+X S       : 手動セッション保存
+  Ctrl+X L       : セッション一覧表示
+  Ctrl+X Ctrl+R  : セッション復旧メニュー
 
 ダイレクト移動:
   Ctrl+X 0-7     : 指定ペインに直接移動
@@ -219,6 +235,18 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
             logDebug "KeyBindings" "Ctrl+G pressed - canceling current operation"
             resetSequence ()
             Application.Refresh()
+        | DetachSession ->
+            // セッションデタッチ機能 (未実装)
+            MessageBox.Query(50, 10, "セッション永続化", "セッションデタッチ機能は実装中です", "OK") |> ignore
+        | SaveSession ->
+            // 手動セッション保存 (未実装)
+            MessageBox.Query(50, 10, "セッション永続化", "セッション保存機能は実装中です", "OK") |> ignore
+        | ShowSessionList ->
+            // セッション一覧表示 (未実装)
+            MessageBox.Query(50, 10, "セッション永続化", "セッション一覧機能は実装中です", "OK") |> ignore
+        | RecoveryMenu ->
+            // セッション復旧メニュー (未実装)
+            MessageBox.Query(50, 10, "セッション永続化", "セッション復旧機能は実装中です", "OK") |> ignore
 
     // マルチキーシーケンス検索
     let findMultiKeyBinding (firstKey: Key) (secondKey: Key) =

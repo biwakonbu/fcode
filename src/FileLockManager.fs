@@ -25,6 +25,17 @@ module FileLockManager =
           ExpiresAt: DateTime option
           LastHeartbeat: DateTime }
 
+    // シリアライゼーション用の型（JSON対応）
+    type SerializableFileLock =
+        { LockId: string
+          FilePath: string
+          LockType: string
+          PaneId: string
+          ProcessId: int
+          AcquiredAt: DateTime
+          ExpiresAt: DateTime option
+          LastHeartbeat: DateTime }
+
     type LockResult =
         | LockAcquired of LockId: string
         | LockConflict of ConflictingPaneId: string * ConflictingLockType: LockType
@@ -40,7 +51,7 @@ module FileLockManager =
 
     type LockConflictInfo =
         { RequestedFile: string
-          RequestedType: LockType
+          RequestedType: string
           RequestingPane: string
           ConflictingLocks: FileLock array
           ConflictReason: string }
@@ -101,6 +112,44 @@ module FileLockManager =
     // グローバルロックレジストリ
     let private lockRegistry = LockRegistry()
 
+    // LockType変換関数
+    let private lockTypeToString (lockType: LockType) =
+        match lockType with
+        | ReadLock -> "ReadLock"
+        | WriteLock -> "WriteLock"
+        | ExclusiveLock -> "ExclusiveLock"
+
+    let private stringToLockType (str: string) =
+        match str with
+        | "ReadLock" -> ReadLock
+        | "WriteLock" -> WriteLock
+        | "ExclusiveLock" -> ExclusiveLock
+        | _ -> failwith $"不正なLockType: {str}"
+
+    // FileLock <-> SerializableFileLock 変換関数
+    let private toSerializable (lock: FileLock) : SerializableFileLock =
+        { LockId = lock.LockId
+          FilePath = lock.FilePath
+          LockType = lockTypeToString lock.LockType
+          PaneId = lock.PaneId
+          ProcessId = lock.ProcessId
+          AcquiredAt = lock.AcquiredAt
+          ExpiresAt = lock.ExpiresAt
+          LastHeartbeat = lock.LastHeartbeat }
+
+    let private fromSerializable (serializable: SerializableFileLock) : FileLock =
+        { LockId = serializable.LockId
+          FilePath = serializable.FilePath
+          LockType = stringToLockType serializable.LockType
+          PaneId = serializable.PaneId
+          ProcessId = serializable.ProcessId
+          AcquiredAt = serializable.AcquiredAt
+          ExpiresAt = serializable.ExpiresAt
+          LastHeartbeat = serializable.LastHeartbeat }
+
+    // JsonSerializerOptions
+    let private jsonOptions = JsonSerializerOptions(WriteIndented = true)
+
     // デフォルト設定
     let defaultConfig =
         { LocksDirectory =
@@ -124,8 +173,8 @@ module FileLockManager =
 
             let lockFile = Path.Combine(config.LocksDirectory, $"{lock.LockId}.json")
 
-            let json =
-                JsonSerializer.Serialize(lock, JsonSerializerOptions(WriteIndented = true))
+            let serializableLock = toSerializable lock
+            let json = JsonSerializer.Serialize(serializableLock, jsonOptions)
 
             File.WriteAllText(lockFile, json)
 
@@ -192,12 +241,12 @@ module FileLockManager =
             if conflicts.Length > 0 then
                 let conflictInfo =
                     { RequestedFile = absolutePath
-                      RequestedType = lockType
+                      RequestedType = lockTypeToString lockType
                       RequestingPane = paneId
                       ConflictingLocks = conflicts
                       ConflictReason = $"{conflicts.Length}個の競合ロックが存在" }
 
-                Logger.logWarning "FileLockManager" $"ロック競合検出: {paneId} -> {absolutePath} ({lockType})"
+                Logger.logWarning "FileLockManager" $"ロック競合検出: {paneId} -> {absolutePath} ({lockTypeToString lockType})"
                 LockConflict(conflicts.[0].PaneId, conflicts.[0].LockType)
             else
                 let lock =
@@ -215,7 +264,10 @@ module FileLockManager =
                 // ロック情報をファイルに保存
                 saveLockToFile config lock |> ignore
 
-                Logger.logInfo "FileLockManager" $"ロック取得成功: {paneId} -> {absolutePath} ({lockType}) [ID: {lockId}]"
+                Logger.logInfo
+                    "FileLockManager"
+                    $"ロック取得成功: {paneId} -> {absolutePath} ({lockTypeToString lockType}) [ID: {lockId}]"
+
                 LockAcquired lockId
 
         with ex ->
@@ -367,7 +419,11 @@ module FileLockManager =
                 for lockFile in lockFiles do
                     try
                         let json = File.ReadAllText(lockFile)
-                        let lock = JsonSerializer.Deserialize<FileLock>(json)
+
+                        let serializableLock =
+                            JsonSerializer.Deserialize<SerializableFileLock>(json, jsonOptions)
+
+                        let lock = fromSerializable serializableLock
 
                         // 期限切れでない場合のみ復元
                         let isValid =

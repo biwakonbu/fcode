@@ -249,7 +249,7 @@ module FileLockManager =
                 Logger.logWarning "FileLockManager" $"ロック競合検出: {paneId} -> {absolutePath} ({lockTypeToString lockType})"
                 LockConflict(conflicts.[0].PaneId, conflicts.[0].LockType)
             else
-                let lock =
+                let lock: FileLock =
                     { LockId = lockId
                       FilePath = absolutePath
                       LockType = lockType

@@ -5,6 +5,7 @@ open System.IO
 open System.Text.Json
 open System.Threading.Tasks
 open System.IO.Compression
+open FCode.SecurityUtils
 
 /// セッション永続化機能を提供するモジュール
 module SessionPersistenceManager =
@@ -118,36 +119,58 @@ module SessionPersistenceManager =
             Logger.logError "SessionPersistence" $"会話履歴展開失敗: {ex.Message}"
             []
 
-    /// ペイン状態の保存
+    /// ペイン状態の保存（セキュリティ強化版）
     let savePaneState (config: PersistenceConfig) (sessionId: string) (paneState: PaneState) =
         try
-            let sessionDir = Path.Combine(config.StorageDirectory, "sessions", sessionId)
-            Directory.CreateDirectory(sessionDir) |> ignore
+            // セキュリティ検証: IDのサニタイズ
+            let safeSessionId = sanitizeSessionId sessionId
+            let safePaneId = sanitizePaneId paneState.PaneId
 
-            let stateDir = Path.Combine(sessionDir, "pane-states")
-            Directory.CreateDirectory(stateDir) |> ignore
+            let sessionDir = Path.Combine(config.StorageDirectory, "sessions", safeSessionId)
 
-            let historyDir = Path.Combine(sessionDir, "conversation-history")
-            Directory.CreateDirectory(historyDir) |> ignore
+            // パスインジェクション防止: ベースディレクトリ外へのアクセスを拒否
+            let normalizedSessionDir = Path.GetFullPath(sessionDir)
+            let normalizedBaseDir = Path.GetFullPath(config.StorageDirectory)
 
-            // ペイン状態の保存 (会話履歴除く)
-            let stateWithoutHistory =
-                { paneState with
-                    ConversationHistory = [] }
+            if not (normalizedSessionDir.StartsWith(normalizedBaseDir)) then
+                Error "セキュリティ検証失敗: パスインジェクション攻撃を検出"
+            else
+                Directory.CreateDirectory(sessionDir) |> ignore
 
-            let stateJson = JsonSerializer.Serialize(stateWithoutHistory, jsonOptions)
-            let stateFile = Path.Combine(stateDir, $"{paneState.PaneId}.json")
-            File.WriteAllText(stateFile, stateJson)
+                let stateDir = Path.Combine(sessionDir, "pane-states")
+                Directory.CreateDirectory(stateDir) |> ignore
 
-            // 会話履歴の圧縮保存
-            if config.CompressionEnabled && paneState.ConversationHistory.Length > 0 then
-                let compressedHistory = compressHistory paneState.ConversationHistory
-                let historyFile = Path.Combine(historyDir, $"{paneState.PaneId}.history.gz")
-                File.WriteAllBytes(historyFile, compressedHistory)
+                let historyDir = Path.Combine(sessionDir, "conversation-history")
+                Directory.CreateDirectory(historyDir) |> ignore
 
-            Success()
+                // 環境変数から機密情報を除去
+                let sanitizedEnvironment = sanitizeEnvironment paneState.Environment
+
+                // 会話履歴から機密情報を除去
+                let sanitizedHistory = filterSensitiveConversation paneState.ConversationHistory
+
+                // ペイン状態の保存 (会話履歴除く、機密情報除去済み)
+                let stateWithoutHistory =
+                    { paneState with
+                        PaneId = safePaneId
+                        ConversationHistory = []
+                        Environment = sanitizedEnvironment }
+
+                let stateJson = JsonSerializer.Serialize(stateWithoutHistory, jsonOptions)
+                let stateFile = Path.Combine(stateDir, $"{safePaneId}.json")
+                File.WriteAllText(stateFile, stateJson)
+
+                // 会話履歴の圧縮保存（機密情報除去済み）
+                if config.CompressionEnabled && sanitizedHistory.Length > 0 then
+                    let compressedHistory = compressHistory sanitizedHistory
+                    let historyFile = Path.Combine(historyDir, $"{safePaneId}.history.gz")
+                    File.WriteAllBytes(historyFile, compressedHistory)
+
+                Success()
         with ex ->
-            Error $"ペイン状態保存失敗 ({paneState.PaneId}): {ex.Message}"
+            let sanitizedMessage = sanitizeLogMessage ex.Message
+            Logger.logError "SessionPersistence" $"ペイン状態保存失敗: {sanitizedMessage}"
+            Error $"ペイン状態保存失敗 ({sanitizePaneId paneState.PaneId}): {sanitizedMessage}"
 
     /// ペイン状態の読み込み
     let loadPaneState (config: PersistenceConfig) (sessionId: string) (paneId: string) =

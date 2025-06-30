@@ -4,7 +4,6 @@ open Terminal.Gui
 open System
 open FCode.Logger
 open FCode.ClaudeCodeProcess
-open FCode.WorkerProcessManager
 
 // キーバインドアクション定義
 type KeyAction =

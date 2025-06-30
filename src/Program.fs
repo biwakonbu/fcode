@@ -7,7 +7,6 @@ open FCode.ColorSchemes
 open FCode.KeyBindings
 open FCode.ClaudeCodeProcess
 open FCode.UIHelpers
-open FCode.EventLoop
 
 [<EntryPoint>]
 let main argv =
@@ -43,12 +42,12 @@ let main argv =
             convo.X <- 0
             convo.Y <- 0
             convo.Width <- conversationWidth
-            convo.Height <- 24  // 固定高
-            convo.CanFocus <- true  // フォーカス可能にする（key-event-focus.md対応）
+            convo.Height <- 24 // 固定高
+            convo.CanFocus <- true // フォーカス可能にする（key-event-focus.md対応）
 
             // Border-less style for the conversation pane (フラット表示)
             convo.Border.Effect3D <- false
-            
+
             // 会話ペイン用TextViewを追加
             logDebug "UI" "Adding TextView to conversation pane"
             let conversationTextView = new TextView()
@@ -57,24 +56,26 @@ let main argv =
             conversationTextView.Width <- Dim.Fill()
             conversationTextView.Height <- Dim.Fill()
             conversationTextView.ReadOnly <- true
-            conversationTextView.Text <- "[会話ペイン] Claude Codeとの対話がここに表示されます\n\nキーバインド:\nESC - 終了\nCtrl+X - Emacsスタイルコマンド"
-            
+
+            conversationTextView.Text <-
+                "[会話ペイン] Claude Codeとの対話がここに表示されます\n\nキーバインド:\nESC - 終了\nCtrl+X - Emacsスタイルコマンド"
+
             // Terminal.Gui 1.15.0の推奨方法: Add()メソッド使用
             convo.Add(conversationTextView)
-            
+
             // レイアウトを適切に設定
             conversationTextView.SetNeedsDisplay()
             convo.SetNeedsDisplay()
-            
+
             logInfo "UI" "Conversation pane with TextView created successfully"
 
             // ----------------------------------------------------------------------
             // Right-hand container – holds all other panes
             let right = new View()
-            right.X <- 60  // 固定位置
+            right.X <- 60 // 固定位置
             right.Y <- 0
-            right.Width <- 60  // 固定幅
-            right.Height <- 24  // 固定高
+            right.Width <- 60 // 固定幅
+            right.Height <- 24 // 固定高
 
             // TextView直接参照用マップ
             let mutable paneTextViews = Map.empty<string, TextView>
@@ -121,56 +122,56 @@ let main argv =
 
             // Row heights (percentage of right-hand container)
             // FIXED LAYOUT for debugging - replacing dynamic Dim.Percent
-            let devRowHeight = 8  // 固定値
-            let qaRowHeight = 8   // 固定値
+            let devRowHeight = 8 // 固定値
+            let qaRowHeight = 8 // 固定値
 
             // ------------------------------------------------------------------
             // Top row – dev1 dev2 dev3
             let dev1 = makePane "dev1"
             dev1.X <- 0
             dev1.Y <- 0
-            dev1.Width <- 20  // 固定幅
+            dev1.Width <- 20 // 固定幅
             dev1.Height <- devRowHeight
 
             let dev2 = makePane "dev2"
-            dev2.X <- 20  // 固定位置
+            dev2.X <- 20 // 固定位置
             dev2.Y <- 0
-            dev2.Width <- 20  // 固定幅
+            dev2.Width <- 20 // 固定幅
             dev2.Height <- devRowHeight
 
             let dev3 = makePane "dev3"
-            dev3.X <- 40  // 固定位置
+            dev3.X <- 40 // 固定位置
             dev3.Y <- 0
-            dev3.Width <- 20  // 固定幅
+            dev3.Width <- 20 // 固定幅
             dev3.Height <- devRowHeight
 
             // ------------------------------------------------------------------
             // Middle row – qa1 qa2 ux
             let qa1 = makePane "qa1"
             qa1.X <- 0
-            qa1.Y <- 8  // 固定位置
-            qa1.Width <- 20  // 固定幅
+            qa1.Y <- 8 // 固定位置
+            qa1.Width <- 20 // 固定幅
             qa1.Height <- qaRowHeight
 
             let qa2 = makePane "qa2"
-            qa2.X <- 20  // 固定位置
-            qa2.Y <- 8   // 固定位置
-            qa2.Width <- 20  // 固定幅
+            qa2.X <- 20 // 固定位置
+            qa2.Y <- 8 // 固定位置
+            qa2.Width <- 20 // 固定幅
             qa2.Height <- qaRowHeight
 
             let ux = makePane "ux"
-            ux.X <- 40  // 固定位置
-            ux.Y <- 8   // 固定位置
-            ux.Width <- 20  // 固定幅
+            ux.X <- 40 // 固定位置
+            ux.Y <- 8 // 固定位置
+            ux.Width <- 20 // 固定幅
             ux.Height <- qaRowHeight
 
             // ------------------------------------------------------------------
             // Bottom row – PM / PdM timeline spanning full width
             let timeline = makePane "PM / PdM タイムライン"
             timeline.X <- 0
-            timeline.Y <- 16  // 固定位置
-            timeline.Width <- 60  // 固定幅
-            timeline.Height <- 6   // 固定高
+            timeline.Y <- 16 // 固定位置
+            timeline.Width <- 60 // 固定幅
+            timeline.Height <- 6 // 固定高
             // Apply PM color scheme specifically
             applySchemeByRole timeline "pm"
 
@@ -274,35 +275,38 @@ let main argv =
             // Override key processing
             // TEMPORARILY DISABLED for debugging
             // top.add_KeyDown keyHandler
-            
+
             // TEMPORARY: 最小限の終了キーハンドラー（ESCのみ）
-            let minimalExitHandler = System.Action<View.KeyEventEventArgs>(fun args ->
-                // デバッグ: すべてのキーイベントをログ
-                logInfo "KeyEvent" $"Key pressed: {args.KeyEvent.Key}, KeyValue: {args.KeyEvent.KeyValue}, Handled: {args.Handled}"
-                
-                if args.KeyEvent.Key = Key.Esc then
-                    logInfo "Application" "ESC pressed - requesting application stop"
-                    Application.RequestStop()
-                    args.Handled <- true
-                else
-                    // 他のキーも一時的に処理してログ表示
-                    match args.KeyEvent.Key with
-                    | Key.CtrlMask when (args.KeyEvent.Key &&& Key.CharMask) = Key.C ->
-                        logInfo "KeyEvent" "Ctrl+C detected"
-                        args.Handled <- false
-                    | Key.CtrlMask when (args.KeyEvent.Key &&& Key.CharMask) = Key.X ->
-                        logInfo "KeyEvent" "Ctrl+X detected - waiting for second key"
-                        args.Handled <- false
-                    | _ ->
-                        logInfo "KeyEvent" $"Other key: {args.KeyEvent.Key}"
-                        args.Handled <- false
-            )
+            let minimalExitHandler =
+                System.Action<View.KeyEventEventArgs>(fun args ->
+                    // デバッグ: すべてのキーイベントをログ
+                    logInfo
+                        "KeyEvent"
+                        $"Key pressed: {args.KeyEvent.Key}, KeyValue: {args.KeyEvent.KeyValue}, Handled: {args.Handled}"
+
+                    if args.KeyEvent.Key = Key.Esc then
+                        logInfo "Application" "ESC pressed - requesting application stop"
+                        Application.RequestStop()
+                        args.Handled <- true
+                    else
+                        // 他のキーも一時的に処理してログ表示
+                        match args.KeyEvent.Key with
+                        | Key.CtrlMask when (args.KeyEvent.Key &&& Key.CharMask) = Key.C ->
+                            logInfo "KeyEvent" "Ctrl+C detected"
+                            args.Handled <- false
+                        | Key.CtrlMask when (args.KeyEvent.Key &&& Key.CharMask) = Key.X ->
+                            logInfo "KeyEvent" "Ctrl+X detected - waiting for second key"
+                            args.Handled <- false
+                        | _ ->
+                            logInfo "KeyEvent" $"Other key: {args.KeyEvent.Key}"
+                            args.Handled <- false)
+
             top.add_KeyDown minimalExitHandler
             logInfo "Application" "Minimal exit handler with debug logging enabled"
 
             // Set initial focus - key-event-focus.md対応
             logDebug "Application" "Setting initial focus to conversation pane"
-            focusablePanes.[0].SetFocus()  // 会話ペインを初期フォーカス
+            focusablePanes.[0].SetFocus() // 会話ペインを初期フォーカス
             logInfo "Application" "Initial focus set to conversation pane"
 
             // Application.Run後の遅延起動を設定
@@ -351,13 +355,13 @@ let main argv =
 
             // Run application
             logInfo "Application" "Starting TUI application loop"
-            
+
             // CPU 100%問題の修正: ドキュメント推奨のFPS/TPS分離実装
             // TEMPORARILY DISABLED: EventLoop might be interfering with key events
             logInfo "Application" "EventLoop DISABLED - testing key event handling without custom event loop"
             // let eventLoop = OptimizedEventLoop(defaultConfig)
             // eventLoop.Run()
-            
+
             // TEMPORARILY DISABLED for debugging
             // setupDelayedAutoStart ()
             Application.Run(top)

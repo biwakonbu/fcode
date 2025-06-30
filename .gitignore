@@ -351,5 +351,10 @@ FodyWeavers.xsd
 *.tmp
 *.temp
 
+# Test Results and Debug files
+TestResults/
+*.dmp
+*.trx
+
 # Keyboard mapping files
 hhkb.xkm

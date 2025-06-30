@@ -36,6 +36,9 @@
     <Compile Include="SessionIsolationTests.fs"/>
     <Compile Include="SessionPersistenceTests.fs"/>
     <Compile Include="DetachAttachTests.fs"/>
+    <Compile Include="SecurityTests.fs"/>
+    <Compile Include="ErrorHandlingTests.fs"/>
+    <Compile Include="ConcurrencyTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

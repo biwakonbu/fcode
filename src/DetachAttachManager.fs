@@ -242,14 +242,24 @@ module DetachAttachManager =
             try
                 Logger.logInfo "DetachAttach" "孤立プロセスロック清理開始"
 
-                let detachedSessions = listDetachedSessions config
+                let lockDir = Path.Combine(config.PersistenceConfig.StorageDirectory, "locks")
                 let mutable cleanedCount = 0
 
-                for session in detachedSessions do
-                    if not (isProcessAlive session.ProcessId) then
-                        removeProcessLock config session.SessionId
-                        cleanedCount <- cleanedCount + 1
-                        Logger.logInfo "DetachAttach" $"孤立ロック削除: {session.SessionId} (PID: {session.ProcessId})"
+                if Directory.Exists(lockDir) then
+                    let lockFiles = Directory.GetFiles(lockDir, "*.lock")
+
+                    for lockFile in lockFiles do
+                        try
+                            let sessionId = Path.GetFileNameWithoutExtension(lockFile)
+
+                            match loadProcessLock config sessionId with
+                            | Some lockInfo when not (isProcessAlive lockInfo.ProcessId) ->
+                                removeProcessLock config sessionId
+                                cleanedCount <- cleanedCount + 1
+                                Logger.logInfo "DetachAttach" $"孤立ロック削除: {sessionId} (PID: {lockInfo.ProcessId})"
+                            | _ -> ()
+                        with ex ->
+                            Logger.logWarning "DetachAttach" $"ロックファイル処理失敗: {ex.Message}"
 
                 Logger.logInfo "DetachAttach" $"孤立プロセスロック清理完了: {cleanedCount}件削除"
                 return cleanedCount

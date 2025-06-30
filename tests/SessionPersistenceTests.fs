@@ -220,7 +220,7 @@ type SessionPersistenceTests() =
 
     [<Test>]
     member this.``空の会話履歴での圧縮・展開テスト``() =
-        let emptyHistory = []
+        let emptyHistory: string list = []
 
         let compressed = compressHistory emptyHistory
         Assert.IsNotNull(compressed)

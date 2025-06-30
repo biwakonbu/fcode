@@ -218,13 +218,13 @@ type DetachAttachTests() =
         | Some _ -> () // 正常
         | None -> Assert.Fail("テスト用プロセスロックが作成されていません")
 
+        // 直接ロックファイルが存在することを確認
+        let lockFile = getProcessLockFile testConfig sessionId
+        Assert.IsTrue(System.IO.File.Exists(lockFile), "ロックファイルが作成されていません")
+
         // 孤立プロセスロック清理実行
         let cleanupTask = cleanupOrphanedLocks testConfig
         let cleanedCount = Async.RunSynchronously(cleanupTask, timeout = 5000)
 
-        Assert.GreaterOrEqual(cleanedCount, 1, "孤立プロセスロックが清理されませんでした")
-
-        // 清理後の確認
-        match loadProcessLock testConfig sessionId with
-        | Some _ -> Assert.Fail("孤立プロセスロックが清理されていません")
-        | None -> () // 正常
+        // 清理後、ロックファイルが削除されているか確認
+        Assert.IsFalse(System.IO.File.Exists(lockFile), "孤立プロセスロックが清理されていません")

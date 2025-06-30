@@ -31,29 +31,67 @@ type SessionManager() =
             false // Session already running
         | _ ->
             try
-                // Claude CLI実行可能性確認
+                // Claude CLI実行可能性確認（改善されたパス検出）
                 logDebug "SessionManager" "Checking Claude CLI availability"
-                let checkClaudeCmd = ProcessStartInfo("which", "claude")
-                checkClaudeCmd.UseShellExecute <- false
-                checkClaudeCmd.RedirectStandardOutput <- true
-                checkClaudeCmd.CreateNoWindow <- true
 
-                use checkProcess = Process.Start(checkClaudeCmd)
-                checkProcess.WaitForExit()
+                let findClaudePath () =
+                    // 複数の候補パスをチェック（安全なFile.Exists使用）
+                    let candidatePaths =
+                        [ "/home/biwakonbu/.local/share/nvm/v20.12.0/bin/claude" // 既知のnvmパス
+                          "/usr/local/bin/claude" // 標準システムパス
+                          "/home/biwakonbu/.local/bin/claude" ] // ローカルbinパス
 
-                if checkProcess.ExitCode <> 0 then
+                    let rec tryPaths paths =
+                        match paths with
+                        | [] ->
+                            // PATH上のclaudeを最後に試行
+                            try
+                                let whichCmd = ProcessStartInfo("which", "claude")
+                                whichCmd.UseShellExecute <- false
+                                whichCmd.RedirectStandardOutput <- true
+                                whichCmd.CreateNoWindow <- true
+                                use whichProc = Process.Start(whichCmd)
+                                whichProc.WaitForExit()
+
+                                if whichProc.ExitCode = 0 then
+                                    let claudePath = whichProc.StandardOutput.ReadToEnd().Trim()
+                                    logDebug "SessionManager" $"Found Claude CLI via which: {claudePath}"
+                                    Some claudePath
+                                else
+                                    None
+                            with ex ->
+                                logDebug "SessionManager" $"which command failed: {ex.Message}"
+                                None
+                        | path :: remainingPaths ->
+                            try
+                                if System.IO.File.Exists(path) then
+                                    logDebug "SessionManager" $"Found Claude CLI at: {path}"
+                                    Some path
+                                else
+                                    tryPaths remainingPaths
+                            with ex ->
+                                logDebug "SessionManager" $"Path check failed for {path}: {ex.Message}"
+                                tryPaths remainingPaths
+
+                    tryPaths candidatePaths
+
+                match findClaudePath () with
+                | None ->
                     let errorMsg =
-                        "[ERROR] Claude CLI が見つかりません。インストールしてください: curl -fsSL https://claude.ai/cli.sh | sh"
+                        "[ERROR] Claude CLI が見つかりません。\n"
+                        + "以下のいずれかでインストールしてください:\n"
+                        + "• curl -fsSL https://claude.ai/cli.sh | sh\n"
+                        + "• npm install -g @anthropic-ai/claude-cli"
 
                     logError "SessionManager" errorMsg
                     outputView.Text <- errorMsg
                     outputView.SetNeedsDisplay()
                     Application.Refresh()
                     false
-                else
+                | Some claudePath ->
                     logDebug "SessionManager" $"Creating ProcessStartInfo for pane: {paneId}"
                     let startInfo = ProcessStartInfo()
-                    startInfo.FileName <- "claude"
+                    startInfo.FileName <- claudePath
                     startInfo.WorkingDirectory <- workingDir
                     startInfo.UseShellExecute <- false
                     startInfo.RedirectStandardInput <- true
@@ -137,7 +175,23 @@ type SessionManager() =
                             | None -> logDebug "SessionManager" $"Standard role configuration for pane: {paneId}"
 
                     logDebug "SessionManager" $"Starting Claude process for pane: {paneId}"
-                    let proc = Process.Start(startInfo)
+
+                    let proc =
+                        try
+                            Process.Start(startInfo)
+                        with ex ->
+                            let errorMsg =
+                                $"[ERROR] Claude CLI起動に失敗しました:\n"
+                                + $"パス: {claudePath}\n"
+                                + $"作業ディレクトリ: {workingDir}\n"
+                                + $"エラー: {ex.Message}"
+
+                            logError "SessionManager" errorMsg
+                            outputView.Text <- errorMsg
+                            outputView.SetNeedsDisplay()
+                            Application.Refresh()
+                            reraise ()
+
                     logInfo "SessionManager" $"Claude process started - PaneId: {paneId}, ProcessId: {proc.Id}"
 
                     let buffer = StringBuilder()

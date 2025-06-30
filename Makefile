@@ -1,7 +1,7 @@
 # fcode プロジェクト用 Makefile
 # 開発・CI/CD タスクの統一インターフェース
 
-.PHONY: help setup clean build test format lint check release install-tools hooks
+.PHONY: help setup clean build run test format lint check release install-tools hooks
 
 # デフォルトターゲット
 help:
@@ -18,6 +18,7 @@ help:
 	@echo "  check          - 全品質チェック (フォーマット+リント+テスト)"
 	@echo ""
 	@echo "🏗️  ビルド・テスト:"
+	@echo "  run            - アプリケーションを起動"
 	@echo "  build          - デバッグビルド"
 	@echo "  test           - テスト実行"
 	@echo "  release        - リリースビルド + 単一ファイルパブリッシュ"
@@ -71,6 +72,11 @@ check:
 		echo "修正後に再度 make check を実行してください"; \
 		exit 1; \
 	fi
+
+# アプリケーション起動
+run:
+	@echo "🚀 アプリケーションを起動中..."
+	@dotnet run --project src/fcode.fsproj
 
 # デバッグビルド
 build:

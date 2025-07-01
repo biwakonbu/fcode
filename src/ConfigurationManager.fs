@@ -97,14 +97,22 @@ let defaultPaneConfigs =
        { PaneId = "ux"
          Role = "ui_ux_designer"
          SystemPrompt =
-           Some "あなたはUI/UXデザイナーです。画面設計、ユーザビリティレビューを担当します。ユーザー中心設計の観点から、直感的で使いやすいインターフェースの提案と、アクセシビリティの確保を重視してください。"
+           Some
+               "あなたはUI/UXデザイナーです。開発の都合よりも常にユーザーの意識について注視してください。本当にユーザーが使いたいのは何か？求めている事を探求し、突き止めることが最優先です。誰よりもユーザーの行動に詳しく、サービス利用者の気持ち、行動をトレースした上で改善点を見つけだしてください。技術的制約や開発効率より、ユーザーの真のニーズと利用体験を最優先に考え、ユーザーの立場から見た本質的な問題解決を提案してください。"
          MaxMemoryMB = Some 384.0
          MaxCpuPercent = Some 40.0 }
        { PaneId = "pm"
+         Role = "project_manager"
+         SystemPrompt =
+           Some
+               "あなたはProject Manager (PM)です。プロジェクト全体の進行管理、ステークホルダー（依頼者）との調整を担当します。スケジュール管理、リスク管理、チーム間のコミュニケーション促進を行い、プロジェクトの成功に向けて全体を統括してください。進捗状況の把握、課題の早期発見と解決、品質とスケジュールのバランス調整を重視してください。"
+         MaxMemoryMB = Some 320.0
+         MaxCpuPercent = Some 35.0 }
+       { PaneId = "pdm"
          Role = "product_designer_manager"
          SystemPrompt =
            Some
-               "あなたはProduct Designer/Manager (PdM)です。要件定義、優先順位付け、ユーザーストーリー策定を担当します。ユーザーニーズと技術的制約のバランスを取りながら、プロダクトの方向性と詳細仕様を定義してください。"
+               "あなたはProduct Designer/Manager (PdM)です。UXデザイナーとの協働によりプロダクトの完成度を高めてください。市場の理解と目の前のプロダクトの品質を忖度なく、全力で批判的にチェックし、常に定量化したレビューを行ってください。KPI、メトリクス、数値データを重視し、客観的な評価基準でプロダクトを判断してください。定性的なレビューはUXデザイナーに任せ、あなたは市場動向、競合分析、ビジネス指標を基にした戦略的な意思決定を担当してください。"
          MaxMemoryMB = Some 320.0
          MaxCpuPercent = Some 35.0 } |]
 
@@ -153,7 +161,10 @@ let defaultKeyBindings =
          Description = "uxペインに移動" }
        { Action = "GotoPane7"
          KeySequence = "Ctrl+X 7"
-         Description = "pmペインに移動" } |]
+         Description = "pmペインに移動" }
+       { Action = "GotoPane8"
+         KeySequence = "Ctrl+X 8"
+         Description = "pdmペインに移動" } |]
 
 let defaultConfiguration =
     { Version = "1.0.0"
@@ -168,7 +179,7 @@ let defaultConfiguration =
           AutoScrollEnabled = Some true
           FontSize = Some 12 }
       ResourceConfig =
-        { MaxActiveConnections = Some 7
+        { MaxActiveConnections = Some 8
           SystemMemoryLimitGB = Some 4.0
           MonitoringIntervalMs = Some 2000
           GcIntervalMs = Some 30000 }

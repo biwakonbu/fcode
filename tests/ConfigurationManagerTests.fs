@@ -30,7 +30,7 @@ type ConfigurationManagerTests() =
         let config = defaultConfiguration
 
         Assert.That(config.Version, Is.EqualTo("1.0.0"))
-        Assert.That(config.PaneConfigs.Length, Is.EqualTo(8))
+        Assert.That(config.PaneConfigs.Length, Is.EqualTo(9))
         Assert.That(config.KeyBindings.Length, Is.GreaterThan(0))
         Assert.That(config.ClaudeConfig.DefaultModel, Is.EqualTo(Some "claude-3-5-sonnet-20241022"))
 
@@ -39,7 +39,7 @@ type ConfigurationManagerTests() =
         let paneIds = defaultPaneConfigs |> Array.map (_.PaneId) |> Set.ofArray
 
         let expectedPanes =
-            Set.ofArray [| "conversation"; "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux"; "pm" |]
+            Set.ofArray [| "conversation"; "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux"; "pm"; "pdm" |]
 
         Assert.That(paneIds, Is.EqualTo(expectedPanes))
 
@@ -54,7 +54,7 @@ type ConfigurationManagerTests() =
             |> Array.map (_.Role)
             |> Set.ofArray
 
-        Assert.That(nonConversationRoles.Count, Is.EqualTo(6), "Each role should be unique")
+        Assert.That(nonConversationRoles.Count, Is.EqualTo(7), "Each role should be unique")
 
     [<Test>]
     member _.``Senior engineer should have highest resource allocation``() =
@@ -81,7 +81,7 @@ type ConfigurationManagerTests() =
         let config = manager.GetConfiguration()
 
         Assert.That(config.Version, Is.EqualTo("1.0.0"))
-        Assert.That(config.PaneConfigs.Length, Is.EqualTo(8))
+        Assert.That(config.PaneConfigs.Length, Is.EqualTo(9))
 
     [<Test>]
     member _.``GetPaneConfig should return correct pane configuration``() =
@@ -219,7 +219,7 @@ type ConfigurationFileTests() =
 
         let config = manager.GetConfiguration()
         Assert.That(config.Version, Is.EqualTo("1.0.0"))
-        Assert.That(config.PaneConfigs.Length, Is.EqualTo(8))
+        Assert.That(config.PaneConfigs.Length, Is.EqualTo(9))
 
 [<TestFixture>]
 [<Category("Unit")>]
@@ -277,7 +277,7 @@ type ConfigurationStructureTests() =
     member _.``ResourceConfig should have reasonable defaults``() =
         let config = defaultConfiguration
 
-        Assert.That(config.ResourceConfig.MaxActiveConnections, Is.EqualTo(Some 7))
+        Assert.That(config.ResourceConfig.MaxActiveConnections, Is.EqualTo(Some 8))
         Assert.That(config.ResourceConfig.SystemMemoryLimitGB, Is.EqualTo(Some 4.0))
         Assert.That(config.ResourceConfig.MonitoringIntervalMs, Is.EqualTo(Some 2000))
 

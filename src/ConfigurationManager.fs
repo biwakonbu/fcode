@@ -34,11 +34,22 @@ type ResourceConfig =
     { MaxActiveConnections: int option
       MonitoringIntervalMs: int option }
 
+type AgentIntegrationConfigData =
+    { Name: string
+      CliPath: string
+      DefaultArgs: string[]
+      OutputFormat: string
+      TimeoutMinutes: float
+      MaxRetries: int
+      SupportedCapabilities: string[]
+      EnvironmentVariables: Map<string, string> }
+
 type Configuration =
     { Version: string
       ClaudeConfig: ClaudeConfig
       UIConfig: UIConfig
       ResourceConfig: ResourceConfig
+      AgentIntegrations: AgentIntegrationConfigData[]
       PaneConfigs: PaneConfig[]
       KeyBindings: KeyBindingConfig[]
       CreatedAt: DateTime
@@ -157,6 +168,22 @@ let defaultConfiguration =
       ResourceConfig =
         { MaxActiveConnections = Some 8
           MonitoringIntervalMs = Some 2000 }
+      AgentIntegrations =
+        [| { Name = "Claude Code"
+             CliPath = "claude"
+             DefaultArgs = [| "--no-color" |]
+             OutputFormat = "text"
+             TimeoutMinutes = 5.0
+             MaxRetries = 3
+             SupportedCapabilities =
+               [| "CodeGeneration"
+                  "Testing"
+                  "Documentation"
+                  "Debugging"
+                  "Refactoring"
+                  "ArchitectureDesign"
+                  "CodeReview" |]
+             EnvironmentVariables = Map.empty } |]
       PaneConfigs = defaultPaneConfigs
       KeyBindings = defaultKeyBindings
       CreatedAt = DateTime.Now

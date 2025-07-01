@@ -33,14 +33,14 @@ type AgentCLIInterfaceTests() =
     [<Test>]
     member _.``AgentOutput構造体は必要な全フィールドを含む``() =
         let testOutput =
-            { Status = "success"
+            { Status = Success
               Content = "テスト出力"
               Metadata = Map.empty.Add("test", "value")
               Timestamp = DateTime.Now
               SourceAgent = "TestAgent"
               Capabilities = [ CodeGeneration; Testing ] }
 
-        Assert.AreEqual("success", testOutput.Status)
+        Assert.AreEqual(Success, testOutput.Status)
         Assert.AreEqual("テスト出力", testOutput.Content)
         Assert.AreEqual("TestAgent", testOutput.SourceAgent)
         Assert.AreEqual(2, testOutput.Capabilities.Length)
@@ -115,7 +115,7 @@ type ClaudeCodeCLITests() =
         let rawOutput = "テスト出力\n追加行"
         let parsedOutput = claudeCLI.ParseOutput(rawOutput)
 
-        Assert.AreEqual("success", parsedOutput.Status)
+        Assert.AreEqual(Success, parsedOutput.Status)
         Assert.AreEqual("テスト出力\n追加行", parsedOutput.Content)
         Assert.AreEqual("Claude Code", parsedOutput.SourceAgent)
         Assert.IsTrue(parsedOutput.Metadata.ContainsKey("output_length"))
@@ -129,7 +129,7 @@ type ClaudeCodeCLITests() =
         let rawOutput = "Error: テストエラー"
         let parsedOutput = claudeCLI.ParseOutput(rawOutput)
 
-        Assert.AreEqual("error", parsedOutput.Status)
+        Assert.AreEqual(Error, parsedOutput.Status)
         Assert.IsTrue(parsedOutput.Content.Contains("テストエラー"))
 
 [<TestFixture>]
@@ -167,7 +167,7 @@ type CustomScriptCLITests() =
         let jsonOutput = """{"status": "success", "content": "テスト結果"}"""
         let parsedOutput = scriptCLI.ParseOutput(jsonOutput)
 
-        Assert.AreEqual("success", parsedOutput.Status)
+        Assert.AreEqual(Success, parsedOutput.Status)
         Assert.AreEqual("テスト結果", parsedOutput.Content)
         Assert.AreEqual("Python Script", parsedOutput.SourceAgent)
         Assert.IsTrue(parsedOutput.Metadata.ContainsKey("format"))
@@ -184,7 +184,7 @@ type CustomScriptCLITests() =
         let textOutput = "プレーンテキスト出力"
         let parsedOutput = scriptCLI.ParseOutput(textOutput)
 
-        Assert.AreEqual("success", parsedOutput.Status)
+        Assert.AreEqual(Success, parsedOutput.Status)
         Assert.AreEqual("プレーンテキスト出力", parsedOutput.Content)
         Assert.AreEqual("text", parsedOutput.Metadata.["format"])
 
@@ -274,7 +274,7 @@ type UtilityFunctionTests() =
     [<Test>]
     member _.``formatAgentOutput統一フォーマットで出力を整形``() =
         let testOutput =
-            { Status = "success"
+            { Status = Success
               Content = "テスト結果"
               Metadata = Map.empty.Add("key1", "value1").Add("key2", "value2")
               Timestamp = DateTime(2025, 7, 1, 12, 0, 0)
@@ -378,7 +378,7 @@ type AgentCLIErrorHandlingTests() =
         let longOutput = String.replicate 10000 "テスト"
         let parsedOutput = claudeCLI.ParseOutput(longOutput)
 
-        Assert.AreEqual("success", parsedOutput.Status)
+        Assert.AreEqual(Success, parsedOutput.Status)
         Assert.IsTrue(parsedOutput.Content.Length > 0)
 
     [<Test>]
@@ -398,7 +398,7 @@ type AgentCLIErrorHandlingTests() =
         let invalidJson = "{ invalid json"
         let parsedOutput = scriptCLI.ParseOutput(invalidJson)
 
-        Assert.AreEqual("error", parsedOutput.Status)
+        Assert.AreEqual(Error, parsedOutput.Status)
         Assert.IsTrue(parsedOutput.Content.Contains("Parse error"))
         Assert.IsTrue(parsedOutput.Metadata.ContainsKey("error_type"))
 
@@ -441,7 +441,7 @@ type AgentCLIBoundaryValueTests() =
     [<Test>]
     member _.``formatAgentOutput空データでフォーマット``() =
         let emptyOutput =
-            { Status = ""
+            { Status = Success
               Content = ""
               Metadata = Map.empty
               Timestamp = DateTime.MinValue

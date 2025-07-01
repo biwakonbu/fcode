@@ -32,7 +32,7 @@ type ConfigurationManagerTests() =
         Assert.That(config.Version, Is.EqualTo("1.0.0"))
         Assert.That(config.PaneConfigs.Length, Is.EqualTo(9))
         Assert.That(config.KeyBindings.Length, Is.GreaterThan(0))
-        Assert.That(config.ClaudeConfig.DefaultModel, Is.EqualTo(Some "claude-3-5-sonnet-20241022"))
+        Assert.That(config.ClaudeConfig.ProjectPath, Is.EqualTo(None))
 
     [<Test>]
     member _.``DefaultPaneConfigs should include all required panes``() =
@@ -61,10 +61,8 @@ type ConfigurationManagerTests() =
         let dev1Config = defaultPaneConfigs |> Array.find (fun p -> p.PaneId = "dev1")
         let otherConfigs = defaultPaneConfigs |> Array.filter (fun p -> p.PaneId <> "dev1")
 
-        // シニアエンジニアが最もリソースを多く使用することを確認
-        for config in otherConfigs do
-            Assert.That(dev1Config.MaxMemoryMB.Value, Is.GreaterThanOrEqualTo(config.MaxMemoryMB.Value))
-            Assert.That(dev1Config.MaxCpuPercent.Value, Is.GreaterThanOrEqualTo(config.MaxCpuPercent.Value))
+        // シニアエンジニアの設定が存在することを確認
+        Assert.That(dev1Config.Role, Is.EqualTo("senior_engineer"))
 
     [<Test>]
     member _.``DefaultKeyBindings should include essential actions``() =
@@ -90,7 +88,6 @@ type ConfigurationManagerTests() =
         let dev1Config = manager.GetPaneConfig("dev1")
         Assert.That(dev1Config.IsSome, Is.True)
         Assert.That(dev1Config.Value.Role, Is.EqualTo("senior_engineer"))
-        Assert.That(dev1Config.Value.MaxMemoryMB, Is.EqualTo(Some 1024.0))
 
     [<Test>]
     member _.``GetPaneConfig should return None for non-existent pane``() =
@@ -114,15 +111,14 @@ type ConfigurationManagerTests() =
         let newClaudeConfig =
             { ClaudeCliPath = Some "/custom/path/claude"
               ApiKey = Some "test-api-key"
-              ProjectPath = Some "/test/project"
-              DefaultModel = Some "claude-3-haiku" }
+              ProjectPath = Some "/test/project" }
 
         manager.UpdateClaudeConfig(newClaudeConfig)
         let config = manager.GetConfiguration()
 
         Assert.That(config.ClaudeConfig.ClaudeCliPath, Is.EqualTo(Some "/custom/path/claude"))
         Assert.That(config.ClaudeConfig.ApiKey, Is.EqualTo(Some "test-api-key"))
-        Assert.That(config.ClaudeConfig.DefaultModel, Is.EqualTo(Some "claude-3-haiku"))
+        Assert.That(config.ClaudeConfig.ProjectPath, Is.EqualTo(Some "/test/project"))
 
     [<Test>]
     member _.``UpdatePaneConfig should update specific pane configuration``() =
@@ -131,16 +127,13 @@ type ConfigurationManagerTests() =
         let updatedPaneConfig =
             { PaneId = "dev1"
               Role = "senior-developer"
-              SystemPrompt = Some "Updated system prompt"
-              MaxMemoryMB = Some 1024.0
-              MaxCpuPercent = Some 75.0 }
+              SystemPrompt = Some "Updated system prompt" }
 
         manager.UpdatePaneConfig("dev1", updatedPaneConfig)
         let dev1Config = manager.GetPaneConfig("dev1")
 
         Assert.That(dev1Config.IsSome, Is.True)
         Assert.That(dev1Config.Value.Role, Is.EqualTo("senior-developer"))
-        Assert.That(dev1Config.Value.MaxMemoryMB, Is.EqualTo(Some 1024.0))
         Assert.That(dev1Config.Value.SystemPrompt, Is.EqualTo(Some "Updated system prompt"))
 
     [<Test>]
@@ -191,8 +184,7 @@ type ConfigurationFileTests() =
         let customClaudeConfig =
             { ClaudeCliPath = Some "/test/claude"
               ApiKey = Some "test-key"
-              ProjectPath = Some "/test/project"
-              DefaultModel = Some "claude-3-haiku" }
+              ProjectPath = Some "/test/project" }
 
         manager.UpdateClaudeConfig(customClaudeConfig)
 
@@ -262,8 +254,6 @@ type ConfigurationStructureTests() =
 
         Assert.That(dev1Config.Role, Is.EqualTo("senior_engineer"))
         Assert.That(dev1Config.SystemPrompt.IsSome, Is.True)
-        Assert.That(dev1Config.MaxMemoryMB, Is.EqualTo(Some 1024.0))
-        Assert.That(dev1Config.MaxCpuPercent, Is.EqualTo(Some 70.0))
 
     [<Test>]
     member _.``KeyBindingConfig should have required fields``() =
@@ -278,7 +268,6 @@ type ConfigurationStructureTests() =
         let config = defaultConfiguration
 
         Assert.That(config.ResourceConfig.MaxActiveConnections, Is.EqualTo(Some 8))
-        Assert.That(config.ResourceConfig.SystemMemoryLimitGB, Is.EqualTo(Some 4.0))
         Assert.That(config.ResourceConfig.MonitoringIntervalMs, Is.EqualTo(Some 2000))
 
     [<Test>]

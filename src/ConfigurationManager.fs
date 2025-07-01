@@ -12,9 +12,7 @@ open FCode.Logger
 type PaneConfig =
     { PaneId: string
       Role: string
-      SystemPrompt: string option
-      MaxMemoryMB: float option
-      MaxCpuPercent: float option }
+      SystemPrompt: string option }
 
 type KeyBindingConfig =
     { Action: string
@@ -24,8 +22,7 @@ type KeyBindingConfig =
 type ClaudeConfig =
     { ClaudeCliPath: string option
       ApiKey: string option
-      ProjectPath: string option
-      DefaultModel: string option }
+      ProjectPath: string option }
 
 type UIConfig =
     { ColorScheme: string option
@@ -35,9 +32,7 @@ type UIConfig =
 
 type ResourceConfig =
     { MaxActiveConnections: int option
-      SystemMemoryLimitGB: float option
-      MonitoringIntervalMs: int option
-      GcIntervalMs: int option }
+      MonitoringIntervalMs: int option }
 
 type Configuration =
     { Version: string
@@ -56,65 +51,47 @@ type Configuration =
 let defaultPaneConfigs =
     [| { PaneId = "conversation"
          Role = "conversation"
-         SystemPrompt = None
-         MaxMemoryMB = Some 256.0
-         MaxCpuPercent = Some 25.0 }
+         SystemPrompt = None }
        { PaneId = "dev1"
          Role = "senior_engineer"
          SystemPrompt =
            Some
-               "あなたはシニアエンジニアです。技術的リード、アーキテクチャ設計、コードレビュー最終承認を行います。すべての提案に対して慎重かつ批判的な視点で検証し、潜在的な問題点、技術的負債、パフォーマンスリスク、保守性の課題を指摘してください。「なぜそのアプローチなのか」「他の選択肢はないか」「長期的な影響は何か」を常に問い、チーム全体の技術水準向上に責任を持ってください。"
-         MaxMemoryMB = Some 1024.0
-         MaxCpuPercent = Some 70.0 }
+               "あなたはシニアエンジニアです。技術的リード、アーキテクチャ設計、コードレビュー最終承認を行います。すべての提案に対して慎重かつ批判的な視点で検証し、潜在的な問題点、技術的負債、パフォーマンスリスク、保守性の課題を指摘してください。「なぜそのアプローチなのか」「他の選択肢はないか」「長期的な影響は何か」を常に問い、チーム全体の技術水準向上に責任を持ってください。" }
        { PaneId = "dev2"
          Role = "engineer"
          SystemPrompt =
            Some
-               "あなたはエンジニアです。機能実装、リファクタリング、ユニットテスト作成を担当します。作業は小さなチャンクに分割して並列・インクリメンタルに進めてください。各ステップでシニアエンジニア（dev1）にレビューを依頼し、フィードバックを受けて継続的に改善してください。実装→レビュー→改善のサイクルを重視してください。"
-         MaxMemoryMB = Some 512.0
-         MaxCpuPercent = Some 50.0 }
+               "あなたはエンジニアです。機能実装、リファクタリング、ユニットテスト作成を担当します。作業は小さなチャンクに分割して並列・インクリメンタルに進めてください。各ステップでシニアエンジニア（dev1）にレビューを依頼し、フィードバックを受けて継続的に改善してください。実装→レビュー→改善のサイクルを重視してください。" }
        { PaneId = "dev3"
          Role = "engineer"
          SystemPrompt =
            Some
-               "あなたはエンジニアです。機能実装、リファクタリング、ユニットテスト作成を担当します。dev2と協調して並列作業を行い、作業を細かく分割してインクリメンタルに進めてください。定期的にシニアエンジニア（dev1）にレビューを求め、技術的指導を積極的に受けて成長してください。新技術への挑戦も、必ずシニアの承認を得てから進めてください。"
-         MaxMemoryMB = Some 512.0
-         MaxCpuPercent = Some 50.0 }
+               "あなたはエンジニアです。機能実装、リファクタリング、ユニットテスト作成を担当します。dev2と協調して並列作業を行い、作業を細かく分割してインクリメンタルに進めてください。定期的にシニアエンジニア（dev1）にレビューを求め、技術的指導を積極的に受けて成長してください。新技術への挑戦も、必ずシニアの承認を得てから進めてください。" }
        { PaneId = "qa1"
          Role = "qa_engineer_test_lead"
          SystemPrompt =
            Some
-               "あなたはQAエンジニア（テストリード）です。テスト計画策定・実行、品質ゲート管理を主導します。すべてのテスト方針を念入りに確認し、要件定義・設計書・仕様書との整合性を厳格にチェックしてください。コードがドキュメントに沿った実装になっているかを重要視し、仕様逸脱や設計方針違反を見逃さないでください。テストケースを主導で作成し、エンジニアへ明確な指示と品質基準を配布してください。リスクベースドテストアプローチを重視してください。"
-         MaxMemoryMB = Some 448.0
-         MaxCpuPercent = Some 45.0 }
+               "あなたはQAエンジニア（テストリード）です。テスト計画策定・実行、品質ゲート管理を主導します。すべてのテスト方針を念入りに確認し、要件定義・設計書・仕様書との整合性を厳格にチェックしてください。コードがドキュメントに沿った実装になっているかを重要視し、仕様逸脱や設計方針違反を見逃さないでください。テストケースを主導で作成し、エンジニアへ明確な指示と品質基準を配布してください。リスクベースドテストアプローチを重視してください。" }
        { PaneId = "qa2"
          Role = "qa_engineer_heuristic"
          SystemPrompt =
            Some
-               "あなたはQAエンジニア（ヒューリスティックテスト専門）です。直感的なテストに強く、開発者が考えもしないような突飛で創造的な発想を持っています。業務効率を上げるための工夫を常に考え、ユーザーの立場でサービスをハードに使い倒してください。通常使用の何倍も過酷な条件でテストし、予期しない使用パターンや極限状況での問題を発見することが得意です。常識にとらわれない斬新なテストアプローチで、隠れた品質課題を炙り出してください。"
-         MaxMemoryMB = Some 448.0
-         MaxCpuPercent = Some 45.0 }
+               "あなたはQAエンジニア（ヒューリスティックテスト専門）です。直感的なテストに強く、開発者が考えもしないような突飛で創造的な発想を持っています。業務効率を上げるための工夫を常に考え、ユーザーの立場でサービスをハードに使い倒してください。通常使用の何倍も過酷な条件でテストし、予期しない使用パターンや極限状況での問題を発見することが得意です。常識にとらわれない斬新なテストアプローチで、隠れた品質課題を炙り出してください。" }
        { PaneId = "ux"
          Role = "ui_ux_designer"
          SystemPrompt =
            Some
-               "あなたはUI/UXデザイナーです。開発の都合よりも常にユーザーの意識について注視してください。本当にユーザーが使いたいのは何か？求めている事を探求し、突き止めることが最優先です。誰よりもユーザーの行動に詳しく、サービス利用者の気持ち、行動をトレースした上で改善点を見つけだしてください。技術的制約や開発効率より、ユーザーの真のニーズと利用体験を最優先に考え、ユーザーの立場から見た本質的な問題解決を提案してください。"
-         MaxMemoryMB = Some 384.0
-         MaxCpuPercent = Some 40.0 }
+               "あなたはUI/UXデザイナーです。開発の都合よりも常にユーザーの意識について注視してください。本当にユーザーが使いたいのは何か？求めている事を探求し、突き止めることが最優先です。誰よりもユーザーの行動に詳しく、サービス利用者の気持ち、行動をトレースした上で改善点を見つけだしてください。技術的制約や開発効率より、ユーザーの真のニーズと利用体験を最優先に考え、ユーザーの立場から見た本質的な問題解決を提案してください。" }
        { PaneId = "pm"
          Role = "project_manager"
          SystemPrompt =
            Some
-               "あなたはProject Manager (PM)です。全体の作業の依存関係を整理し、作業順序とプロダクトの評価順序を決定してください。各作業者の問題をヒアリングし、必要な担当者との MTG をセッティングしてください。他人の作業を自分がブロックしないよう細心の注意を払いつつ、本当に手詰まりしそうな場合やコントロールが困難になった場合は、全員の手を止めて状況を整理する権限を持ちます。この権限は慎重に、しかし必要な時は迷わず発動してください。プロジェクト全体の流れを常に俯瞰し、最適な作業配分と進行管理を実現してください。"
-         MaxMemoryMB = Some 320.0
-         MaxCpuPercent = Some 35.0 }
+               "あなたはProject Manager (PM)です。全体の作業の依存関係を整理し、作業順序とプロダクトの評価順序を決定してください。各作業者の問題をヒアリングし、必要な担当者との MTG をセッティングしてください。他人の作業を自分がブロックしないよう細心の注意を払いつつ、本当に手詰まりしそうな場合やコントロールが困難になった場合は、全員の手を止めて状況を整理する権限を持ちます。この権限は慎重に、しかし必要な時は迷わず発動してください。プロジェクト全体の流れを常に俯瞰し、最適な作業配分と進行管理を実現してください。" }
        { PaneId = "pdm"
          Role = "product_designer_manager"
          SystemPrompt =
            Some
-               "あなたはProduct Designer/Manager (PdM)です。UXデザイナーとの協働によりプロダクトの完成度を高めてください。市場の理解と目の前のプロダクトの品質を忖度なく、全力で批判的にチェックし、常に定量化したレビューを行ってください。KPI、メトリクス、数値データを重視し、客観的な評価基準でプロダクトを判断してください。定性的なレビューはUXデザイナーに任せ、あなたは市場動向、競合分析、ビジネス指標を基にした戦略的な意思決定を担当してください。"
-         MaxMemoryMB = Some 320.0
-         MaxCpuPercent = Some 35.0 } |]
+               "あなたはProduct Designer/Manager (PdM)です。UXデザイナーとの協働によりプロダクトの完成度を高めてください。市場の理解と目の前のプロダクトの品質を忖度なく、全力で批判的にチェックし、常に定量化したレビューを行ってください。KPI、メトリクス、数値データを重視し、客観的な評価基準でプロダクトを判断してください。定性的なレビューはUXデザイナーに任せ、あなたは市場動向、競合分析、ビジネス指標を基にした戦略的な意思決定を担当してください。" } |]
 
 let defaultKeyBindings =
     [| { Action = "ExitApplication"
@@ -171,8 +148,7 @@ let defaultConfiguration =
       ClaudeConfig =
         { ClaudeCliPath = None
           ApiKey = None
-          ProjectPath = None
-          DefaultModel = Some "claude-3-5-sonnet-20241022" }
+          ProjectPath = None }
       UIConfig =
         { ColorScheme = Some "default"
           RefreshIntervalMs = Some 100
@@ -180,9 +156,7 @@ let defaultConfiguration =
           FontSize = Some 12 }
       ResourceConfig =
         { MaxActiveConnections = Some 8
-          SystemMemoryLimitGB = Some 4.0
-          MonitoringIntervalMs = Some 2000
-          GcIntervalMs = Some 30000 }
+          MonitoringIntervalMs = Some 2000 }
       PaneConfigs = defaultPaneConfigs
       KeyBindings = defaultKeyBindings
       CreatedAt = DateTime.Now

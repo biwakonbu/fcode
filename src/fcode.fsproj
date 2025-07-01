@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="Logger.fs" />
     <Compile Include="ColorSchemes.fs" />
+    <Compile Include="ConfigurationManager.fs" />
     <Compile Include="ResourceMonitor.fs" />
     <Compile Include="ResourceController.fs" />
     <Compile Include="PtyNetManager.fs" />

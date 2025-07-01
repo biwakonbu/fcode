@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="TestHelpers.fs"/>
+    <Compile Include="ConfigurationManagerTests.fs"/>
     <Compile Include="QAPromptManagerTests.fs"/>
     <Compile Include="QAEndToEndTests.fs"/>
     <Compile Include="UXPromptManagerTests.fs"/>

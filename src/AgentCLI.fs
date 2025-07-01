@@ -218,6 +218,96 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
         member _.Config = config
 
 // ===============================================
+// Cursor AI CLI実装
+// ===============================================
+
+/// Cursor AI CLI統合実装
+type CursorAICLI(config: AgentIntegrationConfig) =
+    interface IAgentCLI with
+        member _.Name = "Cursor AI"
+
+        member _.StartCommand(input: string) =
+            let startInfo = ProcessStartInfo()
+            startInfo.FileName <- config.CliPath
+            startInfo.Arguments <- String.Join(" ", config.DefaultArgs) + " " + $"\"{input}\""
+            startInfo.UseShellExecute <- false
+            startInfo.RedirectStandardOutput <- true
+            startInfo.RedirectStandardError <- true
+            startInfo.RedirectStandardInput <- true
+            startInfo.CreateNoWindow <- true
+            startInfo.WorkingDirectory <- Environment.CurrentDirectory
+
+            // Cursor AI専用環境変数設定
+            for kvp in config.EnvironmentVariables do
+                startInfo.Environment.[kvp.Key] <- kvp.Value
+
+            // Cursor AI最適化環境変数
+            startInfo.Environment.["CURSOR_AI_CONTEXT"] <- "true"
+            startInfo.Environment.["CURSOR_OUTPUT_MODE"] <- "structured"
+
+            logDebug "CursorAICLI" $"StartCommand: {startInfo.FileName} {startInfo.Arguments}"
+            startInfo
+
+        member _.ParseOutput(rawOutput: string) =
+            try
+                // Cursor AI出力の解析（MarkDown形式に対応）
+                let lines = rawOutput.Split('\n')
+
+                let content =
+                    String.Join(
+                        "\n",
+                        lines
+                        |> Array.filter (fun line ->
+                            not (
+                                line.StartsWith("DEBUG:")
+                                || line.StartsWith("INFO:")
+                                || line.StartsWith("TRACE:")
+                            ))
+                    )
+
+                let status =
+                    if
+                        content.Contains("error")
+                        || content.Contains("Error")
+                        || content.Contains("failed")
+                    then
+                        "error"
+                    elif
+                        content.Contains("completed")
+                        || content.Contains("success")
+                        || content.Length > 0
+                    then
+                        "success"
+                    else
+                        "in_progress"
+
+                { Status = status
+                  Content = content.Trim()
+                  Metadata =
+                    Map.empty
+                        .Add("output_length", content.Length.ToString())
+                        .Add("line_count", lines.Length.ToString())
+                        .Add("format", "markdown")
+                        .Add("agent_type", "cursor_ai")
+                  Timestamp = DateTime.Now
+                  SourceAgent = "Cursor AI"
+                  Capabilities = [ CodeGeneration; Refactoring; CodeReview; ArchitectureDesign ] }
+            with ex ->
+                logError "CursorAICLI" $"ParseOutput failed: {ex.Message}"
+
+                { Status = "error"
+                  Content = $"Parse error: {ex.Message}"
+                  Metadata = Map.empty.Add("error_type", "parse_failure").Add("agent_type", "cursor_ai")
+                  Timestamp = DateTime.Now
+                  SourceAgent = "Cursor AI"
+                  Capabilities = [] }
+
+        member _.SupportedCapabilities =
+            [ CodeGeneration; Refactoring; ArchitectureDesign; CodeReview; Debugging ]
+
+        member _.Config = config
+
+// ===============================================
 // エージェントファクトリー
 // ===============================================
 
@@ -274,6 +364,52 @@ type AgentFactory() =
               MaxRetries = 2
               SupportedCapabilities = capabilities
               EnvironmentVariables = Map.empty }
+
+        CustomScriptCLI(config) :> IAgentCLI
+
+    /// Cursor AI CLI生成
+    static member CreateCursorAICLI(cursorPath: string option) =
+        let path =
+            match cursorPath with
+            | Some p -> p
+            | None ->
+                // デフォルトパス候補
+                let candidates =
+                    [ "/usr/local/bin/cursor"
+                      "/opt/cursor/cursor"
+                      "/home/biwakonbu/.local/bin/cursor"
+                      "cursor" ]
+
+                candidates
+                |> List.find (fun p ->
+                    try
+                        File.Exists(p) || (p = "cursor")
+                    with _ ->
+                        false)
+
+        let config =
+            { Name = "Cursor AI"
+              CliPath = path
+              DefaultArgs = [ "--cli"; "--output-json" ]
+              OutputFormat = "json"
+              Timeout = TimeSpan.FromMinutes(3.0)
+              MaxRetries = 2
+              SupportedCapabilities = [ CodeGeneration; Refactoring; ArchitectureDesign; CodeReview; Debugging ]
+              EnvironmentVariables = Map.empty.Add("CURSOR_AI_MODE", "cli").Add("CURSOR_CONTEXT_AWARE", "true") }
+
+        CursorAICLI(config) :> IAgentCLI
+
+    /// GitHub Copilot CLI生成
+    static member CreateGitHubCopilotCLI() =
+        let config =
+            { Name = "GitHub Copilot"
+              CliPath = "gh"
+              DefaultArgs = [ "copilot"; "suggest" ]
+              OutputFormat = "text"
+              Timeout = TimeSpan.FromMinutes(2.0)
+              MaxRetries = 3
+              SupportedCapabilities = [ CodeGeneration; Debugging; Documentation ]
+              EnvironmentVariables = Map.empty.Add("GH_COPILOT_CONTEXT", "true").Add("GH_COPILOT_FORMAT", "text") }
 
         CustomScriptCLI(config) :> IAgentCLI
 

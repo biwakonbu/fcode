@@ -7,6 +7,7 @@ open System.Threading
 open System.Threading.Tasks
 open FCode.Logger
 open FCode.AgentCLI
+open FCode.AgentConfiguration
 
 // ===============================================
 // エージェントプロセス状態管理
@@ -44,9 +45,10 @@ and ResourceUsage =
 
 /// 複数エージェントプロセス統合管理
 type MultiAgentProcessManager() =
+    let config = getConfiguration ()
     let processInfos = ConcurrentDictionary<string, AgentProcessInfo>()
     let cts = new CancellationTokenSource()
-    let maxConcurrentProcesses = 5
+    let maxConcurrentProcesses = config.MaxConcurrentProcesses
     let semaphore = new SemaphoreSlim(maxConcurrentProcesses, maxConcurrentProcesses)
 
     /// エージェント登録
@@ -56,7 +58,7 @@ type MultiAgentProcessManager() =
                 { CPUUsage = 0.0
                   MemoryUsage = 0L
                   Priority = ProcessPriorityClass.Normal
-                  MaxMemoryLimit = 1024L * 1024L * 1024L // 1GB制限
+                  MaxMemoryLimit = config.ResourceLimits.MaxMemoryMB * 1024L * 1024L // MB -> bytes
                   ExecutionTimeLimit = agent.Config.Timeout }
 
             let processInfo =
@@ -193,7 +195,7 @@ type MultiAgentProcessManager() =
                 | _ -> ()
 
                 return
-                    { Status = "error"
+                    { Status = Error
                       Content = $"Process monitoring error: {ex.Message}"
                       Metadata = Map.empty.Add("error_type", "monitoring_failure")
                       Timestamp = DateTime.Now
@@ -209,60 +211,86 @@ type MultiAgentProcessManager() =
         with ex ->
             logWarning "MultiAgentProcessManager" $"Failed to set process priority: {ex.Message}"
 
-    /// リソース監視開始
+    /// リソース監視開始（イベントベース実装）
     member private this.StartResourceMonitoring(agentId: string, proc: Process) =
         async {
             try
-                while not proc.HasExited do
-                    let! _ = Async.Sleep(1000) // 1秒間隔で監視
+                // プロセス終了イベント監視設定
+                let exitEventReceived = ref false
 
-                    if not proc.HasExited then // 二重チェック
+                proc.EnableRaisingEvents <- true
+
+                proc.Exited.Add(fun _ ->
+                    exitEventReceived := true
+                    logDebug "MultiAgentProcessManager" $"Process exit event received for agent: {agentId}")
+
+                // 設定可能間隔でリソース監視
+                while not !exitEventReceived && not proc.HasExited do
+                    let! _ = Async.Sleep(config.ResourceLimits.MonitoringIntervalMs)
+
+                    // プロセス状態の安全チェック
+                    if not !exitEventReceived && not proc.HasExited then
                         match processInfos.TryGetValue(agentId) with
                         | (true, currentInfo) ->
                             try
-                                let cpuUsage = this.GetCPUUsage(proc)
-                                let memoryUsage = proc.WorkingSet64
+                                // プロセスアクセス前の最終チェック
+                                if not proc.HasExited then
+                                    let cpuUsage = this.GetCPUUsage(proc)
 
-                                // メモリ制限チェック
-                                if memoryUsage > currentInfo.ResourceUsage.MaxMemoryLimit then
-                                    logWarning
-                                        "MultiAgentProcessManager"
-                                        $"Memory limit exceeded for agent {agentId}: {memoryUsage} bytes"
+                                    let memoryUsage =
+                                        try
+                                            proc.WorkingSet64
+                                        with
+                                        | :? InvalidOperationException -> 0L // プロセス終了済み
+                                        | _ -> 0L
 
-                                    proc.Kill()
-
-                                // 実行時間制限チェック
-                                match currentInfo.StartTime with
-                                | Some startTime ->
-                                    let elapsed = DateTime.Now - startTime
-
-                                    if elapsed > currentInfo.ResourceUsage.ExecutionTimeLimit then
+                                    // メモリ制限チェック
+                                    if memoryUsage > currentInfo.ResourceUsage.MaxMemoryLimit && memoryUsage > 0L then
                                         logWarning
                                             "MultiAgentProcessManager"
-                                            $"Execution time limit exceeded for agent {agentId}: {elapsed}"
+                                            $"Memory limit exceeded for agent {agentId}: {memoryUsage} bytes"
 
-                                        proc.Kill()
-                                | None -> ()
+                                        try
+                                            proc.Kill()
+                                        with _ ->
+                                            () // 終了済みの場合はエラー無視
 
-                                // リソース使用状況更新
-                                let updatedResourceUsage =
-                                    { currentInfo.ResourceUsage with
-                                        CPUUsage = cpuUsage
-                                        MemoryUsage = memoryUsage }
+                                    // 実行時間制限チェック
+                                    match currentInfo.StartTime with
+                                    | Some startTime ->
+                                        let elapsed = DateTime.Now - startTime
 
-                                let updatedInfo =
-                                    { currentInfo with
-                                        ResourceUsage = updatedResourceUsage }
+                                        if elapsed > currentInfo.ResourceUsage.ExecutionTimeLimit then
+                                            logWarning
+                                                "MultiAgentProcessManager"
+                                                $"Execution time limit exceeded for agent {agentId}: {elapsed}"
 
-                                processInfos.TryUpdate(agentId, updatedInfo, currentInfo) |> ignore
+                                            try
+                                                proc.Kill()
+                                            with _ ->
+                                                () // 終了済みの場合はエラー無視
+                                    | None -> ()
+
+                                    // リソース使用状況更新
+                                    let updatedResourceUsage =
+                                        { currentInfo.ResourceUsage with
+                                            CPUUsage = cpuUsage
+                                            MemoryUsage = memoryUsage }
+
+                                    let updatedInfo =
+                                        { currentInfo with
+                                            ResourceUsage = updatedResourceUsage }
+
+                                    processInfos.TryUpdate(agentId, updatedInfo, currentInfo) |> ignore
 
                             with ex ->
                                 logDebug
                                     "MultiAgentProcessManager"
-                                    $"Resource monitoring error (process likely exited): {ex.Message}"
+                                    $"Resource monitoring warning (process state changed): {ex.Message}"
 
                         | _ -> ()
 
+                logDebug "MultiAgentProcessManager" $"Resource monitoring completed for agent: {agentId}"
                 return ()
             with ex ->
                 logException "MultiAgentProcessManager" $"Resource monitoring failed for agent: {agentId}" ex

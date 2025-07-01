@@ -33,7 +33,7 @@ type AgentCLIInterfaceTests() =
     [<Test>]
     member _.``AgentOutput構造体は必要な全フィールドを含む``() =
         let testOutput =
-            { Status = "success"
+            { Status = Success
               Content = "テスト出力"
               Metadata = Map.empty.Add("test", "value")
               Timestamp = DateTime.Now
@@ -274,7 +274,7 @@ type UtilityFunctionTests() =
     [<Test>]
     member _.``formatAgentOutput統一フォーマットで出力を整形``() =
         let testOutput =
-            { Status = "success"
+            { Status = Success
               Content = "テスト結果"
               Metadata = Map.empty.Add("key1", "value1").Add("key2", "value2")
               Timestamp = DateTime(2025, 7, 1, 12, 0, 0)
@@ -441,7 +441,7 @@ type AgentCLIBoundaryValueTests() =
     [<Test>]
     member _.``formatAgentOutput空データでフォーマット``() =
         let emptyOutput =
-            { Status = ""
+            { Status = Success
               Content = ""
               Metadata = Map.empty
               Timestamp = DateTime.MinValue

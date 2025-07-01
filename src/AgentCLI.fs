@@ -5,6 +5,7 @@ open System.Diagnostics
 open System.IO
 open System.Text.Json
 open FCode.Logger
+open FCode.AgentConfiguration
 
 // ===============================================
 // エージェント能力・出力定義
@@ -23,9 +24,17 @@ type AgentCapability =
     | UserExperience // UX設計・ユーザビリティ
     | QualityAssurance // 品質保証・探索的テスト
 
+/// エージェント実行ステータス
+type AgentStatus =
+    | Success // 正常完了
+    | Error // エラー発生
+    | InProgress // 実行中
+    | Timeout // タイムアウト
+    | Cancelled // キャンセル
+
 /// エージェント出力の構造化データ
 type AgentOutput =
-    { Status: string // 実行ステータス (success/error/in_progress)
+    { Status: AgentStatus // 実行ステータス
       Content: string // 主要出力内容
       Metadata: Map<string, string> // 追加メタデータ
       Timestamp: DateTime // 出力タイムスタンプ
@@ -105,9 +114,9 @@ type ClaudeCodeCLI(config: AgentIntegrationConfig) =
 
                 { Status =
                     if content.Contains("error") || content.Contains("Error") then
-                        "error"
+                        Error
                     else
-                        "success"
+                        Success
                   Content = content.Trim()
                   Metadata =
                     Map.empty.Add("output_length", content.Length.ToString()).Add("line_count", lines.Length.ToString())
@@ -117,7 +126,7 @@ type ClaudeCodeCLI(config: AgentIntegrationConfig) =
             with ex ->
                 logError "ClaudeCodeCLI" $"ParseOutput failed: {ex.Message}"
 
-                { Status = "error"
+                { Status = Error
                   Content = $"Parse error: {ex.Message}"
                   Metadata = Map.empty.Add("error_type", "parse_failure")
                   Timestamp = DateTime.Now
@@ -182,8 +191,15 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
 
                     { Status =
                         match root.TryGetProperty("status") with
-                        | (true, statusProp) -> statusProp.GetString()
-                        | _ -> "success"
+                        | (true, statusProp) ->
+                            match statusProp.GetString() with
+                            | "success" -> Success
+                            | "error" -> Error
+                            | "in_progress" -> InProgress
+                            | "timeout" -> Timeout
+                            | "cancelled" -> Cancelled
+                            | _ -> Success
+                        | _ -> Success
                       Content =
                         match root.TryGetProperty("content") with
                         | (true, contentProp) -> contentProp.GetString()
@@ -196,9 +212,9 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
                     // プレーンテキスト解析
                     { Status =
                         if rawOutput.Contains("error") || rawOutput.Contains("Error") then
-                            "error"
+                            Error
                         else
-                            "success"
+                            Success
                       Content = rawOutput.Trim()
                       Metadata = Map.empty.Add("format", "text")
                       Timestamp = DateTime.Now
@@ -207,7 +223,7 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
             with ex ->
                 logError "CustomScriptCLI" $"ParseOutput failed: {ex.Message}"
 
-                { Status = "error"
+                { Status = Error
                   Content = $"Parse error: {ex.Message}"
                   Metadata = Map.empty.Add("error_type", "parse_failure")
                   Timestamp = DateTime.Now
@@ -271,15 +287,15 @@ type CursorAICLI(config: AgentIntegrationConfig) =
                         || content.Contains("Error")
                         || content.Contains("failed")
                     then
-                        "error"
+                        Error
                     elif
                         content.Contains("completed")
                         || content.Contains("success")
                         || content.Length > 0
                     then
-                        "success"
+                        Success
                     else
-                        "in_progress"
+                        InProgress
 
                 { Status = status
                   Content = content.Trim()
@@ -295,7 +311,7 @@ type CursorAICLI(config: AgentIntegrationConfig) =
             with ex ->
                 logError "CursorAICLI" $"ParseOutput failed: {ex.Message}"
 
-                { Status = "error"
+                { Status = Error
                   Content = $"Parse error: {ex.Message}"
                   Metadata = Map.empty.Add("error_type", "parse_failure").Add("agent_type", "cursor_ai")
                   Timestamp = DateTime.Now
@@ -316,30 +332,26 @@ type AgentFactory() =
 
     /// Claude Code CLI生成
     static member CreateClaudeCodeCLI(claudePath: string option) =
+        let config = getConfiguration ()
+
         let path =
             match claudePath with
             | Some p -> p
             | None ->
-                // デフォルトパス候補
-                let candidates =
-                    [ "/home/biwakonbu/.local/share/nvm/v20.12.0/bin/claude"
-                      "/usr/local/bin/claude"
-                      "/home/biwakonbu/.local/bin/claude"
-                      "claude" ]
+                try
+                    findExecutablePath (config.ClaudeCodePaths)
+                with _ ->
+                    logWarning "AgentFactory" "Claude Code executable not found, using 'claude' as fallback"
+                    "claude"
 
-                candidates
-                |> List.find (fun p ->
-                    try
-                        File.Exists(p) || (p = "claude")
-                    with _ ->
-                        false)
+        let agentConfig = getConfiguration ()
 
         let config =
             { Name = "Claude Code"
               CliPath = path
               DefaultArgs = [ "--no-color" ]
               OutputFormat = "text"
-              Timeout = TimeSpan.FromMinutes(5.0)
+              Timeout = TimeSpan.FromMinutes(float agentConfig.DefaultTimeoutMinutes)
               MaxRetries = 3
               SupportedCapabilities =
                 [ CodeGeneration
@@ -369,30 +381,26 @@ type AgentFactory() =
 
     /// Cursor AI CLI生成
     static member CreateCursorAICLI(cursorPath: string option) =
+        let config = getConfiguration ()
+
         let path =
             match cursorPath with
             | Some p -> p
             | None ->
-                // デフォルトパス候補
-                let candidates =
-                    [ "/usr/local/bin/cursor"
-                      "/opt/cursor/cursor"
-                      "/home/biwakonbu/.local/bin/cursor"
-                      "cursor" ]
+                try
+                    findExecutablePath (config.CursorAIPaths)
+                with _ ->
+                    logWarning "AgentFactory" "Cursor AI executable not found, using 'cursor' as fallback"
+                    "cursor"
 
-                candidates
-                |> List.find (fun p ->
-                    try
-                        File.Exists(p) || (p = "cursor")
-                    with _ ->
-                        false)
+        let agentConfig = getConfiguration ()
 
         let config =
             { Name = "Cursor AI"
               CliPath = path
               DefaultArgs = [ "--cli"; "--output-json" ]
               OutputFormat = "json"
-              Timeout = TimeSpan.FromMinutes(3.0)
+              Timeout = TimeSpan.FromMinutes(float agentConfig.DefaultTimeoutMinutes)
               MaxRetries = 2
               SupportedCapabilities = [ CodeGeneration; Refactoring; ArchitectureDesign; CodeReview; Debugging ]
               EnvironmentVariables = Map.empty.Add("CURSOR_AI_MODE", "cli").Add("CURSOR_CONTEXT_AWARE", "true") }
@@ -401,12 +409,14 @@ type AgentFactory() =
 
     /// GitHub Copilot CLI生成
     static member CreateGitHubCopilotCLI() =
+        let agentConfig = getConfiguration ()
+
         let config =
             { Name = "GitHub Copilot"
-              CliPath = "gh"
+              CliPath = agentConfig.GitHubCopilotCommand
               DefaultArgs = [ "copilot"; "suggest" ]
               OutputFormat = "text"
-              Timeout = TimeSpan.FromMinutes(2.0)
+              Timeout = TimeSpan.FromMinutes(float agentConfig.DefaultTimeoutMinutes)
               MaxRetries = 3
               SupportedCapabilities = [ CodeGeneration; Debugging; Documentation ]
               EnvironmentVariables = Map.empty.Add("GH_COPILOT_CONTEXT", "true").Add("GH_COPILOT_FORMAT", "text") }
@@ -437,10 +447,18 @@ let formatAgentOutput (output: AgentOutput) =
         |> List.map (fun (k, v) -> sprintf "%s=%s" k v)
         |> String.concat "; "
 
+    let statusStr =
+        match output.Status with
+        | Success -> "SUCCESS"
+        | Error -> "ERROR"
+        | InProgress -> "IN_PROGRESS"
+        | Timeout -> "TIMEOUT"
+        | Cancelled -> "CANCELLED"
+
     sprintf
         "[%s] %s\nTime: %s\nCapabilities: %s\n\n%s\n\nMetadata: %s"
         output.SourceAgent
-        (output.Status.ToUpper())
+        statusStr
         (output.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"))
         capabilitiesStr
         output.Content

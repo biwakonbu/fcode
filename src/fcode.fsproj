@@ -13,6 +13,7 @@
     <Compile Include="AgentMessaging.fs" />
     <Compile Include="MessagePersistence.fs" />
     <Compile Include="MultiAgentProcessManager.fs" />
+    <Compile Include="RealtimeCollaboration.fs" />
     <Compile Include="ResourceMonitor.fs" />
     <Compile Include="ResourceController.fs" />
     <Compile Include="PtyNetManager.fs" />

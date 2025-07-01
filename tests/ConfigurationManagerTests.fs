@@ -44,6 +44,29 @@ type ConfigurationManagerTests() =
         Assert.That(paneIds, Is.EqualTo(expectedPanes))
 
     [<Test>]
+    member _.``PaneConfigs should have differentiated roles``() =
+        let roles = defaultPaneConfigs |> Array.map (_.Role) |> Set.ofArray
+
+        // 各ロールが異なることを確認（conversationを除く）
+        let nonConversationRoles =
+            defaultPaneConfigs
+            |> Array.filter (fun p -> p.PaneId <> "conversation")
+            |> Array.map (_.Role)
+            |> Set.ofArray
+
+        Assert.That(nonConversationRoles.Count, Is.EqualTo(6), "Each role should be unique")
+
+    [<Test>]
+    member _.``Senior engineer should have highest resource allocation``() =
+        let dev1Config = defaultPaneConfigs |> Array.find (fun p -> p.PaneId = "dev1")
+        let otherConfigs = defaultPaneConfigs |> Array.filter (fun p -> p.PaneId <> "dev1")
+
+        // シニアエンジニアが最もリソースを多く使用することを確認
+        for config in otherConfigs do
+            Assert.That(dev1Config.MaxMemoryMB.Value, Is.GreaterThanOrEqualTo(config.MaxMemoryMB.Value))
+            Assert.That(dev1Config.MaxCpuPercent.Value, Is.GreaterThanOrEqualTo(config.MaxCpuPercent.Value))
+
+    [<Test>]
     member _.``DefaultKeyBindings should include essential actions``() =
         let actions = defaultKeyBindings |> Array.map (_.Action) |> Set.ofArray
 
@@ -66,8 +89,8 @@ type ConfigurationManagerTests() =
 
         let dev1Config = manager.GetPaneConfig("dev1")
         Assert.That(dev1Config.IsSome, Is.True)
-        Assert.That(dev1Config.Value.Role, Is.EqualTo("developer"))
-        Assert.That(dev1Config.Value.MaxMemoryMB, Is.EqualTo(Some 512.0))
+        Assert.That(dev1Config.Value.Role, Is.EqualTo("senior_engineer"))
+        Assert.That(dev1Config.Value.MaxMemoryMB, Is.EqualTo(Some 1024.0))
 
     [<Test>]
     member _.``GetPaneConfig should return None for non-existent pane``() =
@@ -237,10 +260,10 @@ type ConfigurationStructureTests() =
     member _.``PaneConfig should have valid default values``() =
         let dev1Config = defaultPaneConfigs |> Array.find (fun p -> p.PaneId = "dev1")
 
-        Assert.That(dev1Config.Role, Is.EqualTo("developer"))
+        Assert.That(dev1Config.Role, Is.EqualTo("senior_engineer"))
         Assert.That(dev1Config.SystemPrompt.IsSome, Is.True)
-        Assert.That(dev1Config.MaxMemoryMB, Is.EqualTo(Some 512.0))
-        Assert.That(dev1Config.MaxCpuPercent, Is.EqualTo(Some 50.0))
+        Assert.That(dev1Config.MaxMemoryMB, Is.EqualTo(Some 1024.0))
+        Assert.That(dev1Config.MaxCpuPercent, Is.EqualTo(Some 70.0))
 
     [<Test>]
     member _.``KeyBindingConfig should have required fields``() =

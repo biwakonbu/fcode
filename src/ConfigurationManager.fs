@@ -60,40 +60,49 @@ let defaultPaneConfigs =
          MaxMemoryMB = Some 256.0
          MaxCpuPercent = Some 25.0 }
        { PaneId = "dev1"
-         Role = "developer"
-         SystemPrompt = Some "あなたは熟練のソフトウェアエンジニアです。コード品質、パフォーマンス、保守性を重視してください。"
-         MaxMemoryMB = Some 512.0
-         MaxCpuPercent = Some 50.0 }
+         Role = "senior_engineer"
+         SystemPrompt =
+           Some
+               "あなたはシニアエンジニアです。技術的リード、アーキテクチャ設計、コードレビュー最終承認を行います。技術的品質と設計の一貫性を最重要視し、チーム全体の技術水準向上に責任を持ってください。複雑な技術的課題の解決に集中してください。"
+         MaxMemoryMB = Some 1024.0
+         MaxCpuPercent = Some 70.0 }
        { PaneId = "dev2"
-         Role = "developer"
-         SystemPrompt = Some "あなたは熟練のソフトウェアエンジニアです。コード品質、パフォーマンス、保守性を重視してください。"
+         Role = "engineer"
+         SystemPrompt = Some "あなたはエンジニアです。機能実装、リファクタリング、ユニットテスト作成を担当します。実装速度と品質のバランスを保ちながら、保守性の高いコードを書くことを心がけてください。"
          MaxMemoryMB = Some 512.0
          MaxCpuPercent = Some 50.0 }
        { PaneId = "dev3"
-         Role = "developer"
-         SystemPrompt = Some "あなたは熟練のソフトウェアエンジニアです。コード品質、パフォーマンス、保守性を重視してください。"
+         Role = "engineer"
+         SystemPrompt = Some "あなたはエンジニアです。機能実装、リファクタリング、ユニットテスト作成を担当します。新しい技術への挑戦と学習意欲を持ちながら、チームの開発効率向上に貢献してください。"
          MaxMemoryMB = Some 512.0
          MaxCpuPercent = Some 50.0 }
        { PaneId = "qa1"
-         Role = "qa"
-         SystemPrompt = Some "あなたは品質保証の専門家です。テスト戦略、バグ検出、品質向上に焦点を当ててください。"
-         MaxMemoryMB = Some 384.0
-         MaxCpuPercent = Some 40.0 }
+         Role = "qa_engineer_test_lead"
+         SystemPrompt =
+           Some
+               "あなたはQAエンジニア（テストリード）です。テスト計画策定・実行、品質ゲート管理を主導します。テストケースを主導で作成し、エンジニアへ明確な指示を配布してください。リスクベースドテストアプローチを重視してください。"
+         MaxMemoryMB = Some 448.0
+         MaxCpuPercent = Some 45.0 }
        { PaneId = "qa2"
-         Role = "qa"
-         SystemPrompt = Some "あなたは品質保証の専門家です。テスト戦略、バグ検出、品質向上に焦点を当ててください。"
-         MaxMemoryMB = Some 384.0
-         MaxCpuPercent = Some 40.0 }
+         Role = "qa_engineer_heuristic"
+         SystemPrompt =
+           Some
+               "あなたはQAエンジニア（ヒューリスティックテスト専門）です。未知の不具合やユーザビリティ課題の早期発見を担当します。探索的テストとエッジケース発見に特化し、創造的なテストアプローチで品質向上に貢献してください。"
+         MaxMemoryMB = Some 448.0
+         MaxCpuPercent = Some 45.0 }
        { PaneId = "ux"
-         Role = "ux"
-         SystemPrompt = Some "あなたはUX/UIデザインの専門家です。ユーザビリティ、アクセシビリティ、使いやすさを重視してください。"
+         Role = "ui_ux_designer"
+         SystemPrompt =
+           Some "あなたはUI/UXデザイナーです。画面設計、ユーザビリティレビューを担当します。ユーザー中心設計の観点から、直感的で使いやすいインターフェースの提案と、アクセシビリティの確保を重視してください。"
          MaxMemoryMB = Some 384.0
          MaxCpuPercent = Some 40.0 }
        { PaneId = "pm"
-         Role = "pm"
-         SystemPrompt = Some "あなたはプロジェクトマネージャーです。進捗管理、リスク管理、品質管理の観点で支援してください。"
-         MaxMemoryMB = Some 256.0
-         MaxCpuPercent = Some 30.0 } |]
+         Role = "product_designer_manager"
+         SystemPrompt =
+           Some
+               "あなたはProduct Designer/Manager (PdM)です。要件定義、優先順位付け、ユーザーストーリー策定を担当します。ユーザーニーズと技術的制約のバランスを取りながら、プロダクトの方向性と詳細仕様を定義してください。"
+         MaxMemoryMB = Some 320.0
+         MaxCpuPercent = Some 35.0 } |]
 
 let defaultKeyBindings =
     [| { Action = "ExitApplication"

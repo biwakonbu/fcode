@@ -23,11 +23,23 @@ src/                         # メインアプリケーション
 ├── ClaudeCodeProcess.fs     # Claude Codeプロセス管理・セッション制御 (190行)
 ├── ProcessSupervisor.fs     # プロセス分離・監視・自動復旧システム (422行)
 ├── Logger.fs                # 包括的ログシステム (71行)
+├── RealtimeCollaboration.fs # リアルタイム協調機能統合ファサード (217行)
+├── Collaboration/           # リアルタイム協調機能アーキテクチャ（2,526行）
+│   ├── CollaborationTypes.fs        # 型定義・エラー型 (163行)
+│   ├── IAgentStateManager.fs        # エージェント状態管理インターフェース (46行)
+│   ├── ITaskDependencyGraph.fs      # タスク依存関係管理インターフェース (58行)
+│   ├── IProgressAggregator.fs       # 進捗監視インターフェース (75行)
+│   ├── ICollaborationCoordinator.fs # 協調制御インターフェース (63行)
+│   ├── AgentStateManager.fs         # エージェント状態管理実装 (268行)
+│   ├── TaskDependencyGraph.fs       # タスク依存関係管理実装 (549行)
+│   ├── ProgressAggregator.fs        # 進捗監視・分析実装 (408行)
+│   ├── CollaborationCoordinator.fs  # 競合制御・デッドロック検出実装 (496行)
+│   └── RealtimeCollaborationFacade.fs # 統合ファサード・イベント統合 (400行)
 ├── fcode.fsproj             # F#プロジェクトファイル
 ├── bin/                     # ビルド出力
 └── obj/                     # ビルド中間ファイル
 
-tests/                       # 包括的テストスイート（82テスト）
+tests/                       # 包括的テストスイート（151テスト）
 ├── KeyBindingsTests.fs      # キーバインドシステムテスト
 ├── ColorSchemesTests.fs     # カラースキーム機能テスト
 ├── WorkerProcessManagerDynamicWaitTests.fs  # 動的待機機能テスト
@@ -35,13 +47,16 @@ tests/                       # 包括的テストスイート（82テスト）
 ├── UIHelpersTests.fs        # UI階層・境界条件テスト
 ├── EndToEndIntegrationTests.fs  # 統合・E2Eテスト
 ├── ResourceManagementTests.fs    # リソース管理・リーク検出テスト
+├── RealtimeCollaborationTests.fs # リアルタイム協調機能包括的テスト (625行)
 ├── fcode.Tests.fsproj       # テストプロジェクトファイル
 └── Program.fs               # テストエントリーポイント
 
-docs/                        # プロジェクト文書
+docs/                        # プロジェクト文書・アーキテクチャ設計
 ├── TODO.md                  # 詳細開発タスク管理
 ├── PRD.md                   # プロダクト要件定義
-└── ui_layout.md             # UIレイアウト設計詳細
+├── ui_layout.md             # UIレイアウト設計詳細
+├── COLLABORATION_ARCHITECTURE.md # リアルタイム協調アーキテクチャ設計 (383行)
+└── TASK_STORAGE_DESIGN.md   # SQLite3タスクストレージ設計 (783行)
 ```
 
 ## 開発環境セットアップ
@@ -102,7 +117,9 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - **包括的ログシステム**: 4段階ログレベル、カテゴリ別出力（71行）
 - **プロセス分離アーキテクチャ基盤**: ProcessSupervisor完全実装（422行）
 - **UIHelpers根本修正**: Terminal.Gui 1.15.0対応、リフレクション安全化（2025-06-29）
-- **包括的テストスイート**: 82テストケース、5カテゴリ（Unit/Integration/Performance/Stability）
+- **包括的テストスイート**: 151テストケース、5カテゴリ（Unit/Integration/Performance/Stability）
+- **リアルタイム協調機能基盤**: 完全実装（2,526行、包括的アーキテクチャ）
+- **SQLite3永続化設計**: タスク・依存関係管理設計完了（783行）
 
 ### 開発中機能（80%完了）
 - **Claude Code CLI統合**: プロセス起動基盤完成、TextView初期化に課題
@@ -132,13 +149,14 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - Claude Code CLI（必須）: ローカルインストール済み前提
 - 設定ファイル: `~/.config/claude-tui/config.toml`（予定）
 
-## 現在のプロジェクト状態（2025-06-29）
+## 現在のプロジェクト状態（2025-07-02）
 
 ### 最新の実装状況
-- **総実装ライン数**: 1180行 (src/), 1777行 (tests/)
-- **テストカバレッジ**: 82テストケース / 100%パス
-- **アーキテクチャ基盤**: UI、キーバインド、ログ、プロセス分離、TextView初期化すべて完成
+- **総実装ライン数**: 3,706行 (src/), 2,402行 (tests/)
+- **テストカバレッジ**: 151テストケース / 100%パス
+- **アーキテクチャ基盤**: UI、キーバインド、ログ、プロセス分離、リアルタイム協調すべて完成
 - **根本修正完了**: TextView初期化問題解決（Terminal.Gui 1.15.0対応）
+- **リアルタイム協調機能**: 完全実装（2,526行、包括的アーキテクチャ）
 
 ### 開発フェーズ再編成: 動作確認最優先
 **新しい開発方針**: セッション維持・堅牢性は後回し、まず画面表示を実現
@@ -166,10 +184,6 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - **包括的テスト強化** - 39テスト追加（WorkerProcessManager/IPCChannel/UIHelpers/E2E/リソース管理） - commit a6ff40e
 - **CI/CDパイプライン修正** - テストカテゴリ分離・タイムアウト対策 - commit 4cd9317
 
-### 次期開発タスク（最優先）
-1. Claude Code標準出力キャプチャ機能実装
-2. dev1ペインでの基本対話動作確認  
-3. I/O統合とリアルタイム表示機能
 
 ## 開発時注意事項
 

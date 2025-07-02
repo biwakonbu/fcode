@@ -13,6 +13,17 @@
     <Compile Include="AgentMessaging.fs" />
     <Compile Include="MessagePersistence.fs" />
     <Compile Include="MultiAgentProcessManager.fs" />
+    <Compile Include="RealtimeCollaboration.fs" />
+    <Compile Include="Collaboration/CollaborationTypes.fs" />
+    <Compile Include="Collaboration/IAgentStateManager.fs" />
+    <Compile Include="Collaboration/ITaskDependencyGraph.fs" />
+    <Compile Include="Collaboration/IProgressAggregator.fs" />
+    <Compile Include="Collaboration/ICollaborationCoordinator.fs" />
+    <Compile Include="Collaboration/AgentStateManager.fs" />
+    <Compile Include="Collaboration/TaskDependencyGraph.fs" />
+    <Compile Include="Collaboration/ProgressAggregator.fs" />
+    <Compile Include="Collaboration/CollaborationCoordinator.fs" />
+    <Compile Include="Collaboration/RealtimeCollaborationFacade.fs" />
     <Compile Include="ResourceMonitor.fs" />
     <Compile Include="ResourceController.fs" />
     <Compile Include="PtyNetManager.fs" />
@@ -38,5 +49,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="FSharp.SystemTextJson" Version="1.3.13" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
   </ItemGroup>
 </Project> 

@@ -2,7 +2,7 @@ module FCode.Tests.TaskStorageTests
 
 open System
 open System.IO
-open Xunit
+open NUnit.Framework
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.TaskStorageManager
 open FCode.Collaboration.DatabaseSchemaManager
@@ -24,8 +24,8 @@ let createTestConfig (dbPath: string) =
         MaxConcurrentAgents = 5
         TaskTimeoutMinutes = 10 }
 
-[<Fact(DisplayName = "TaskStorageManager - データベース初期化テスト")>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TaskStorageManager database initialization test`` () =
     let storage, dbPath = createTestDatabase ()
 
@@ -33,13 +33,11 @@ let ``TaskStorageManager database initialization test`` () =
         // データベース初期化
         let initResult = storage.InitializeDatabase() |> Async.RunSynchronously
 
-        Assert.True(
-            match initResult with
-            | Result.Ok _ -> true
-            | _ -> false
-        )
+        match initResult with
+        | Result.Ok _ -> Assert.Pass()
+        | Result.Error e -> Assert.Fail($"Database initialization failed: {e}")
 
-        Assert.True(File.Exists(dbPath))
+        Assert.That(File.Exists(dbPath), Is.True)
 
     finally
         storage.Dispose()
@@ -47,8 +45,8 @@ let ``TaskStorageManager database initialization test`` () =
         if File.Exists(dbPath) then
             File.Delete(dbPath)
 
-[<Fact(DisplayName = "TaskStorageManager - タスク保存・取得テスト")>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TaskStorageManager task save and retrieve test`` () =
     let storage, dbPath = createTestDatabase ()
 
@@ -72,22 +70,20 @@ let ``TaskStorageManager task save and retrieve test`` () =
         // タスク保存テスト
         let saveResult = storage.SaveTask(testTask) |> Async.RunSynchronously
 
-        Assert.True(
-            match saveResult with
-            | Result.Ok _ -> true
-            | _ -> false
-        )
+        match saveResult with
+        | Result.Ok _ -> Assert.Pass()
+        | Result.Error e -> Assert.Fail($"Task save failed: {e}")
 
         // 実行可能タスク取得テスト
         let executableTasks = storage.GetExecutableTasks() |> Async.RunSynchronously
 
         match executableTasks with
         | Result.Ok tasks ->
-            Assert.True(tasks |> List.exists (fun t -> t.TaskId = "test-task-1"))
+            Assert.That(tasks |> List.exists (fun t -> t.TaskId = "test-task-1"), Is.True)
             let retrievedTask = tasks |> List.find (fun t -> t.TaskId = "test-task-1")
-            Assert.Equal(testTask.Title, retrievedTask.Title)
-            Assert.Equal(testTask.Priority, retrievedTask.Priority)
-        | Result.Error e -> Assert.True(false, $"タスク取得に失敗: {e}")
+            Assert.That(retrievedTask.Title, Is.EqualTo(testTask.Title))
+            Assert.That(retrievedTask.Priority, Is.EqualTo(testTask.Priority))
+        | Result.Error e -> Assert.Fail($"タスク取得に失敗: {e}")
 
     finally
         storage.Dispose()
@@ -95,8 +91,8 @@ let ``TaskStorageManager task save and retrieve test`` () =
         if File.Exists(dbPath) then
             File.Delete(dbPath)
 
-[<Fact(DisplayName = "TaskStorageManager - 依存関係保存テスト")>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TaskStorageManager dependency save test`` () =
     let storage, dbPath = createTestDatabase ()
 
@@ -108,11 +104,9 @@ let ``TaskStorageManager dependency save test`` () =
         let depResult =
             storage.SaveTaskDependency("task-2", "task-1", "hard") |> Async.RunSynchronously
 
-        Assert.True(
-            match depResult with
-            | Result.Ok _ -> true
-            | _ -> false
-        )
+        match depResult with
+        | Result.Ok _ -> Assert.Pass()
+        | Result.Error e -> Assert.Fail($"Dependency save failed: {e}")
 
     finally
         storage.Dispose()
@@ -120,8 +114,8 @@ let ``TaskStorageManager dependency save test`` () =
         if File.Exists(dbPath) then
             File.Delete(dbPath)
 
-[<Fact(DisplayName = "TaskStorageManager - エージェント状態履歴保存テスト")>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TaskStorageManager agent state history save test`` () =
     let storage, dbPath = createTestDatabase ()
 
@@ -142,11 +136,9 @@ let ``TaskStorageManager agent state history save test`` () =
         let historyResult =
             storage.SaveAgentStateHistory(testAgentState) |> Async.RunSynchronously
 
-        Assert.True(
-            match historyResult with
-            | Result.Ok _ -> true
-            | _ -> false
-        )
+        match historyResult with
+        | Result.Ok _ -> Assert.Pass()
+        | Result.Error e -> Assert.Fail($"Agent state history save failed: {e}")
 
     finally
         storage.Dispose()
@@ -154,8 +146,8 @@ let ``TaskStorageManager agent state history save test`` () =
         if File.Exists(dbPath) then
             File.Delete(dbPath)
 
-[<Fact(DisplayName = "TaskStorageManager - 進捗サマリー取得テスト")>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TaskStorageManager progress summary test`` () =
     let storage, dbPath = createTestDatabase ()
 
@@ -207,10 +199,10 @@ let ``TaskStorageManager progress summary test`` () =
 
         match summaryResult with
         | Result.Ok summary ->
-            Assert.Equal(3, summary.TotalTasks)
-            Assert.Equal(1, summary.CompletedTasks)
-            Assert.Equal(1, summary.InProgressTasks)
-        | Result.Error e -> Assert.True(false, $"進捗サマリー取得に失敗: {e}")
+            Assert.That(summary.TotalTasks, Is.EqualTo(3))
+            Assert.That(summary.CompletedTasks, Is.EqualTo(1))
+            Assert.That(summary.InProgressTasks, Is.EqualTo(1))
+        | Result.Error e -> Assert.Fail($"進捗サマリー取得に失敗: {e}")
 
     finally
         storage.Dispose()
@@ -218,8 +210,8 @@ let ``TaskStorageManager progress summary test`` () =
         if File.Exists(dbPath) then
             File.Delete(dbPath)
 
-[<Fact(DisplayName = "TaskRepository - タスク保存・取得テスト")>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Integration")>]
 let ``TaskRepository save and retrieve test`` () =
     let testDbPath = Path.GetTempFileName()
     let connectionString = $"Data Source={testDbPath}"
@@ -247,27 +239,25 @@ let ``TaskRepository save and retrieve test`` () =
         // タスク保存テスト
         let saveResult = taskRepo.SaveTask(testTask) |> Async.RunSynchronously
 
-        Assert.True(
-            match saveResult with
-            | Result.Ok _ -> true
-            | _ -> false
-        )
+        match saveResult with
+        | Result.Ok _ -> Assert.Pass()
+        | Result.Error e -> Assert.Fail($"Task save failed: {e}")
 
         // タスク取得テスト
         let getResult = taskRepo.GetTask("task-repo-test-1") |> Async.RunSynchronously
 
         match getResult with
         | Result.Ok(Some retrievedTask) ->
-            Assert.Equal(testTask.Title, retrievedTask.Title)
-            Assert.Equal(testTask.Priority, retrievedTask.Priority)
-        | _ -> Assert.True(false, "タスクリポジトリからのタスク取得に失敗")
+            Assert.That(retrievedTask.Title, Is.EqualTo(testTask.Title))
+            Assert.That(retrievedTask.Priority, Is.EqualTo(testTask.Priority))
+        | _ -> Assert.Fail("タスクリポジトリからのタスク取得に失敗")
 
     finally
         if File.Exists(testDbPath) then
             File.Delete(testDbPath)
 
-[<Fact(DisplayName = "AgentRepository - エージェント状態管理テスト")>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Integration")>]
 let ``AgentRepository state management test`` () =
     let testDbPath = Path.GetTempFileName()
     let connectionString = $"Data Source={testDbPath}"
@@ -292,11 +282,9 @@ let ``AgentRepository state management test`` () =
         let saveResult =
             agentRepo.SaveAgentStateHistory(testAgentState) |> Async.RunSynchronously
 
-        Assert.True(
-            match saveResult with
-            | Result.Ok _ -> true
-            | _ -> false
-        )
+        match saveResult with
+        | Result.Ok _ -> Assert.Pass()
+        | Result.Error e -> Assert.Fail($"Agent state save failed: {e}")
 
         // エージェント最新状態取得テスト
         let getResult =
@@ -304,17 +292,17 @@ let ``AgentRepository state management test`` () =
 
         match getResult with
         | Result.Ok(Some retrievedState) ->
-            Assert.Equal(testAgentState.AgentId, retrievedState.AgentId)
-            Assert.Equal(testAgentState.Status, retrievedState.Status)
-            Assert.Equal(testAgentState.Progress, retrievedState.Progress)
-        | _ -> Assert.True(false, "エージェントリポジトリからの状態取得に失敗")
+            Assert.That(retrievedState.AgentId, Is.EqualTo(testAgentState.AgentId))
+            Assert.That(retrievedState.Status, Is.EqualTo(testAgentState.Status))
+            Assert.That(retrievedState.Progress, Is.EqualTo(testAgentState.Progress))
+        | _ -> Assert.Fail("エージェントリポジトリからの状態取得に失敗")
 
     finally
         if File.Exists(testDbPath) then
             File.Delete(testDbPath)
 
-[<Fact(DisplayName = "ProgressRepository - 進捗管理テスト")>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Integration")>]
 let ``ProgressRepository progress management test`` () =
     let testDbPath = Path.GetTempFileName()
     let connectionString = $"Data Source={testDbPath}"
@@ -337,11 +325,9 @@ let ``ProgressRepository progress management test`` () =
             )
             |> Async.RunSynchronously
 
-        Assert.True(
-            match eventResult with
-            | Result.Ok _ -> true
-            | _ -> false
-        )
+        match eventResult with
+        | Result.Ok _ -> Assert.Pass()
+        | Result.Error e -> Assert.Fail($"Progress event save failed: {e}")
 
         // 最新進捗イベント取得テスト
         let eventsResult =
@@ -349,11 +335,11 @@ let ``ProgressRepository progress management test`` () =
 
         match eventsResult with
         | Result.Ok events ->
-            Assert.True(events.Length > 0)
+            Assert.That(events.Length, Is.GreaterThan(0))
             let (eventType, agentId, _, _, _, _, _) = events.Head
-            Assert.Equal("TaskStarted", eventType)
-            Assert.Equal("test-agent-1", agentId)
-        | _ -> Assert.True(false, "進捗リポジトリからのイベント取得に失敗")
+            Assert.That(eventType, Is.EqualTo("TaskStarted"))
+            Assert.That(agentId, Is.EqualTo("test-agent-1"))
+        | _ -> Assert.Fail("進捗リポジトリからのイベント取得に失敗")
 
     finally
         if File.Exists(testDbPath) then

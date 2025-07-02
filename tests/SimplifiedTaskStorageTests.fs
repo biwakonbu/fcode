@@ -93,12 +93,12 @@ type SimplifiedTaskStorageTests() =
                     Assert.AreEqual(testTask.Status, retrievedTask.Status)
                     Assert.AreEqual(testTask.Priority, retrievedTask.Priority)
                     Assert.AreEqual(testTask.RequiredResources.Length, retrievedTask.RequiredResources.Length)
-                    
+
                     // JSON配列として保存されたリソースの確認
                     Assert.IsTrue(List.contains "cpu" retrievedTask.RequiredResources)
                     Assert.IsTrue(List.contains "memory" retrievedTask.RequiredResources)
                     Assert.IsTrue(List.contains "storage" retrievedTask.RequiredResources)
-                    
+
                 | Result.Ok(None) -> Assert.Fail("Task not found")
                 | Result.Error(error) -> Assert.Fail($"Task retrieval failed: {error}")
 
@@ -137,7 +137,7 @@ type SimplifiedTaskStorageTests() =
                     { TaskId = "task-b"
                       Title = "Task B"
                       Description = "Second task"
-                      Status = TaskStatus.Completed  // 完了状態
+                      Status = TaskStatus.Completed // 完了状態
                       AssignedAgent = None
                       Priority = TaskPriority.Medium
                       EstimatedDuration = None
@@ -166,7 +166,7 @@ type SimplifiedTaskStorageTests() =
 
                 match executableResult with
                 | Result.Ok(tasks) ->
-                    Assert.IsTrue(tasks.Length >= 0)  // 基本的に実行可能
+                    Assert.IsTrue(tasks.Length >= 0) // 基本的に実行可能
                     // task-aが実行可能タスクに含まれるかチェック
                     let taskAExists = tasks |> List.exists (fun t -> t.TaskId = "task-a")
                     Assert.IsTrue(taskAExists, "Task A should be executable since Task B is completed")
@@ -243,32 +243,32 @@ type SimplifiedTaskStorageTests() =
     [<Category("Unit")>]
     member _.``Type Safe Enum Mapping Test``() =
         // 型安全な列挙型マッピングのテスト
-        
+
         // TaskStatus マッピング
         Assert.AreEqual(1, taskStatusToInt TaskStatus.Pending)
         Assert.AreEqual(2, taskStatusToInt TaskStatus.InProgress)
         Assert.AreEqual(3, taskStatusToInt TaskStatus.Completed)
         Assert.AreEqual(4, taskStatusToInt TaskStatus.Failed)
         Assert.AreEqual(5, taskStatusToInt TaskStatus.Cancelled)
-        
+
         Assert.AreEqual(TaskStatus.Pending, intToTaskStatus 1)
         Assert.AreEqual(TaskStatus.InProgress, intToTaskStatus 2)
         Assert.AreEqual(TaskStatus.Completed, intToTaskStatus 3)
         Assert.AreEqual(TaskStatus.Failed, intToTaskStatus 4)
         Assert.AreEqual(TaskStatus.Cancelled, intToTaskStatus 5)
-        
+
         // AgentStatus マッピング
         Assert.AreEqual(1, agentStatusToInt AgentStatus.Idle)
         Assert.AreEqual(2, agentStatusToInt AgentStatus.Working)
         Assert.AreEqual(3, agentStatusToInt AgentStatus.Blocked)
         Assert.AreEqual(4, agentStatusToInt AgentStatus.Error)
         Assert.AreEqual(5, agentStatusToInt AgentStatus.Completed)
-        
+
         // JSON安全変換
-        let testList = ["resource1"; "resource2"; "resource3"]
+        let testList = [ "resource1"; "resource2"; "resource3" ]
         let json = listToJson testList
         let restoredList = jsonToList json
-        
+
         Assert.AreEqual(testList.Length, restoredList.Length)
         Assert.IsTrue(List.contains "resource1" restoredList)
         Assert.IsTrue(List.contains "resource2" restoredList)
@@ -302,7 +302,7 @@ type SimplifiedTaskStorageTests() =
                       UpdatedAt = DateTime.Now }
 
                 let! saveTaskResult = manager.SaveTask(testTask)
-                
+
                 match saveTaskResult with
                 | Result.Ok(_) -> ()
                 | Result.Error(error) -> Assert.Fail($"Task save failed: {error}")
@@ -313,7 +313,7 @@ type SimplifiedTaskStorageTests() =
                       Status = AgentStatus.Working
                       Progress = 50.0
                       LastUpdate = DateTime.Now
-                      CurrentTask = Some "test-task"  // 上で作成したタスクを参照
+                      CurrentTask = Some "test-task" // 上で作成したタスクを参照
                       WorkingDirectory = "/tmp/test"
                       ProcessId = Some 12345 }
 
@@ -321,8 +321,7 @@ type SimplifiedTaskStorageTests() =
                 let! saveResult = manager.SaveAgentStateHistory(agentState)
 
                 match saveResult with
-                | Result.Ok(rowsAffected) ->
-                    Assert.AreEqual(1, rowsAffected)
+                | Result.Ok(rowsAffected) -> Assert.AreEqual(1, rowsAffected)
                 | Result.Error(error) -> Assert.Fail($"Agent state history save failed: {error}")
 
             | None -> Assert.Fail("Storage manager not initialized")

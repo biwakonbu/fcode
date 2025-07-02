@@ -27,24 +27,33 @@ type StorageDesignIntegrationTests() =
     member _.``Factory can create both storage designs``() =
         async {
             // 3テーブル設計のテスト
-            use threeTableStorage = TaskStorageFactory.CreateTaskStorage(connectionString, ThreeTableDesign)
+            use threeTableStorage =
+                TaskStorageFactory.CreateTaskStorage(connectionString, ThreeTableDesign)
+
             let! initResult3 = threeTableStorage.InitializeDatabase()
+
             match initResult3 with
             | Result.Ok(_) -> Assert.Pass()
             | Result.Error(error) -> Assert.Fail($"3-table design initialization failed: {error}")
 
             // 6テーブル設計のテスト
-            let tempDbPath6 = Path.Combine(Path.GetTempPath(), $"integration_6table_test_{Guid.NewGuid()}.db")
+            let tempDbPath6 =
+                Path.Combine(Path.GetTempPath(), $"integration_6table_test_{Guid.NewGuid()}.db")
+
             let connectionString6 = $"Data Source={tempDbPath6};"
-            
+
             try
-                use sixTableStorage = TaskStorageFactory.CreateTaskStorage(connectionString6, SixTableDesign)
+                use sixTableStorage =
+                    TaskStorageFactory.CreateTaskStorage(connectionString6, SixTableDesign)
+
                 let! initResult6 = sixTableStorage.InitializeDatabase()
+
                 match initResult6 with
                 | Result.Ok(_) -> Assert.Pass()
                 | Result.Error(error) -> Assert.Fail($"6-table design initialization failed: {error}")
             finally
-                if File.Exists(tempDbPath6) then File.Delete(tempDbPath6)
+                if File.Exists(tempDbPath6) then
+                    File.Delete(tempDbPath6)
         }
         |> Async.RunSynchronously
 
@@ -66,7 +75,9 @@ type StorageDesignIntegrationTests() =
                   UpdatedAt = DateTime.Now }
 
             // 3テーブル設計でのテスト
-            use threeTableStorage = TaskStorageFactory.CreateTaskStorage(connectionString, ThreeTableDesign)
+            use threeTableStorage =
+                TaskStorageFactory.CreateTaskStorage(connectionString, ThreeTableDesign)
+
             let! _ = threeTableStorage.InitializeDatabase()
             let! saveResult3 = threeTableStorage.SaveTask(testTask)
             let! getResult3 = threeTableStorage.GetTask("integration-test-001")
@@ -74,6 +85,7 @@ type StorageDesignIntegrationTests() =
             match saveResult3 with
             | Result.Ok(_) -> Assert.Pass()
             | Result.Error(error) -> Assert.Fail($"3-table design save failed: {error}")
+
             match getResult3 with
             | Result.Ok(Some retrievedTask) ->
                 Assert.AreEqual(testTask.TaskId, retrievedTask.TaskId)
@@ -82,11 +94,15 @@ type StorageDesignIntegrationTests() =
             | _ -> Assert.Fail("3-table design should retrieve saved task")
 
             // 6テーブル設計でのテスト
-            let tempDbPath6 = Path.Combine(Path.GetTempPath(), $"integration_6table_crud_{Guid.NewGuid()}.db")
+            let tempDbPath6 =
+                Path.Combine(Path.GetTempPath(), $"integration_6table_crud_{Guid.NewGuid()}.db")
+
             let connectionString6 = $"Data Source={tempDbPath6};"
-            
+
             try
-                use sixTableStorage = TaskStorageFactory.CreateTaskStorage(connectionString6, SixTableDesign)
+                use sixTableStorage =
+                    TaskStorageFactory.CreateTaskStorage(connectionString6, SixTableDesign)
+
                 let! _ = sixTableStorage.InitializeDatabase()
                 let! saveResult6 = sixTableStorage.SaveTask(testTask)
                 let! getResult6 = sixTableStorage.GetTask("integration-test-001")
@@ -94,6 +110,7 @@ type StorageDesignIntegrationTests() =
                 match saveResult6 with
                 | Result.Ok(_) -> Assert.Pass()
                 | Result.Error(error) -> Assert.Fail($"6-table design save failed: {error}")
+
                 match getResult6 with
                 | Result.Ok(Some retrievedTask) ->
                     Assert.AreEqual(testTask.TaskId, retrievedTask.TaskId)
@@ -101,7 +118,8 @@ type StorageDesignIntegrationTests() =
                     Assert.AreEqual(testTask.Priority, retrievedTask.Priority)
                 | _ -> Assert.Fail("6-table design should retrieve saved task")
             finally
-                if File.Exists(tempDbPath6) then File.Delete(tempDbPath6)
+                if File.Exists(tempDbPath6) then
+                    File.Delete(tempDbPath6)
         }
         |> Async.RunSynchronously
 
@@ -152,7 +170,9 @@ type StorageDesignIntegrationTests() =
                   UpdatedAt = DateTime.Now }
 
             // 3テーブル設計のプログレス確認
-            use threeTableStorage = TaskStorageFactory.CreateTaskStorage(connectionString, ThreeTableDesign)
+            use threeTableStorage =
+                TaskStorageFactory.CreateTaskStorage(connectionString, ThreeTableDesign)
+
             let! _ = threeTableStorage.InitializeDatabase()
             let! _ = threeTableStorage.SaveTask(testTask)
             let! progressResult3 = threeTableStorage.GetProgressSummary()

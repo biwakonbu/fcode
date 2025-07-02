@@ -19,6 +19,7 @@ type SimplifiedTaskStorageManager(connectionString: string) =
             match value with
             | Some v -> box v
             | None -> box DBNull.Value
+
         command.Parameters.AddWithValue(paramName, sqlValue) |> ignore
 
     /// データベース初期化
@@ -51,22 +52,34 @@ type SimplifiedTaskStorageManager(connectionString: string) =
                         """
 
                     use command = new SqliteCommand(sql, connection)
-                    
+
                     // 型安全なパラメータ設定
                     command.Parameters.AddWithValue("@taskId", task.TaskId) |> ignore
                     command.Parameters.AddWithValue("@title", task.Title) |> ignore
                     command.Parameters.AddWithValue("@description", task.Description) |> ignore
-                    command.Parameters.AddWithValue("@status", TypeSafeMapping.taskStatusToInt task.Status) |> ignore
+
+                    command.Parameters.AddWithValue("@status", TypeSafeMapping.taskStatusToInt task.Status)
+                    |> ignore
+
                     addParameterSafely command "@assignedAgent" (task.AssignedAgent |> Option.map box)
-                    command.Parameters.AddWithValue("@priority", TypeSafeMapping.taskPriorityToInt task.Priority) |> ignore
-                    
-                    addParameterSafely command "@estimatedMinutes" 
+
+                    command.Parameters.AddWithValue("@priority", TypeSafeMapping.taskPriorityToInt task.Priority)
+                    |> ignore
+
+                    addParameterSafely
+                        command
+                        "@estimatedMinutes"
                         (task.EstimatedDuration |> Option.map (fun ts -> box (int ts.TotalMinutes)))
-                    addParameterSafely command "@actualMinutes" 
+
+                    addParameterSafely
+                        command
+                        "@actualMinutes"
                         (task.ActualDuration |> Option.map (fun ts -> box (int ts.TotalMinutes)))
-                    
-                    command.Parameters.AddWithValue("@resourcesJson", TypeSafeMapping.listToJson task.RequiredResources) |> ignore
-                    command.Parameters.AddWithValue("@metadataJson", "{}") |> ignore  // 将来の拡張用
+
+                    command.Parameters.AddWithValue("@resourcesJson", TypeSafeMapping.listToJson task.RequiredResources)
+                    |> ignore
+
+                    command.Parameters.AddWithValue("@metadataJson", "{}") |> ignore // 将来の拡張用
                     command.Parameters.AddWithValue("@createdAt", task.CreatedAt) |> ignore
                     command.Parameters.AddWithValue("@updatedAt", task.UpdatedAt) |> ignore
 
@@ -101,24 +114,29 @@ type SimplifiedTaskStorageManager(connectionString: string) =
                     if hasData then
                         try
                             let task =
-                                { TaskId = reader.GetString(0)  // task_id
-                                  Title = reader.GetString(1)   // title
-                                  Description = reader.GetString(2)  // description
-                                  Status = TypeSafeMapping.intToTaskStatus (reader.GetInt32(3))  // status
+                                { TaskId = reader.GetString(0) // task_id
+                                  Title = reader.GetString(1) // title
+                                  Description = reader.GetString(2) // description
+                                  Status = TypeSafeMapping.intToTaskStatus (reader.GetInt32(3)) // status
                                   AssignedAgent =
-                                    if reader.IsDBNull(4) then None
-                                    else Some(reader.GetString(4))  // assigned_agent
-                                  Priority = TypeSafeMapping.intToTaskPriority (reader.GetInt32(5))  // priority
+                                    if reader.IsDBNull(4) then
+                                        None
+                                    else
+                                        Some(reader.GetString(4)) // assigned_agent
+                                  Priority = TypeSafeMapping.intToTaskPriority (reader.GetInt32(5)) // priority
                                   EstimatedDuration =
-                                    if reader.IsDBNull(6) then None
-                                    else Some(TimeSpan.FromMinutes(float (reader.GetInt32(6))))  // estimated_minutes
+                                    if reader.IsDBNull(6) then
+                                        None
+                                    else
+                                        Some(TimeSpan.FromMinutes(float (reader.GetInt32(6)))) // estimated_minutes
                                   ActualDuration =
-                                    if reader.IsDBNull(7) then None
-                                    else Some(TimeSpan.FromMinutes(float (reader.GetInt32(7))))  // actual_minutes
-                                  RequiredResources = 
-                                    TypeSafeMapping.jsonToList (reader.GetString(8))  // resources_json
-                                  CreatedAt = reader.GetDateTime(10)  // created_at
-                                  UpdatedAt = reader.GetDateTime(11) }  // updated_at
+                                    if reader.IsDBNull(7) then
+                                        None
+                                    else
+                                        Some(TimeSpan.FromMinutes(float (reader.GetInt32(7)))) // actual_minutes
+                                  RequiredResources = TypeSafeMapping.jsonToList (reader.GetString(8)) // resources_json
+                                  CreatedAt = reader.GetDateTime(10) // created_at
+                                  UpdatedAt = reader.GetDateTime(11) } // updated_at
 
                             return Result.Ok(Some task)
                         with ex ->
@@ -149,7 +167,9 @@ type SimplifiedTaskStorageManager(connectionString: string) =
                 use command = new SqliteCommand(sql, connection)
                 command.Parameters.AddWithValue("@taskId", taskId) |> ignore
                 command.Parameters.AddWithValue("@dependsOnTaskId", dependsOnTaskId) |> ignore
-                command.Parameters.AddWithValue("@dependencyType", TypeSafeMapping.dependencyTypeToInt dependencyType) |> ignore
+
+                command.Parameters.AddWithValue("@dependencyType", TypeSafeMapping.dependencyTypeToInt dependencyType)
+                |> ignore
 
                 let! rowsAffected = command.ExecuteNonQueryAsync() |> Async.AwaitTask
 
@@ -168,7 +188,7 @@ type SimplifiedTaskStorageManager(connectionString: string) =
                 use connection = createConnection ()
                 do! connection.OpenAsync() |> Async.AwaitTask
 
-                let sql = "SELECT * FROM executable_tasks LIMIT 50"  // シンプルなクエリ
+                let sql = "SELECT * FROM executable_tasks LIMIT 50" // シンプルなクエリ
                 use command = new SqliteCommand(sql, connection)
 
                 use! reader = command.ExecuteReaderAsync() |> Async.AwaitTask
@@ -177,24 +197,29 @@ type SimplifiedTaskStorageManager(connectionString: string) =
                 while! reader.ReadAsync() |> Async.AwaitTask do
                     try
                         let task =
-                            { TaskId = reader.GetString(0)  // task_id
-                              Title = reader.GetString(1)   // title
-                              Description = reader.GetString(2)  // description
-                              Status = TypeSafeMapping.intToTaskStatus (reader.GetInt32(3))  // status
+                            { TaskId = reader.GetString(0) // task_id
+                              Title = reader.GetString(1) // title
+                              Description = reader.GetString(2) // description
+                              Status = TypeSafeMapping.intToTaskStatus (reader.GetInt32(3)) // status
                               AssignedAgent =
-                                if reader.IsDBNull(4) then None
-                                else Some(reader.GetString(4))  // assigned_agent
-                              Priority = TypeSafeMapping.intToTaskPriority (reader.GetInt32(5))  // priority
+                                if reader.IsDBNull(4) then
+                                    None
+                                else
+                                    Some(reader.GetString(4)) // assigned_agent
+                              Priority = TypeSafeMapping.intToTaskPriority (reader.GetInt32(5)) // priority
                               EstimatedDuration =
-                                if reader.IsDBNull(6) then None
-                                else Some(TimeSpan.FromMinutes(float (reader.GetInt32(6))))  // estimated_minutes
+                                if reader.IsDBNull(6) then
+                                    None
+                                else
+                                    Some(TimeSpan.FromMinutes(float (reader.GetInt32(6)))) // estimated_minutes
                               ActualDuration =
-                                if reader.IsDBNull(7) then None
-                                else Some(TimeSpan.FromMinutes(float (reader.GetInt32(7))))  // actual_minutes
-                              RequiredResources = 
-                                TypeSafeMapping.jsonToList (reader.GetString(8))  // resources_json
-                              CreatedAt = reader.GetDateTime(10)  // created_at
-                              UpdatedAt = reader.GetDateTime(11) }  // updated_at
+                                if reader.IsDBNull(7) then
+                                    None
+                                else
+                                    Some(TimeSpan.FromMinutes(float (reader.GetInt32(7)))) // actual_minutes
+                              RequiredResources = TypeSafeMapping.jsonToList (reader.GetString(8)) // resources_json
+                              CreatedAt = reader.GetDateTime(10) // created_at
+                              UpdatedAt = reader.GetDateTime(11) } // updated_at
 
                         tasks.Add(task)
                     with ex ->
@@ -227,12 +252,18 @@ type SimplifiedTaskStorageManager(connectionString: string) =
 
                     use command = new SqliteCommand(sql, connection)
                     command.Parameters.AddWithValue("@agentId", agentState.AgentId) |> ignore
-                    command.Parameters.AddWithValue("@status", TypeSafeMapping.agentStatusToInt agentState.Status) |> ignore
+
+                    command.Parameters.AddWithValue("@status", TypeSafeMapping.agentStatusToInt agentState.Status)
+                    |> ignore
+
                     command.Parameters.AddWithValue("@progress", agentState.Progress) |> ignore
                     addParameterSafely command "@currentTaskId" (agentState.CurrentTask |> Option.map box)
-                    command.Parameters.AddWithValue("@workingDirectory", agentState.WorkingDirectory) |> ignore
+
+                    command.Parameters.AddWithValue("@workingDirectory", agentState.WorkingDirectory)
+                    |> ignore
+
                     addParameterSafely command "@processId" (agentState.ProcessId |> Option.map box)
-                    command.Parameters.AddWithValue("@metadataJson", "{}") |> ignore  // 将来の拡張用
+                    command.Parameters.AddWithValue("@metadataJson", "{}") |> ignore // 将来の拡張用
                     command.Parameters.AddWithValue("@timestamp", agentState.LastUpdate) |> ignore
 
                     let! rowsAffected = command.ExecuteNonQueryAsync() |> Async.AwaitTask
@@ -261,22 +292,32 @@ type SimplifiedTaskStorageManager(connectionString: string) =
 
                 if hasData then
                     let summary =
-                        { TotalTasks = if reader.IsDBNull(0) then 0 else reader.GetInt32(0)  // total_tasks
-                          CompletedTasks = if reader.IsDBNull(1) then 0 else reader.GetInt32(1)  // completed_tasks
-                          InProgressTasks = if reader.IsDBNull(2) then 0 else reader.GetInt32(2)  // active_tasks
-                          BlockedTasks = if reader.IsDBNull(3) then 0 else reader.GetInt32(3)  // failed_tasks
-                          ActiveAgents = if reader.IsDBNull(5) then 0 else reader.GetInt32(5)  // active_agents
-                          OverallProgress = if reader.IsDBNull(4) then 0.0 else reader.GetDouble(4)  // completion_percentage
-                          EstimatedTimeRemaining = None  // 簡素化のため省略
-                          LastUpdated = if reader.IsDBNull(6) then DateTime.MinValue else reader.GetDateTime(6) }  // last_update
+                        { TotalTasks = if reader.IsDBNull(0) then 0 else reader.GetInt32(0) // total_tasks
+                          CompletedTasks = if reader.IsDBNull(1) then 0 else reader.GetInt32(1) // completed_tasks
+                          InProgressTasks = if reader.IsDBNull(2) then 0 else reader.GetInt32(2) // active_tasks
+                          BlockedTasks = if reader.IsDBNull(3) then 0 else reader.GetInt32(3) // failed_tasks
+                          ActiveAgents = if reader.IsDBNull(5) then 0 else reader.GetInt32(5) // active_agents
+                          OverallProgress = if reader.IsDBNull(4) then 0.0 else reader.GetDouble(4) // completion_percentage
+                          EstimatedTimeRemaining = None // 簡素化のため省略
+                          LastUpdated =
+                            if reader.IsDBNull(6) then
+                                DateTime.MinValue
+                            else
+                                reader.GetDateTime(6) } // last_update
 
                     return Result.Ok summary
                 else
                     // データが無い場合のデフォルト値
                     let emptySummary =
-                        { TotalTasks = 0; CompletedTasks = 0; InProgressTasks = 0; BlockedTasks = 0
-                          ActiveAgents = 0; OverallProgress = 0.0; EstimatedTimeRemaining = None
+                        { TotalTasks = 0
+                          CompletedTasks = 0
+                          InProgressTasks = 0
+                          BlockedTasks = 0
+                          ActiveAgents = 0
+                          OverallProgress = 0.0
+                          EstimatedTimeRemaining = None
                           LastUpdated = DateTime.Now }
+
                     return Result.Ok emptySummary
 
             with ex ->

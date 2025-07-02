@@ -8,77 +8,84 @@ open FCode.Logger
 
 /// 型安全な列挙型マッピング
 module TypeSafeMapping =
-    
+
     /// TaskStatus ↔ Integer マッピング
-    let taskStatusToInt = function
+    let taskStatusToInt =
+        function
         | TaskStatus.Pending -> 1
         | TaskStatus.InProgress -> 2
         | TaskStatus.Completed -> 3
         | TaskStatus.Failed -> 4
         | TaskStatus.Cancelled -> 5
-    
-    let intToTaskStatus = function
+
+    let intToTaskStatus =
+        function
         | 1 -> TaskStatus.Pending
         | 2 -> TaskStatus.InProgress
         | 3 -> TaskStatus.Completed
         | 4 -> TaskStatus.Failed
         | 5 -> TaskStatus.Cancelled
         | _ -> failwith "Invalid task status"
-    
+
     /// AgentStatus ↔ Integer マッピング
-    let agentStatusToInt = function
+    let agentStatusToInt =
+        function
         | AgentStatus.Idle -> 1
         | AgentStatus.Working -> 2
         | AgentStatus.Blocked -> 3
         | AgentStatus.Error -> 4
         | AgentStatus.Completed -> 5
-    
-    let intToAgentStatus = function
+
+    let intToAgentStatus =
+        function
         | 1 -> AgentStatus.Idle
         | 2 -> AgentStatus.Working
         | 3 -> AgentStatus.Blocked
         | 4 -> AgentStatus.Error
         | 5 -> AgentStatus.Completed
         | _ -> failwith "Invalid agent status"
-    
+
     /// TaskPriority ↔ Integer マッピング
-    let taskPriorityToInt = function
+    let taskPriorityToInt =
+        function
         | TaskPriority.Low -> 1
         | TaskPriority.Medium -> 2
         | TaskPriority.High -> 3
         | TaskPriority.Critical -> 4
-        | _ -> 2  // 未知の値にはMediumを適用
-    
-    let intToTaskPriority = function
+        | _ -> 2 // 未知の値にはMediumを適用
+
+    let intToTaskPriority =
+        function
         | 1 -> TaskPriority.Low
         | 2 -> TaskPriority.Medium
         | 3 -> TaskPriority.High
         | 4 -> TaskPriority.Critical
-        | _ -> TaskPriority.Medium  // デフォルト値
+        | _ -> TaskPriority.Medium // デフォルト値
 
     /// 依存関係タイプマッピング
-    let dependencyTypeToInt = function
+    let dependencyTypeToInt =
+        function
         | "hard" -> 1
         | "soft" -> 2
-        | _ -> 1  // デフォルトはhard
-    
-    let intToDependencyType = function
+        | _ -> 1 // デフォルトはhard
+
+    let intToDependencyType =
+        function
         | 1 -> "hard"
         | 2 -> "soft"
         | _ -> "hard"
 
     /// JSON安全変換
-    let listToJson (items: string list) =
-        JsonSerializer.Serialize(items)
-    
+    let listToJson (items: string list) = JsonSerializer.Serialize(items)
+
     let jsonToList (json: string) =
         if String.IsNullOrWhiteSpace(json) then
             []
         else
             try
                 JsonSerializer.Deserialize<string list>(json)
-            with
-            | _ -> []
+            with _ ->
+                []
 
 /// 簡素化された3テーブルスキーマ管理
 type SimplifiedSchemaManager(connectionString: string) =
@@ -169,11 +176,11 @@ type SimplifiedSchemaManager(connectionString: string) =
                   "CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks (status)"
                   "CREATE INDEX IF NOT EXISTS idx_tasks_assigned_agent ON tasks (assigned_agent)"
                   "CREATE INDEX IF NOT EXISTS idx_tasks_priority_created ON tasks (priority DESC, created_at ASC)"
-                  
+
                   // 依存関係検索最適化
                   "CREATE INDEX IF NOT EXISTS idx_dependencies_task_id ON task_dependencies (task_id)"
                   "CREATE INDEX IF NOT EXISTS idx_dependencies_depends_on ON task_dependencies (depends_on_task_id)"
-                  
+
                   // エージェント履歴検索最適化
                   "CREATE INDEX IF NOT EXISTS idx_agent_history_agent_timestamp ON agent_history (agent_id, timestamp DESC)"
                   "CREATE INDEX IF NOT EXISTS idx_agent_history_task ON agent_history (current_task_id)" ]

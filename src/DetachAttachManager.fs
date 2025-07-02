@@ -58,35 +58,39 @@ module DetachAttachManager =
     let saveProcessLock (config: DetachAttachConfig) (sessionId: string) (processId: int) =
         try
             // セキュリティ検証: セッションIDのサニタイズ
-            let safeSessionId = sanitizeSessionId sessionId
-
-            let lockDir = Path.Combine(config.PersistenceConfig.StorageDirectory, "locks")
-
-            // パスインジェクション防止: ベースディレクトリ外へのアクセスを拒否
-            let normalizedLockDir = Path.GetFullPath(lockDir)
-            let normalizedBaseDir = Path.GetFullPath(config.PersistenceConfig.StorageDirectory)
-
-            if not (normalizedLockDir.StartsWith(normalizedBaseDir)) then
-                Logger.logError "DetachAttach" "セキュリティ検証失敗: パスインジェクション攻撃を検出"
+            match sanitizeSessionId sessionId with
+            | Result.Error msg ->
+                Logger.logError "DetachAttach" $"セッションIDサニタイズエラー: {msg}"
                 false
-            else
-                Directory.CreateDirectory(lockDir) |> ignore
+            | Result.Ok safeSessionId ->
 
-                let lockInfo =
-                    { ProcessId = processId
-                      SessionId = safeSessionId
-                      StartTime = DateTime.Now
-                      IsDetached = true }
+                let lockDir = Path.Combine(config.PersistenceConfig.StorageDirectory, "locks")
 
-                let lockFile = getProcessLockFile config safeSessionId
-                let json = System.Text.Json.JsonSerializer.Serialize(lockInfo)
-                File.WriteAllText(lockFile, json)
+                // パスインジェクション防止: ベースディレクトリ外へのアクセスを拒否
+                let normalizedLockDir = Path.GetFullPath(lockDir)
+                let normalizedBaseDir = Path.GetFullPath(config.PersistenceConfig.StorageDirectory)
 
-                let sanitizedLogMessage =
-                    sanitizeLogMessage $"プロセスロック保存: {safeSessionId} (PID: {processId})"
+                if not (normalizedLockDir.StartsWith(normalizedBaseDir)) then
+                    Logger.logError "DetachAttach" "セキュリティ検証失敗: パスインジェクション攻撃を検出"
+                    false
+                else
+                    Directory.CreateDirectory(lockDir) |> ignore
 
-                Logger.logInfo "DetachAttach" sanitizedLogMessage
-                true
+                    let lockInfo =
+                        { ProcessId = processId
+                          SessionId = safeSessionId
+                          StartTime = DateTime.Now
+                          IsDetached = true }
+
+                    let lockFile = getProcessLockFile config safeSessionId
+                    let json = System.Text.Json.JsonSerializer.Serialize(lockInfo)
+                    File.WriteAllText(lockFile, json)
+
+                    let sanitizedLogMessage =
+                        sanitizeLogMessage $"プロセスロック保存: {safeSessionId} (PID: {processId})"
+
+                    Logger.logInfo "DetachAttach" sanitizedLogMessage
+                    true
         with ex ->
             let sanitizedMessage = sanitizeLogMessage ex.Message
             Logger.logError "DetachAttach" $"プロセスロック保存失敗: {sanitizedMessage}"
@@ -96,39 +100,43 @@ module DetachAttachManager =
     let loadProcessLock (config: DetachAttachConfig) (sessionId: string) =
         try
             // セキュリティ検証: セッションIDのサニタイズ
-            let safeSessionId = sanitizeSessionId sessionId
-            let lockFile = getProcessLockFile config safeSessionId
-
-            // パスインジェクション防止: ファイルパスの検証
-            let normalizedLockFile = Path.GetFullPath(lockFile)
-            let normalizedBaseDir = Path.GetFullPath(config.PersistenceConfig.StorageDirectory)
-
-            if not (normalizedLockFile.StartsWith(normalizedBaseDir)) then
-                Logger.logWarning "DetachAttach" "セキュリティ検証失敗: パスインジェクション攻撃を検出"
+            match sanitizeSessionId sessionId with
+            | Result.Error msg ->
+                Logger.logWarning "DetachAttach" $"セッションIDサニタイズエラー: {msg}"
                 None
-            elif File.Exists(lockFile) then
-                try
-                    let json = File.ReadAllText(lockFile)
+            | Result.Ok safeSessionId ->
+                let lockFile = getProcessLockFile config safeSessionId
 
-                    // 空のファイルや無効なJSONをチェック
-                    if String.IsNullOrWhiteSpace(json) then
-                        Logger.logWarning "DetachAttach" "プロセスロックファイルが空です"
-                        None
-                    else
-                        let lockInfo = System.Text.Json.JsonSerializer.Deserialize<ProcessInfo>(json)
+                // パスインジェクション防止: ファイルパスの検証
+                let normalizedLockFile = Path.GetFullPath(lockFile)
+                let normalizedBaseDir = Path.GetFullPath(config.PersistenceConfig.StorageDirectory)
 
-                        // デシリアライズされたデータの妥当性チェック
-                        if String.IsNullOrEmpty(lockInfo.SessionId) || lockInfo.ProcessId <= 0 then
-                            Logger.logWarning "DetachAttach" "プロセスロックファイルのデータが無効です"
+                if not (normalizedLockFile.StartsWith(normalizedBaseDir)) then
+                    Logger.logWarning "DetachAttach" "セキュリティ検証失敗: パスインジェクション攻撃を検出"
+                    None
+                elif File.Exists(lockFile) then
+                    try
+                        let json = File.ReadAllText(lockFile)
+
+                        // 空のファイルや無効なJSONをチェック
+                        if String.IsNullOrWhiteSpace(json) then
+                            Logger.logWarning "DetachAttach" "プロセスロックファイルが空です"
                             None
                         else
-                            Some lockInfo
-                with jsonEx ->
-                    let sanitizedJsonMessage = sanitizeLogMessage jsonEx.Message
-                    Logger.logWarning "DetachAttach" $"プロセスロックファイルのJSON解析失敗: {sanitizedJsonMessage}"
+                            let lockInfo = System.Text.Json.JsonSerializer.Deserialize<ProcessInfo>(json)
+
+                            // デシリアライズされたデータの妥当性チェック
+                            if String.IsNullOrEmpty(lockInfo.SessionId) || lockInfo.ProcessId <= 0 then
+                                Logger.logWarning "DetachAttach" "プロセスロックファイルのデータが無効です"
+                                None
+                            else
+                                Some lockInfo
+                    with jsonEx ->
+                        let sanitizedJsonMessage = sanitizeLogMessage jsonEx.Message
+                        Logger.logWarning "DetachAttach" $"プロセスロックファイルのJSON解析失敗: {sanitizedJsonMessage}"
+                        None
+                else
                     None
-            else
-                None
         with ex ->
             let sanitizedMessage = sanitizeLogMessage ex.Message
             Logger.logWarning "DetachAttach" $"プロセスロック読み込み失敗: {sanitizedMessage}"

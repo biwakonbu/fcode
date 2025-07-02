@@ -45,6 +45,9 @@
     <Compile Include="ConcurrencyTests.fs"/>
     <Compile Include="RealtimeCollaborationTests.fs"/>
     <Compile Include="TaskStorageIntegrationTests.fs"/>
+    <Compile Include="SimplifiedTaskStorageTests.fs"/>
+    <Compile Include="StorageDesignIntegrationTests.fs"/>
+    <Compile Include="StoragePerformanceTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

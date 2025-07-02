@@ -40,6 +40,12 @@
     <Compile Include="Collaboration/CollaborationCoordinator.fs" />
     <Compile Include="Collaboration/RealtimeCollaborationFacade.fs" />
     <Compile Include="Collaboration/TaskStorageManager.fs" />
+    <!-- Simplified 3-Table Design -->
+    <Compile Include="Collaboration/SimplifiedDatabaseSchema.fs" />
+    <Compile Include="Collaboration/SimplifiedTaskStorageManager.fs" />
+    <Compile Include="Collaboration/TaskStorageFactory.fs" />
+    <Compile Include="Collaboration/TaskStorageMigration.fs" />
+    <Compile Include="Collaboration/TaskStorageConfiguration.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />
     <Compile Include="Program.fs" />

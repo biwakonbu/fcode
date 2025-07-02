@@ -14,6 +14,16 @@
     <Compile Include="MessagePersistence.fs" />
     <Compile Include="MultiAgentProcessManager.fs" />
     <Compile Include="RealtimeCollaboration.fs" />
+    <Compile Include="Collaboration/CollaborationTypes.fs" />
+    <Compile Include="Collaboration/IAgentStateManager.fs" />
+    <Compile Include="Collaboration/ITaskDependencyGraph.fs" />
+    <Compile Include="Collaboration/IProgressAggregator.fs" />
+    <Compile Include="Collaboration/ICollaborationCoordinator.fs" />
+    <Compile Include="Collaboration/AgentStateManager.fs" />
+    <Compile Include="Collaboration/TaskDependencyGraph.fs" />
+    <Compile Include="Collaboration/ProgressAggregator.fs" />
+    <Compile Include="Collaboration/CollaborationCoordinator.fs" />
+    <Compile Include="Collaboration/RealtimeCollaborationFacade.fs" />
     <Compile Include="ResourceMonitor.fs" />
     <Compile Include="ResourceController.fs" />
     <Compile Include="PtyNetManager.fs" />

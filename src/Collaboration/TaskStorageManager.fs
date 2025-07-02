@@ -6,7 +6,7 @@ open Microsoft.Data.Sqlite
 open FCode.Collaboration.CollaborationTypes
 open FCode.Logger
 
-/// SQLite3ベースのタスクストレージマネージャー
+/// SQLite3ベースのタスクストレージマネージャー（統合実装）
 type TaskStorageManager(connectionString: string) =
 
     /// データベース接続作成
@@ -293,6 +293,63 @@ type TaskStorageManager(connectionString: string) =
                 return Result.Error(SystemError ex.Message)
         }
 
+    /// タスク取得
+    member _.GetTask(taskId: string) =
+        async {
+            try
+                use connection = createConnection ()
+                do! connection.OpenAsync() |> Async.AwaitTask
+
+                let sql = "SELECT * FROM tasks WHERE task_id = @taskId"
+                use command = new SqliteCommand(sql, connection)
+                command.Parameters.AddWithValue("@taskId", taskId) |> ignore
+
+                use! reader = command.ExecuteReaderAsync() |> Async.AwaitTask
+
+                let! hasData = reader.ReadAsync() |> Async.AwaitTask
+
+                if hasData then
+                    let task =
+                        { TaskId = reader.GetString("task_id")
+                          Title = reader.GetString("title")
+                          Description = reader.GetString("description")
+                          Status =
+                            match reader.GetString("status") with
+                            | "Pending" -> Pending
+                            | "InProgress" -> InProgress
+                            | "Completed" -> Completed
+                            | "Failed" -> Failed
+                            | "Cancelled" -> Cancelled
+                            | _ -> Pending
+                          AssignedAgent =
+                            if reader.IsDBNull("assigned_agent") then
+                                None
+                            else
+                                Some(reader.GetString("assigned_agent"))
+                          Priority = enum<TaskPriority> (reader.GetInt32("priority"))
+                          EstimatedDuration =
+                            if reader.IsDBNull("estimated_duration_minutes") then
+                                None
+                            else
+                                Some(TimeSpan.FromMinutes(reader.GetDouble("estimated_duration_minutes")))
+                          ActualDuration =
+                            if reader.IsDBNull("actual_duration_minutes") then
+                                None
+                            else
+                                Some(TimeSpan.FromMinutes(reader.GetDouble("actual_duration_minutes")))
+                          RequiredResources = [] // 別途取得が必要
+                          CreatedAt = reader.GetDateTime("created_at")
+                          UpdatedAt = reader.GetDateTime("updated_at") }
+
+                    return Result.Ok(Some task)
+                else
+                    return Result.Ok None
+
+            with ex ->
+                logError "TaskStorageManager" $"Failed to get task {taskId}: {ex.Message}"
+                return Result.Error(SystemError ex.Message)
+        }
+
     /// 実行可能タスク取得
     member _.GetExecutableTasks() =
         async {
@@ -465,63 +522,6 @@ type TaskStorageManager(connectionString: string) =
 
             with ex ->
                 logError "TaskStorageManager" $"Failed to get progress summary: {ex.Message}"
-                return Result.Error(SystemError ex.Message)
-        }
-
-    /// タスク取得
-    member _.GetTask(taskId: string) =
-        async {
-            try
-                use connection = createConnection ()
-                do! connection.OpenAsync() |> Async.AwaitTask
-
-                let sql = "SELECT * FROM tasks WHERE task_id = @taskId"
-                use command = new SqliteCommand(sql, connection)
-                command.Parameters.AddWithValue("@taskId", taskId) |> ignore
-
-                use! reader = command.ExecuteReaderAsync() |> Async.AwaitTask
-
-                let! hasData = reader.ReadAsync() |> Async.AwaitTask
-
-                if hasData then
-                    let task =
-                        { TaskId = reader.GetString("task_id")
-                          Title = reader.GetString("title")
-                          Description = reader.GetString("description")
-                          Status =
-                            match reader.GetString("status") with
-                            | "Pending" -> Pending
-                            | "InProgress" -> InProgress
-                            | "Completed" -> Completed
-                            | "Failed" -> Failed
-                            | "Cancelled" -> Cancelled
-                            | _ -> Pending
-                          AssignedAgent =
-                            if reader.IsDBNull("assigned_agent") then
-                                None
-                            else
-                                Some(reader.GetString("assigned_agent"))
-                          Priority = enum<TaskPriority> (reader.GetInt32("priority"))
-                          EstimatedDuration =
-                            if reader.IsDBNull("estimated_duration_minutes") then
-                                None
-                            else
-                                Some(TimeSpan.FromMinutes(reader.GetDouble("estimated_duration_minutes")))
-                          ActualDuration =
-                            if reader.IsDBNull("actual_duration_minutes") then
-                                None
-                            else
-                                Some(TimeSpan.FromMinutes(reader.GetDouble("actual_duration_minutes")))
-                          RequiredResources = [] // 別途取得が必要
-                          CreatedAt = reader.GetDateTime("created_at")
-                          UpdatedAt = reader.GetDateTime("updated_at") }
-
-                    return Result.Ok(Some task)
-                else
-                    return Result.Ok None
-
-            with ex ->
-                logError "TaskStorageManager" $"Failed to get task {taskId}: {ex.Message}"
                 return Result.Error(SystemError ex.Message)
         }
 

@@ -38,6 +38,13 @@
     <Compile Include="SecurityUtils.fs" />
     <Compile Include="SessionPersistenceManager.fs" />
     <Compile Include="DetachAttachManager.fs" />
+    <!-- Collaboration Infrastructure -->
+    <Compile Include="Collaboration/CollaborationTypes.fs" />
+    <Compile Include="Collaboration/DatabaseSchemaManager.fs" />
+    <Compile Include="Collaboration/SimpleTaskRepository.fs" />
+    <Compile Include="Collaboration/SimpleAgentRepository.fs" />
+    <Compile Include="Collaboration/SimpleProgressRepository.fs" />
+    <Compile Include="Collaboration/TaskStorageManager.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />
     <Compile Include="Program.fs" />

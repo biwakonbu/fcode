@@ -51,8 +51,10 @@ module DetachAttachManager =
 
     /// プロセスロックファイルのパス（セキュリティ強化版）
     let getProcessLockFile (config: DetachAttachConfig) (sessionId: string) =
-        let safeSessionId = sanitizeSessionId sessionId
-        Path.Combine(config.PersistenceConfig.StorageDirectory, "locks", $"{safeSessionId}.lock")
+        match sanitizeSessionId sessionId with
+        | Result.Ok safeSessionId ->
+            Path.Combine(config.PersistenceConfig.StorageDirectory, "locks", $"{safeSessionId}.lock")
+        | Result.Error _ -> Path.Combine(config.PersistenceConfig.StorageDirectory, "locks", "invalid.lock")
 
     /// プロセスロック情報の保存（セキュリティ強化版）
     let saveProcessLock (config: DetachAttachConfig) (sessionId: string) (processId: int) =

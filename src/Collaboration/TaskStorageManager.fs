@@ -503,18 +503,46 @@ type TaskStorageManager(connectionString: string) =
 
                 if hasData then
                     let summary =
-                        { TotalTasks = reader.GetInt32("total_tasks")
-                          CompletedTasks = reader.GetInt32("completed_tasks")
-                          InProgressTasks = reader.GetInt32("active_tasks")
-                          BlockedTasks = reader.GetInt32("blocked_tasks")
-                          ActiveAgents = reader.GetInt32("active_agents")
-                          OverallProgress = reader.GetDouble("completion_percentage")
+                        { TotalTasks =
+                            if reader.IsDBNull("total_tasks") then
+                                0
+                            else
+                                reader.GetInt32("total_tasks")
+                          CompletedTasks =
+                            if reader.IsDBNull("completed_tasks") then
+                                0
+                            else
+                                reader.GetInt32("completed_tasks")
+                          InProgressTasks =
+                            if reader.IsDBNull("active_tasks") then
+                                0
+                            else
+                                reader.GetInt32("active_tasks")
+                          BlockedTasks =
+                            if reader.IsDBNull("blocked_tasks") then
+                                0
+                            else
+                                reader.GetInt32("blocked_tasks")
+                          ActiveAgents =
+                            if reader.IsDBNull("active_agents") then
+                                0
+                            else
+                                reader.GetInt32("active_agents")
+                          OverallProgress =
+                            if reader.IsDBNull("completion_percentage") then
+                                0.0
+                            else
+                                reader.GetDouble("completion_percentage")
                           EstimatedTimeRemaining =
                             if reader.IsDBNull("avg_remaining_time_minutes") then
                                 None
                             else
                                 Some(TimeSpan.FromMinutes(reader.GetDouble("avg_remaining_time_minutes")))
-                          LastUpdated = reader.GetDateTime("last_update") }
+                          LastUpdated =
+                            if reader.IsDBNull("last_update") then
+                                DateTime.MinValue
+                            else
+                                reader.GetDateTime("last_update") }
 
                     return Result.Ok summary
                 else

@@ -110,6 +110,47 @@ type TaskStorageIntegrationTests() =
                 | Result.Ok() -> ()
                 | Result.Error(error) -> Assert.Fail($"Database initialization failed: {error}")
 
+                // テスト用タスクを先に作成
+                let taskA =
+                    { TaskId = "task-a"
+                      Title = "Task A"
+                      Description = "First task"
+                      Status = TaskStatus.Pending
+                      AssignedAgent = None
+                      Priority = TaskPriority.Medium
+                      EstimatedDuration = None
+                      ActualDuration = None
+                      RequiredResources = []
+                      CreatedAt = DateTime.Now
+                      UpdatedAt = DateTime.Now }
+
+                let taskB =
+                    { TaskId = "task-b"
+                      Title = "Task B"
+                      Description = "Second task"
+                      Status = TaskStatus.Pending
+                      AssignedAgent = None
+                      Priority = TaskPriority.Medium
+                      EstimatedDuration = None
+                      ActualDuration = None
+                      RequiredResources = []
+                      CreatedAt = DateTime.Now
+                      UpdatedAt = DateTime.Now }
+
+                // タスクA保存
+                let! saveResultA = manager.SaveTask(taskA)
+
+                match saveResultA with
+                | Result.Ok(_) -> ()
+                | Result.Error(error) -> Assert.Fail($"Task A save failed: {error}")
+
+                // タスクB保存
+                let! saveResultB = manager.SaveTask(taskB)
+
+                match saveResultB with
+                | Result.Ok(_) -> ()
+                | Result.Error(error) -> Assert.Fail($"Task B save failed: {error}")
+
                 // 依存関係保存テスト
                 let! depResult = manager.SaveTaskDependency("task-a", "task-b", "hard")
 

@@ -158,10 +158,8 @@ type MultiAgentProcessManager() =
                 let combinedOutput = outputBuffer + errorBuffer
                 let agentOutput = agent.ParseOutput(combinedOutput)
 
-                // SourceAgentをagentIdに設定
-                let correctedOutput =
-                    { agentOutput with
-                        SourceAgent = agentId }
+                // SourceAgentは元のエージェント名を保持
+                let correctedOutput = agentOutput
 
                 // プロセス情報更新
                 match processInfos.TryGetValue(agentId) with

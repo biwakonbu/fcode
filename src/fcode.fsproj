@@ -14,16 +14,6 @@
     <Compile Include="MessagePersistence.fs" />
     <Compile Include="MultiAgentProcessManager.fs" />
     <Compile Include="RealtimeCollaboration.fs" />
-    <Compile Include="Collaboration/CollaborationTypes.fs" />
-    <Compile Include="Collaboration/IAgentStateManager.fs" />
-    <Compile Include="Collaboration/ITaskDependencyGraph.fs" />
-    <Compile Include="Collaboration/IProgressAggregator.fs" />
-    <Compile Include="Collaboration/ICollaborationCoordinator.fs" />
-    <Compile Include="Collaboration/AgentStateManager.fs" />
-    <Compile Include="Collaboration/TaskDependencyGraph.fs" />
-    <Compile Include="Collaboration/ProgressAggregator.fs" />
-    <Compile Include="Collaboration/CollaborationCoordinator.fs" />
-    <Compile Include="Collaboration/RealtimeCollaborationFacade.fs" />
     <Compile Include="ResourceMonitor.fs" />
     <Compile Include="ResourceController.fs" />
     <Compile Include="PtyNetManager.fs" />
@@ -40,10 +30,15 @@
     <Compile Include="DetachAttachManager.fs" />
     <!-- Collaboration Infrastructure -->
     <Compile Include="Collaboration/CollaborationTypes.fs" />
-    <Compile Include="Collaboration/DatabaseSchemaManager.fs" />
-    <Compile Include="Collaboration/SimpleTaskRepository.fs" />
-    <Compile Include="Collaboration/SimpleAgentRepository.fs" />
-    <Compile Include="Collaboration/SimpleProgressRepository.fs" />
+    <Compile Include="Collaboration/IAgentStateManager.fs" />
+    <Compile Include="Collaboration/ITaskDependencyGraph.fs" />
+    <Compile Include="Collaboration/IProgressAggregator.fs" />
+    <Compile Include="Collaboration/ICollaborationCoordinator.fs" />
+    <Compile Include="Collaboration/AgentStateManager.fs" />
+    <Compile Include="Collaboration/TaskDependencyGraph.fs" />
+    <Compile Include="Collaboration/ProgressAggregator.fs" />
+    <Compile Include="Collaboration/CollaborationCoordinator.fs" />
+    <Compile Include="Collaboration/RealtimeCollaborationFacade.fs" />
     <Compile Include="Collaboration/TaskStorageManager.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />

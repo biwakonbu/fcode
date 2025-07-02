@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Logger.fs" />
+    <Compile Include="FCodeError.fs" />
     <Compile Include="ColorSchemes.fs" />
     <Compile Include="ConfigurationManager.fs" />
     <Compile Include="AgentConfiguration.fs" />
@@ -13,7 +14,6 @@
     <Compile Include="AgentMessaging.fs" />
     <Compile Include="MessagePersistence.fs" />
     <Compile Include="MultiAgentProcessManager.fs" />
-    <Compile Include="RealtimeCollaboration.fs" />
     <Compile Include="ResourceMonitor.fs" />
     <Compile Include="ResourceController.fs" />
     <Compile Include="PtyNetManager.fs" />
@@ -30,6 +30,7 @@
     <Compile Include="DetachAttachManager.fs" />
     <!-- Collaboration Infrastructure -->
     <Compile Include="Collaboration/CollaborationTypes.fs" />
+    <Compile Include="RealtimeCollaboration.fs" />
     <Compile Include="Collaboration/IAgentStateManager.fs" />
     <Compile Include="Collaboration/ITaskDependencyGraph.fs" />
     <Compile Include="Collaboration/IProgressAggregator.fs" />
@@ -40,9 +41,7 @@
     <Compile Include="Collaboration/CollaborationCoordinator.fs" />
     <Compile Include="Collaboration/RealtimeCollaborationFacade.fs" />
     <Compile Include="Collaboration/TaskStorageManager.fs" />
-    <!-- Simplified 3-Table Design -->
-    <Compile Include="Collaboration/SimplifiedDatabaseSchema.fs" />
-    <Compile Include="Collaboration/SimplifiedTaskStorageManager.fs" />
+    <!-- Unified Task Storage -->
     <Compile Include="Collaboration/TaskStorageFactory.fs" />
     <Compile Include="Collaboration/TaskStorageMigration.fs" />
     <Compile Include="Collaboration/TaskStorageConfiguration.fs" />

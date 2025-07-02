@@ -33,7 +33,7 @@ type TaskStorageConfigurationManager() =
 
     /// デフォルト設定
     static member DefaultSettings =
-        { Design = ThreeTableDesign
+        { Design = FullTableDesign
           ConnectionString = "Data Source=tasks.db;"
           EnablePerformanceLogging = false
           QueryTimeout = 30
@@ -47,14 +47,14 @@ type TaskStorageConfigurationManager() =
         let design =
             match Environment.GetEnvironmentVariable("FCODE_TASK_STORAGE_DESIGN") with
             | "3table"
-            | "simplified" -> ThreeTableDesign
+            | "simplified" -> FullTableDesign
             | "6table"
-            | "complex" -> SixTableDesign
+            | "complex" -> OptimizedDesign
             | null
-            | "" -> ThreeTableDesign
+            | "" -> FullTableDesign
             | unknown ->
                 logWarning "TaskStorageConfiguration" $"Unknown design '{unknown}', using 3-table"
-                ThreeTableDesign
+                FullTableDesign
 
         let connectionString =
             Environment.GetEnvironmentVariable("FCODE_TASK_STORAGE_CONNECTION")
@@ -131,16 +131,16 @@ type TaskStorageConfigurationManager() =
                 let design =
                     match configJson.design with
                     | Some "3table"
-                    | Some "simplified" -> ThreeTableDesign
+                    | Some "simplified" -> FullTableDesign
                     | Some "6table"
-                    | Some "complex" -> SixTableDesign
+                    | Some "complex" -> OptimizedDesign
                     | Some unknown ->
                         logWarning
                             "TaskStorageConfiguration"
                             $"Unknown design '{unknown}' in config file, using 3-table"
 
-                        ThreeTableDesign
-                    | None -> ThreeTableDesign
+                        FullTableDesign
+                    | None -> FullTableDesign
 
                 { Design = design
                   ConnectionString = configJson.connectionString |> Option.defaultValue "Data Source=tasks.db;"
@@ -164,8 +164,8 @@ type TaskStorageConfigurationManager() =
                 { design =
                     Some(
                         match settings.Design with
-                        | ThreeTableDesign -> "3table"
-                        | SixTableDesign -> "6table"
+                        | FullTableDesign -> "3table"
+                        | OptimizedDesign -> "6table"
                     )
                   connectionString = Some settings.ConnectionString
                   enablePerformanceLogging = Some settings.EnablePerformanceLogging

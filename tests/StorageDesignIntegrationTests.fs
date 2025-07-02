@@ -28,7 +28,7 @@ type StorageDesignIntegrationTests() =
         async {
             // 3テーブル設計のテスト
             use threeTableStorage =
-                TaskStorageFactory.CreateTaskStorage(connectionString, ThreeTableDesign)
+                TaskStorageFactory.CreateTaskStorage(connectionString, FullTableDesign)
 
             let! initResult3 = threeTableStorage.InitializeDatabase()
 
@@ -44,7 +44,7 @@ type StorageDesignIntegrationTests() =
 
             try
                 use sixTableStorage =
-                    TaskStorageFactory.CreateTaskStorage(connectionString6, SixTableDesign)
+                    TaskStorageFactory.CreateTaskStorage(connectionString6, OptimizedDesign)
 
                 let! initResult6 = sixTableStorage.InitializeDatabase()
 
@@ -76,7 +76,7 @@ type StorageDesignIntegrationTests() =
 
             // 3テーブル設計でのテスト
             use threeTableStorage =
-                TaskStorageFactory.CreateTaskStorage(connectionString, ThreeTableDesign)
+                TaskStorageFactory.CreateTaskStorage(connectionString, FullTableDesign)
 
             let! _ = threeTableStorage.InitializeDatabase()
             let! saveResult3 = threeTableStorage.SaveTask(testTask)
@@ -101,7 +101,7 @@ type StorageDesignIntegrationTests() =
 
             try
                 use sixTableStorage =
-                    TaskStorageFactory.CreateTaskStorage(connectionString6, SixTableDesign)
+                    TaskStorageFactory.CreateTaskStorage(connectionString6, OptimizedDesign)
 
                 let! _ = sixTableStorage.InitializeDatabase()
                 let! saveResult6 = sixTableStorage.SaveTask(testTask)
@@ -129,25 +129,25 @@ type StorageDesignIntegrationTests() =
         // 環境変数設定テスト
         Environment.SetEnvironmentVariable("FCODE_TASK_STORAGE_DESIGN", "3table")
         let design3 = TaskStorageFactory.GetStorageDesignFromEnvironment()
-        Assert.AreEqual(ThreeTableDesign, design3)
+        Assert.AreEqual(FullTableDesign, design3)
 
         Environment.SetEnvironmentVariable("FCODE_TASK_STORAGE_DESIGN", "6table")
         let design6 = TaskStorageFactory.GetStorageDesignFromEnvironment()
-        Assert.AreEqual(SixTableDesign, design6)
+        Assert.AreEqual(OptimizedDesign, design6)
 
         Environment.SetEnvironmentVariable("FCODE_TASK_STORAGE_DESIGN", "")
         let designDefault = TaskStorageFactory.GetStorageDesignFromEnvironment()
-        Assert.AreEqual(ThreeTableDesign, designDefault, "Default should be 3-table design")
+        Assert.AreEqual(FullTableDesign, designDefault, "Default should be 3-table design")
 
     [<Test>]
     [<Category("Integration")>]
     member _.``Design info provides accurate metrics``() =
-        let info3 = TaskStorageFactory.GetDesignInfo(ThreeTableDesign)
+        let info3 = TaskStorageFactory.GetDesignInfo(FullTableDesign)
         Assert.AreEqual(3, info3.TableCount)
         Assert.AreEqual(7, info3.IndexCount)
         Assert.AreEqual("Low", info3.EstimatedComplexity)
 
-        let info6 = TaskStorageFactory.GetDesignInfo(SixTableDesign)
+        let info6 = TaskStorageFactory.GetDesignInfo(OptimizedDesign)
         Assert.AreEqual(6, info6.TableCount)
         Assert.AreEqual(16, info6.IndexCount)
         Assert.AreEqual("High", info6.EstimatedComplexity)
@@ -171,7 +171,7 @@ type StorageDesignIntegrationTests() =
 
             // 3テーブル設計のプログレス確認
             use threeTableStorage =
-                TaskStorageFactory.CreateTaskStorage(connectionString, ThreeTableDesign)
+                TaskStorageFactory.CreateTaskStorage(connectionString, FullTableDesign)
 
             let! _ = threeTableStorage.InitializeDatabase()
             let! _ = threeTableStorage.SaveTask(testTask)

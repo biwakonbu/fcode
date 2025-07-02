@@ -61,7 +61,7 @@ type StoragePerformanceTests() =
 
             try
                 use threeTableStorage =
-                    TaskStorageFactory.CreateTaskStorage(connectionString3, ThreeTableDesign)
+                    TaskStorageFactory.CreateTaskStorage(connectionString3, FullTableDesign)
 
                 let! _ = threeTableStorage.InitializeDatabase()
 
@@ -82,7 +82,7 @@ type StoragePerformanceTests() =
 
                 try
                     use sixTableStorage =
-                        TaskStorageFactory.CreateTaskStorage(connectionString6, SixTableDesign)
+                        TaskStorageFactory.CreateTaskStorage(connectionString6, OptimizedDesign)
 
                     let! _ = sixTableStorage.InitializeDatabase()
 
@@ -144,7 +144,7 @@ type StoragePerformanceTests() =
 
             try
                 use threeTableStorage =
-                    TaskStorageFactory.CreateTaskStorage(connectionString3, ThreeTableDesign)
+                    TaskStorageFactory.CreateTaskStorage(connectionString3, FullTableDesign)
 
                 let! _ = threeTableStorage.InitializeDatabase()
 
@@ -174,7 +174,7 @@ type StoragePerformanceTests() =
 
                 try
                     use sixTableStorage =
-                        TaskStorageFactory.CreateTaskStorage(connectionString6, SixTableDesign)
+                        TaskStorageFactory.CreateTaskStorage(connectionString6, OptimizedDesign)
 
                     let! _ = sixTableStorage.InitializeDatabase()
 
@@ -250,7 +250,7 @@ type StoragePerformanceTests() =
 
             try
                 use threeTableStorage =
-                    TaskStorageFactory.CreateTaskStorage(connectionString3, ThreeTableDesign)
+                    TaskStorageFactory.CreateTaskStorage(connectionString3, FullTableDesign)
 
                 let! _ = threeTableStorage.InitializeDatabase()
 
@@ -271,7 +271,7 @@ type StoragePerformanceTests() =
 
                 try
                     use sixTableStorage =
-                        TaskStorageFactory.CreateTaskStorage(connectionString6, SixTableDesign)
+                        TaskStorageFactory.CreateTaskStorage(connectionString6, OptimizedDesign)
 
                     let! _ = sixTableStorage.InitializeDatabase()
 

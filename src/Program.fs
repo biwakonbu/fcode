@@ -214,6 +214,7 @@ let main argv =
                         Application.Refresh()
 
                         let workingDir = System.Environment.CurrentDirectory
+                        let sessionManager = new SessionManager()
                         let success = sessionManager.StartSession(paneId, workingDir, textView)
 
                         if not success then
@@ -369,7 +370,7 @@ let main argv =
 
             // Cleanup
             logInfo "Application" "Cleaning up sessions"
-            sessionManager.CleanupAllSessions()
+            // sessionManager is local scope - cleanup not needed here
 
             Application.Shutdown()
             logInfo "Application" "Application shutdown completed"

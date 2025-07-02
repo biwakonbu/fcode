@@ -119,7 +119,7 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - **UIHelpers根本修正**: Terminal.Gui 1.15.0対応、リフレクション安全化（2025-06-29）
 - **包括的テストスイート**: 151テストケース、5カテゴリ（Unit/Integration/Performance/Stability）
 - **リアルタイム協調機能基盤**: 完全実装（2,526行、包括的アーキテクチャ）
-- **SQLite3永続化設計**: タスク・依存関係管理設計完了（783行）
+- **SQLite3タスクストレージ**: TaskStorageManager実装完了（477行）
 
 ### 開発中機能（80%完了）
 - **Claude Code CLI統合**: プロセス起動基盤完成、TextView初期化に課題

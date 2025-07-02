@@ -7,6 +7,7 @@ open FCode.ColorSchemes
 open FCode.KeyBindings
 open FCode.ClaudeCodeProcess
 open FCode.UIHelpers
+open FCode.FCodeError
 
 [<EntryPoint>]
 let main argv =
@@ -208,29 +209,31 @@ let main argv =
                 | Some textView ->
                     logInfo "AutoStart" $"TextView found via direct reference for pane: {paneId}"
 
-                    try
-                        textView.Text <- $"[DEBUG] {paneId}ペイン - TextView発見、Claude Code起動開始..."
+                    textView.Text <- $"[DEBUG] {paneId}ペイン - TextView発見、Claude Code起動開始..."
+                    textView.SetNeedsDisplay()
+                    Application.Refresh()
+
+                    let workingDir = System.Environment.CurrentDirectory
+                    let sessionManager = new SessionManager()
+
+                    match sessionManager.StartSession(paneId, workingDir, textView) with
+                    | Ok _ ->
+                        logInfo "AutoStart" $"Successfully started Claude Code for pane: {paneId}"
+                        |> ignore
+                    | Error error ->
+                        let msg = error.ToUserMessage()
+
+                        logError "AutoStart" $"Failed to start Claude Code for pane: {paneId}: {msg.UserMessage}"
+                        |> ignore
+
+                        textView.Text <- $"[ERROR] {paneId}ペイン - {msg.UserMessage}"
                         textView.SetNeedsDisplay()
                         Application.Refresh()
-
-                        let workingDir = System.Environment.CurrentDirectory
-                        let sessionManager = new SessionManager()
-                        let success = sessionManager.StartSession(paneId, workingDir, textView)
-
-                        if not success then
-                            logError "AutoStart" $"Failed to start Claude Code for pane: {paneId}"
-                            textView.Text <- $"[ERROR] {paneId}ペイン - Claude Code起動失敗"
-                            textView.SetNeedsDisplay()
-                            Application.Refresh()
-                        else
-                            logInfo "AutoStart" $"Successfully started Claude Code for pane: {paneId}"
-                    with ex ->
-                        logError "AutoStart" $"Exception during Claude Code start for {paneId}: {ex.Message}"
 
                 | None ->
                     // TextViewが見つからない場合（直接参照マップにない）
                     let debugMsg = $"[ERROR] {paneId}ペイン - TextView direct reference not found"
-                    logError "AutoStart" debugMsg
+                    logError "AutoStart" debugMsg |> ignore
                     System.Console.WriteLine(debugMsg)
 
                     // 根本調査: UI構造の詳細ダンプ
@@ -252,9 +255,13 @@ let main argv =
                             Application.Refresh()
                         with ex ->
                             logError "AutoStart" $"Improved TextView access failed for {paneId}: {ex.Message}"
+                            |> ignore
                     | [] ->
                         logError "AutoStart" $"No TextView found even with improved search for pane: {paneId}"
+                        |> ignore
+
                         logError "AutoStart" $"=== ROOT CAUSE: UI structure investigation completed ==="
+                        |> ignore
 
             // UI初期化完了後の遅延自動起動機能で実行するため、即座の自動起動は削除
             logInfo "AutoStart" "Immediate auto-start disabled - will use delayed auto-start after UI completion"
@@ -377,7 +384,7 @@ let main argv =
 
             0 // return an integer exit code
     with ex ->
-        logException "Application" "Fatal error in main application" ex
+        logException "Application" "Fatal error in main application" ex |> ignore
 
         try
             Application.Shutdown()

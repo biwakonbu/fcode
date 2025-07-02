@@ -191,26 +191,31 @@ type RealtimeCollaborationFacade(config: CollaborationConfig) =
             if disposed then
                 Result.Error(SystemError "RealtimeCollaborationFacade has been disposed")
             else
-                match this.GetTask(taskId), this.GetAgentsByStatus(Idle) with
-                | Result.Ok(Some task), Result.Ok idleAgents when not idleAgents.IsEmpty ->
-                    // 最適なエージェントを選択（簡易的にランダム選択）
-                    let selectedAgent = idleAgents |> List.head
+                match this.GetTask(taskId) with
+                | Result.Ok(Some task) ->
+                    match this.GetAgentsByStatus(Idle) with
+                    | Result.Ok idleAgents when not idleAgents.IsEmpty ->
+                        // 最適なエージェントを選択（簡易的にランダム選択）
+                        let selectedAgent = idleAgents |> List.head
 
-                    // エージェント状態を更新
-                    match this.UpdateAgentState(selectedAgent.AgentId, Working, 0.0, ?currentTask = Some taskId) with
-                    | Result.Ok() ->
-                        // タスク状態を更新
-                        match this.UpdateTaskStatus(taskId, InProgress) with
+                        // エージェント状態を更新
+                        match
+                            this.UpdateAgentState(selectedAgent.AgentId, Working, 0.0, ?currentTask = Some taskId)
+                        with
                         | Result.Ok() ->
-                            logInfo "RealtimeCollaborationFacade"
-                            <| sprintf "Task %s auto-assigned to agent %s" taskId selectedAgent.AgentId
+                            // タスク状態を更新
+                            match this.UpdateTaskStatus(taskId, InProgress) with
+                            | Result.Ok() ->
+                                logInfo "RealtimeCollaborationFacade"
+                                <| sprintf "Task %s auto-assigned to agent %s" taskId selectedAgent.AgentId
 
-                            Result.Ok selectedAgent.AgentId
+                                Result.Ok selectedAgent.AgentId
+                            | Result.Error e -> Result.Error e
                         | Result.Error e -> Result.Error e
+                    | Result.Ok _ -> Result.Error(ResourceUnavailable "No idle agents available")
                     | Result.Error e -> Result.Error e
-                | Result.Ok(Some _), Result.Ok [] -> Result.Error(ResourceUnavailable "No idle agents available")
-                | Result.Ok None, _ -> Result.Error(NotFound(sprintf "Task not found: %s" taskId))
-                | Result.Error e, _ -> Result.Error e
+                | Result.Ok None -> Result.Error(NotFound(sprintf "Task not found: %s" taskId))
+                | Result.Error e -> Result.Error e
         with ex ->
             logError "RealtimeCollaborationFacade"
             <| sprintf "Error auto-assigning task: %s" ex.Message

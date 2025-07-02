@@ -313,20 +313,20 @@ type CollaborationCoordinator
         }
 
     /// 競合自動解決戦略の実行
-    member _.ResolveConflict(conflict: ICollaborationCoordinator.ConflictType) =
+    member _.ResolveConflict(conflict: ConflictType) =
         try
             match conflict with
-            | ICollaborationCoordinator.ResourceConflict resource ->
+            | ResourceConflict resource ->
                 logInfo "CollaborationCoordinator"
                 <| sprintf "Resolving resource conflict: %s" resource
 
                 Result.Ok Queue // デフォルトはキューイング戦略
-            | ICollaborationCoordinator.TaskConflict(task1, task2) ->
+            | TaskConflict(task1, task2) ->
                 logInfo "CollaborationCoordinator"
                 <| sprintf "Resolving task conflict: %s vs %s" task1 task2
 
                 Result.Ok Parallel // 可能な限り並列実行
-            | ICollaborationCoordinator.AgentConflict(agent1, agent2) ->
+            | AgentConflict(agent1, agent2) ->
                 logInfo "CollaborationCoordinator"
                 <| sprintf "Resolving agent conflict: %s vs %s" agent1 agent2
 

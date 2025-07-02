@@ -4,12 +4,6 @@ open System
 open System.Threading.Tasks
 open FCode.Collaboration.CollaborationTypes
 
-/// 競合タイプ
-type ConflictType =
-    | ResourceConflict of string
-    | TaskConflict of string * string
-    | AgentConflict of string * string
-
 /// 競合解決戦略
 type ConflictResolution =
     | Queue

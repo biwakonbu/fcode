@@ -35,6 +35,7 @@ type CollaborationError =
     | ConflictDetected of ConflictType list
     | DeadlockDetected of string list
     | ResourceUnavailable of string
+    | EscalationFailed of string
 
 /// 競合タイプ
 and ConflictType =
@@ -141,12 +142,100 @@ type CollaborationEvent =
     | DeadlockDetected of agents: string list
     | SystemReset
 
+/// エスカレーション致命度レベル
+type EscalationSeverity =
+    | Minor = 1 // 軽微: 自動対応可能
+    | Moderate = 2 // 普通: 監視対象・自動回復試行
+    | Important = 3 // 重要: PO即座通知・確認要求
+    | Severe = 4 // 深刻: 緊急対応・作業停止推奨
+    | Critical = 5 // 致命: 即座停止・データ保護・復旧優先
+
+/// エスカレーション判断要素
+type EscalationFactors =
+    { ImpactScope: ImpactScope // 影響範囲: 単一タスク/複数タスク/全システム
+      TimeConstraint: TimeConstraint // 時間制約: 緊急度・デッドライン
+      RiskLevel: RiskLevel // リスク度: データ損失/品質/信頼性リスク
+      BlockerType: BlockerType // ブロッカー種別: 技術/リソース/判断要求
+      AutoRecoveryAttempts: int // 自動復旧試行回数
+      DependentTaskCount: int } // 影響タスク数
+
+/// 影響範囲
+and ImpactScope =
+    | SingleTask // 単一タスクのみ
+    | RelatedTasks // 関連タスク群
+    | AgentWorkflow // エージェントワークフロー
+    | SystemWide // システム全体
+
+/// 時間制約
+and TimeConstraint =
+    | NoUrgency // 緊急性なし
+    | SoonDeadline of TimeSpan // 短期デッドライン
+    | ImmediateAction // 即座対応必要
+    | CriticalTiming // 致命的タイミング
+
+/// リスクレベル
+and RiskLevel =
+    | LowRisk // 低リスク: 回復可能
+    | ModerateRisk // 中リスク: 一部影響
+    | HighRisk of string // 高リスク: 重大影響
+    | CriticalRisk of string list // 致命リスク: 不可逆影響
+
+/// ブロッカー種別
+and BlockerType =
+    | TechnicalIssue of string // 技術的問題
+    | ResourceUnavailable of string // リソース不足
+    | ExternalDependency of string // 外部依存
+    | BusinessJudgment // ビジネス判断要求
+    | QualityGate // 品質基準未達
+
+/// エスカレーションコンテキスト
+and EscalationContext =
+    { EscalationId: string
+      TaskId: string
+      AgentId: string
+      Severity: EscalationSeverity
+      Factors: EscalationFactors
+      Description: string
+      DetectedAt: DateTime
+      AutoRecoveryAttempted: bool
+      RequiredActions: string list
+      EstimatedResolutionTime: TimeSpan option }
+
+/// エスカレーション対応アクション
+type EscalationAction =
+    | AutoRecover of string // 自動復旧実行
+    | ContinueWithAlternative of string // 代替作業継続
+    | WaitForPODecision of TimeSpan // PO判断待機
+    | StopTaskExecution // タスク実行停止
+    | EmergencyShutdown // 緊急シャットダウン
+    | DataProtectionMode // データ保護モード
+
+/// エスカレーション結果
+type EscalationResult =
+    { EscalationId: string
+      Action: EscalationAction
+      ResolvedAt: DateTime option
+      ResolutionMethod: string option
+      PONotified: bool
+      ImpactMitigated: bool
+      LessonsLearned: string list }
+
+/// エスカレーションイベント
+type EscalationEvent =
+    | EscalationTriggered of EscalationContext
+    | EscalationEscalated of string * EscalationSeverity
+    | EscalationResolved of EscalationResult
+    | PODecisionReceived of string * bool * string
+    | AutoRecoverySucceeded of string
+    | AutoRecoveryFailed of string * string
+
 /// システムイベント
 type SystemEvent =
     | AgentStateChanged of AgentState
     | TaskChanged of TaskInfo
     | ProgressUpdated of ProgressSummary
     | CollaborationEventOccurred of CollaborationEvent
+    | EscalationOccurred of EscalationEvent
     | SystemReset
 
 /// 設定情報
@@ -162,7 +251,14 @@ type CollaborationConfig =
       AutoVacuumEnabled: bool
       MaxHistoryRetentionDays: int
       BackupEnabled: bool
-      BackupIntervalHours: int }
+      BackupIntervalHours: int
+      // エスカレーション設定
+      EscalationEnabled: bool
+      AutoRecoveryMaxAttempts: int
+      PONotificationThreshold: EscalationSeverity
+      CriticalEscalationTimeoutMinutes: int
+      DataProtectionModeEnabled: bool
+      EmergencyShutdownEnabled: bool }
 
     static member Default =
         { MaxConcurrentAgents = 10
@@ -175,7 +271,14 @@ type CollaborationConfig =
           AutoVacuumEnabled = true
           MaxHistoryRetentionDays = 30
           BackupEnabled = true
-          BackupIntervalHours = 24 }
+          BackupIntervalHours = 24
+          // エスカレーションデフォルト設定
+          EscalationEnabled = true
+          AutoRecoveryMaxAttempts = 3
+          PONotificationThreshold = EscalationSeverity.Important
+          CriticalEscalationTimeoutMinutes = 5
+          DataProtectionModeEnabled = true
+          EmergencyShutdownEnabled = false }
 
     member this.ConnectionString =
         let expandedPath =

@@ -84,11 +84,18 @@ type SessionManager() =
 
                 match findClaudePath () with
                 | None ->
+                    let currentPath =
+                        System.Environment.GetEnvironmentVariable("PATH")
+                        |> Option.ofObj
+                        |> Option.defaultValue "不明"
+
                     let errorMsg =
                         "[ERROR] Claude CLI が見つかりません。\n"
                         + "以下のいずれかでインストールしてください:\n"
                         + "• curl -fsSL https://claude.ai/cli.sh | sh\n"
-                        + "• npm install -g @anthropic-ai/claude-cli"
+                        + "• npm install -g @anthropic-ai/claude-cli\n"
+                        + $"• PATH環境変数の確認: {currentPath}\n"
+                        + $"• 作業ディレクトリ: {workingDir}"
 
                     logError "SessionManager" errorMsg |> ignore
                     outputView.Text <- errorMsg
@@ -192,7 +199,9 @@ type SessionManager() =
                                 $"[ERROR] Claude CLI起動に失敗しました:\n"
                                 + $"パス: {claudePath}\n"
                                 + $"作業ディレクトリ: {workingDir}\n"
-                                + $"エラー: {ex.Message}"
+                                + $"エラー: {ex.Message}\n"
+                                + $"エラー種別: {ex.GetType().Name}\n"
+                                + $"環境情報: .NET {System.Environment.Version}, OS {System.Environment.OSVersion}"
 
                             logError "SessionManager" errorMsg |> ignore
                             outputView.Text <- errorMsg

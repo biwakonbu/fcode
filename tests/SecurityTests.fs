@@ -288,9 +288,7 @@ type SecurityTests() =
                 with ex ->
                     // シンボリックリンク作成に失敗した場合（権限不足等）はテストをスキップ
                     Assert.Inconclusive($"シンボリックリンク作成失敗（権限不足の可能性）: {ex.Message}")
-            else
-                // Windows環境ではスキップ
-                Assert.Inconclusive("Windowsでのシンボリックリンクテストはスキップ")
+        // Linux/macOS専用機能（Windowsは対象プラットフォーム外）
 
         finally
             // テスト用ディレクトリのクリーンアップ

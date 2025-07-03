@@ -255,14 +255,11 @@ type ResourceManagementTests() =
     [<Category("Unit")>]
     member _.``スレッドリーク検出テスト - Task作成と完了``() =
         task {
-            // CI環境ではスキップ（リソース制約あり）
+            // CI環境でも軽量化して実行（タスク数を制限）
             let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
-
-            if isCI then
-                Assert.Pass("CI environment: skipped due to resource constraints")
+            let taskCount = if isCI then 10 else 100 // CI環境では軽量化
             // Arrange
             let initialThreadCount = Process.GetCurrentProcess().Threads.Count
-            let taskCount = 100
 
             // Act - 大量のTaskを作成・実行
             let tasks =

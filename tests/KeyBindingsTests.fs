@@ -105,7 +105,8 @@ type KeyBindingsTests() =
 
     [<Test>]
     member _.``シングルキーバインドテスト``() =
-        // CI環境でも実行可能（モック化でApplication.Refresh依存性解決）
+        // CI環境ではスキップ（Terminal.Gui Application.Refresh依存）
+        skipIfCI ()
         let panes = createMockFrameViews ()
         let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
@@ -214,7 +215,8 @@ type KeyBindingsTests() =
 
     [<Test>]
     member _.``Ctrl-X Ctrl-C終了コマンドテスト``() =
-        // CI環境でも実行可能（モック化でApplication.RequestStop依存性解決）
+        // CI環境ではスキップ（Terminal.Gui Application.RequestStop依存）
+        skipIfCI ()
         let panes = createMockFrameViews ()
         let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
@@ -225,6 +227,6 @@ type KeyBindingsTests() =
         let firstHandled = handler.HandleKey(firstKey)
         Assert.That(firstHandled, Is.True, "最初のキー（Ctrl+X）が処理されること")
 
-        // 2番目のキーでExitアクションが実行される（モック環境では安全）
+        // 2番目のキーでExitアクションが実行される（Application.RequestStop()が呼ばれる）
         let secondHandled = handler.HandleKey(secondKey)
         Assert.That(secondHandled, Is.True, "2番目のキー（Ctrl+C）が処理されること")

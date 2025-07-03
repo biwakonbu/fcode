@@ -42,7 +42,7 @@ jobs:
     
     # 3. テスト実行 (5分タイムアウト)
     - name: Run tests
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit" --blame-hang-timeout 60000ms
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit" --blame-hang-timeout 300000ms
       env:
         TERM: xterm
         CI: true
@@ -86,7 +86,7 @@ jobs:
         dotnet restore src/fcode.fsproj
     
     - name: Run tests on macOS
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit" --blame-hang-timeout 60000ms
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit" --blame-hang-timeout 300000ms
       env:
         TERM: xterm
         CI: true

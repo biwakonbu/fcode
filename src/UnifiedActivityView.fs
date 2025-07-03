@@ -96,9 +96,15 @@ type UnifiedActivityManager() =
         // 会話ペイン更新
         this.UpdateConversationDisplay()
 
+        let messagePreview =
+            if activity.Message.Length > 50 then
+                activity.Message.[..50] + "..."
+            else
+                activity.Message
+
         logDebug
             "UnifiedActivityView"
-            $"Activity added: {activity.AgentId} - {activity.ActivityType} - {activity.Message.[..50]}..."
+            $"Activity added: {activity.AgentId} - {activity.ActivityType} - {messagePreview}"
 
     /// カスタム活動追加 (システムメッセージ等)
     member this.AddSystemActivity
@@ -237,7 +243,7 @@ type UnifiedActivityManager() =
 // ===============================================
 
 /// グローバル統合活動管理インスタンス
-let globalUnifiedActivityManager = new UnifiedActivityManager()
+let globalUnifiedActivityManager = UnifiedActivityManager()
 
 /// AgentMessageから統合活動追加 (グローバル関数)
 let addActivityFromMessage (message: AgentMessage) =

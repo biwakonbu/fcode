@@ -349,7 +349,7 @@ type DecisionTimelineManager() =
 // ===============================================
 
 /// グローバル意思決定タイムライン管理インスタンス
-let globalDecisionTimelineManager = new DecisionTimelineManager()
+let globalDecisionTimelineManager = DecisionTimelineManager()
 
 /// 新規意思決定開始 (グローバル関数)
 let startDecision (title: string) (description: string) (priority: MessagePriority) (stakeholders: string list) =

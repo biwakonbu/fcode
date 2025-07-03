@@ -11,10 +11,6 @@ open FCode.Logger
 [<TestFixture>]
 type UnifiedActivityViewTests() =
 
-    [<SetUp>]
-    member _.Setup() =
-        // テスト用ログ設定
-        ()
 
     [<Test>]
     [<Category("Unit")>]
@@ -239,8 +235,3 @@ type UnifiedActivityViewTests() =
         Assert.AreEqual("global-agent", latestActivity.AgentId)
         Assert.AreEqual(ActivityType.Progress, latestActivity.ActivityType)
         Assert.AreEqual("Global message activity", latestActivity.Message)
-
-    [<TearDown>]
-    member _.TearDown() =
-        // テスト終了時のクリーンアップ
-        ()

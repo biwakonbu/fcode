@@ -11,10 +11,6 @@ open FCode.Logger
 [<TestFixture>]
 type DecisionTimelineViewTests() =
 
-    [<SetUp>]
-    member _.Setup() =
-        // テスト用ログ設定
-        ()
 
     [<Test>]
     [<Category("Unit")>]
@@ -260,8 +256,3 @@ type DecisionTimelineViewTests() =
         Assert.IsTrue(found)
         Assert.AreEqual(Review, decision.Stage)
         Assert.AreEqual("completed", decision.Status)
-
-    [<TearDown>]
-    member _.TearDown() =
-        // テスト終了時のクリーンアップ
-        ()

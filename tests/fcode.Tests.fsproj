@@ -51,6 +51,7 @@
     <Compile Include="StorageDesignIntegrationTests.fs"/>
     <Compile Include="StoragePerformanceTests.fs"/>
     <Compile Include="TaskAssignmentManagerTests.fs"/>
+    <Compile Include="QualityGateManagerTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

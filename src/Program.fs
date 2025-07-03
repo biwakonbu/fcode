@@ -11,6 +11,8 @@ open FCode.FCodeError
 open FCode.AgentMessaging
 open FCode.UnifiedActivityView
 open FCode.DecisionTimelineView
+open FCode.EscalationNotificationUI
+open FCode.ProgressDashboard
 
 [<EntryPoint>]
 let main argv =
@@ -201,6 +203,54 @@ let main argv =
                 |> ignore
 
             | None -> logWarning "UI" "PM timeline TextView not found for DecisionTimelineView integration"
+
+            // EscalationNotificationUIとの統合設定（QA1ペイン用）
+            match paneTextViews.TryFind("qa1") with
+            | Some qa1TextView ->
+                setNotificationTextView qa1TextView
+                logInfo "UI" "EscalationNotificationUI integrated with QA1 pane for PO notifications"
+
+                // 初期エスカレーション通知サンプル追加
+                let sampleNotificationId =
+                    createEscalationNotification
+                        "技術判断要求: Terminal.Gui型変換"
+                        "ustring型とstring型の変換でコンパイルエラーが発生。技術的判断が必要です。"
+                        TechnicalDecision
+                        Urgent
+                        "dev1"
+                        "PO"
+                        [ "p2-3-ui-integration" ]
+                        None
+
+                logInfo "UI" $"Sample escalation notification created: {sampleNotificationId}"
+
+            | None -> logWarning "UI" "QA1 TextView not found for EscalationNotificationUI integration"
+
+            // ProgressDashboardとの統合設定（UXペイン用）
+            match paneTextViews.TryFind("ux") with
+            | Some uxTextView ->
+                setDashboardTextView uxTextView
+                logInfo "UI" "ProgressDashboard integrated with UX pane for progress monitoring"
+
+                // 初期メトリクス・KPIサンプル追加
+                let taskCompletionId =
+                    createMetric TaskCompletion "Overall Task Completion" 75.0 100.0 "%"
+
+                let codeQualityId = createMetric CodeQuality "Code Quality Score" 87.5 90.0 "pts"
+
+                let overallKPIId =
+                    createKPI
+                        "Sprint Progress"
+                        "現在スプリントの進捗率"
+                        68.0
+                        100.0
+                        "%"
+                        "sprint"
+                        [ taskCompletionId; codeQualityId ]
+
+                logInfo "UI" $"Sample metrics and KPIs created for progress dashboard"
+
+            | None -> logWarning "UI" "UX TextView not found for ProgressDashboard integration"
 
             // Add panes to right container
             logInfo "Application" "Adding all panes to right container"

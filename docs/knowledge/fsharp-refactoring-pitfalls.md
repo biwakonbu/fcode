@@ -15,6 +15,7 @@ find_replace_all("Error", "false")
 ```
 
 **実際の被害例:**
+
 - `logError` → `logfalse` (関数名破壊)
 - `FCodeError` → `FCodefalse` (モジュール名破壊)
 - `ErrorDataReceived` → `falseDataReceived` (API破壊)

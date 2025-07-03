@@ -223,7 +223,7 @@ let main argv =
                         |> ignore
                     else
                         logError "AutoStart" $"Failed to start Claude Code for pane: {paneId}" |> ignore
-                        textView.Text <- $"[ERROR] {paneId}ペイン - Claude Code起動失敗"
+                        textView.Text <- $"[ERROR] {paneId}ペイン - Claude Code起動失敗\n詳細: {logger.LogPath}"
                         textView.SetNeedsDisplay()
                         Application.Refresh()
 

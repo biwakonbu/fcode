@@ -195,7 +195,8 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
                         MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインでClaude Codeを再起動しました", "OK")
                         |> ignore
                     else
-                        MessageBox.ErrorQuery(50, 10, "Error", "Claude Code起動に失敗しました", "OK") |> ignore
+                        MessageBox.ErrorQuery(50, 10, "Error", "Claude Code起動に失敗しました。詳細はログを確認してください。", "OK")
+                        |> ignore
                 | [] ->
                     MessageBox.Query(50, 10, "Claude Code", "このペインはClaude Code対応していません", "OK")
                     |> ignore
@@ -221,7 +222,7 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
                     MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインのClaude Codeを終了しました", "OK")
                     |> ignore
                 else
-                    MessageBox.Query(50, 10, "Claude Code", "アクティブなセッションがありません", "OK") |> ignore
+                    MessageBox.ErrorQuery(50, 10, "Error", "アクティブなセッションがありません", "OK") |> ignore
             else
                 MessageBox.Query(50, 10, "Claude Code", "会話ペインではClaude Code操作はできません", "OK")
                 |> ignore

@@ -189,15 +189,13 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
                 | textView :: _ ->
                     let workingDir = System.Environment.CurrentDirectory
 
-                    match sessionMgr.StartSession(paneId, workingDir, textView) with
-                    | Ok _ ->
+                    let success = sessionMgr.StartSession(paneId, workingDir, textView)
+
+                    if success then
                         MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインでClaude Codeを再起動しました", "OK")
                         |> ignore
-                    | Error error ->
-                        let msg = error.ToUserMessage()
-
-                        MessageBox.ErrorQuery("Error", $"{msg.UserMessage}\n\n詳細: {msg.TechnicalDetails}", "OK")
-                        |> ignore
+                    else
+                        MessageBox.ErrorQuery(50, 10, "Error", "Claude Code起動に失敗しました", "OK") |> ignore
                 | [] ->
                     MessageBox.Query(50, 10, "Claude Code", "このペインはClaude Code対応していません", "OK")
                     |> ignore
@@ -217,15 +215,13 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
                 | _ -> "unknown"
 
             if paneId <> "unknown" && currentPaneIndex > 0 then
-                match sessionMgr.StopSession(paneId) with
-                | Ok _ ->
+                let success = sessionMgr.StopSession(paneId)
+
+                if success then
                     MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインのClaude Codeを終了しました", "OK")
                     |> ignore
-                | Error error ->
-                    let msg = error.ToUserMessage()
-
-                    MessageBox.ErrorQuery("Error", $"{msg.UserMessage}\n\n詳細: {msg.TechnicalDetails}", "OK")
-                    |> ignore
+                else
+                    MessageBox.Query(50, 10, "Claude Code", "アクティブなセッションがありません", "OK") |> ignore
             else
                 MessageBox.Query(50, 10, "Claude Code", "会話ペインではClaude Code操作はできません", "OK")
                 |> ignore

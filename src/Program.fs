@@ -216,17 +216,14 @@ let main argv =
                     let workingDir = System.Environment.CurrentDirectory
                     let sessionManager = new SessionManager()
 
-                    match sessionManager.StartSession(paneId, workingDir, textView) with
-                    | Ok _ ->
+                    let success = sessionManager.StartSession(paneId, workingDir, textView)
+
+                    if success then
                         logInfo "AutoStart" $"Successfully started Claude Code for pane: {paneId}"
                         |> ignore
-                    | Error error ->
-                        let msg = error.ToUserMessage()
-
-                        logError "AutoStart" $"Failed to start Claude Code for pane: {paneId}: {msg.UserMessage}"
-                        |> ignore
-
-                        textView.Text <- $"[ERROR] {paneId}ペイン - {msg.UserMessage}"
+                    else
+                        logError "AutoStart" $"Failed to start Claude Code for pane: {paneId}" |> ignore
+                        textView.Text <- $"[ERROR] {paneId}ペイン - Claude Code起動失敗"
                         textView.SetNeedsDisplay()
                         Application.Refresh()
 

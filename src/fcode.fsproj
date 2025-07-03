@@ -13,6 +13,8 @@
     <Compile Include="AgentCLI.fs" />
     <Compile Include="AgentMessaging.fs" />
     <Compile Include="MessagePersistence.fs" />
+    <Compile Include="UnifiedActivityView.fs" />
+    <Compile Include="DecisionTimelineView.fs" />
     <Compile Include="MultiAgentProcessManager.fs" />
     <Compile Include="ResourceMonitor.fs" />
     <Compile Include="ResourceController.fs" />

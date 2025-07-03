@@ -13,6 +13,8 @@
     <Compile Include="ConfigurationManagerTests.fs"/>
     <Compile Include="AgentCLITests.fs"/>
     <Compile Include="AgentMessagingTests.fs"/>
+    <Compile Include="UnifiedActivityViewTests.fs"/>
+    <Compile Include="DecisionTimelineViewTests.fs"/>
     <Compile Include="MultiAgentIntegrationTests.fs"/>
     <Compile Include="QAPromptManagerTests.fs"/>
     <Compile Include="QAEndToEndTests.fs"/>

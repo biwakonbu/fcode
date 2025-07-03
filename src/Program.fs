@@ -8,6 +8,9 @@ open FCode.KeyBindings
 open FCode.ClaudeCodeProcess
 open FCode.UIHelpers
 open FCode.FCodeError
+open FCode.AgentMessaging
+open FCode.UnifiedActivityView
+open FCode.DecisionTimelineView
 
 [<EntryPoint>]
 let main argv =
@@ -69,6 +72,14 @@ let main argv =
             convo.SetNeedsDisplay()
 
             logInfo "UI" "Conversation pane with TextView created successfully"
+
+            // UnifiedActivityViewとの統合設定
+            setConversationTextView conversationTextView
+            logInfo "UI" "UnifiedActivityView integrated with conversation pane"
+
+            // 初期システム活動追加
+            addSystemActivity "system" SystemMessage "fcode TUI Application 起動完了 - エージェント協調開発環境準備中"
+            addSystemActivity "system" SystemMessage "会話ペイン統合 - 全エージェント活動をリアルタイム表示"
 
             // ----------------------------------------------------------------------
             // Right-hand container – holds all other panes
@@ -175,6 +186,21 @@ let main argv =
             timeline.Height <- 6 // 固定高
             // Apply PM color scheme specifically
             applySchemeByRole timeline "pm"
+
+            // DecisionTimelineViewとの統合設定（PMタイムラインペイン用）
+            match paneTextViews.TryFind("PM / PdM タイムライン") with
+            | Some timelineTextView ->
+                setTimelineTextView timelineTextView
+                logInfo "UI" "DecisionTimelineView integrated with PM timeline pane"
+
+                // 初期意思決定サンプル追加
+                let sampleDecisionId =
+                    startDecision "P2-3 UI統合実装方針" "会話ペイン統合・状況可視化機能の実装戦略決定" High [ "PM"; "dev1"; "dev2" ]
+
+                updateDecisionStage sampleDecisionId Options "PM" "UnifiedActivityView完成、DecisionTimelineView開発中"
+                |> ignore
+
+            | None -> logWarning "UI" "PM timeline TextView not found for DecisionTimelineView integration"
 
             // Add panes to right container
             logInfo "Application" "Adding all panes to right container"

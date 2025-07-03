@@ -198,7 +198,7 @@ let ``TaskAssignmentManager - エージェント登録テスト`` () =
 
     Assert.Contains("dev1", statusReport)
     Assert.Contains("0.0/8.0", statusReport)
-    Assert.Contains("90.00 %", statusReport)
+    Assert.Contains("90.000%", statusReport)
 
 [<Fact(Skip = "Integration test requiring complex NLP processing")>]
 [<Trait("TestCategory", "Integration")>]

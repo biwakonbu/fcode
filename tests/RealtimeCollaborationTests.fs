@@ -15,7 +15,14 @@ let testConfig =
     { MaxConcurrentAgents = 5
       TaskTimeoutMinutes = 30
       StaleAgentThreshold = TimeSpan.FromMinutes(5.0)
-      MaxRetryAttempts = 3 }
+      MaxRetryAttempts = 3
+      DatabasePath = ":memory:"
+      ConnectionPoolSize = 1
+      WALModeEnabled = false
+      AutoVacuumEnabled = false
+      MaxHistoryRetentionDays = 7
+      BackupEnabled = false
+      BackupIntervalHours = 24 }
 
 /// テスト用タスク作成
 let createTestTask taskId title priority estimatedDuration =

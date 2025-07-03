@@ -380,40 +380,18 @@ type ErrorHandlingTests() =
             // ファイルロック関連のエラーは期待される
             | Success _ -> printfn $"タスク{i}成功"
 
-    [<Test>]
-    member this.``ネットワークドライブへの保存エラーテスト``() =
-        // Windows環境でのネットワークドライブテスト（存在しないUNCパス）
-        if Environment.OSVersion.Platform = PlatformID.Win32NT then
-            let networkConfig =
-                { testConfig with
-                    StorageDirectory = "\\\\nonexistent\\share\\fcode" }
-
-            match initializeStorage networkConfig with
-            | Success _ -> Assert.Inconclusive("ネットワークパスが予期せず利用可能でした")
-            | Error msg ->
-                Assert.IsTrue(
-                    msg.Contains("ネットワーク")
-                    || msg.Contains("UNC")
-                    || msg.Contains("share")
-                    || msg.Contains("path"),
-                    $"期待されるネットワークエラーメッセージではありません: {msg}"
-                )
-        else
-            Assert.Inconclusive("Windowsのみのテストです")
+    // Windowsネットワークドライブテストは削除（対象プラットフォーム外のため）
 
     [<Test>]
     member this.``特殊文字ファイル名処理エラーテスト``() =
         let sessionId = generateSessionId ()
 
-        // 各OS で問題となる可能性がある特殊文字
+        // Linux/macOSで問題となる可能性がある特殊文字
         let problematicFileNames =
-            [ "ファイル名:コロン" // Windows で無効
-              "ファイル名<大なり" // Windows で無効
-              "ファイル名>小なり" // Windows で無効
-              "ファイル名|パイプ" // Windows で無効
-              "ファイル名\"ダブルクォート" // Windows で無効
-              "ファイル名*アスタリスク" // Windows で無効
-              "ファイル名?クエスチョン" // Windows で無効
+            [ "ファイル名/スラッシュ" // パス区切り文字
+              "ファイル名\0ヌル文字" // ヌル文字
+              "ファイル名\n改行" // 改行文字
+              "ファイル名\t タブ" // タブ文字
               String.replicate 300 "長" ] // 非常に長いファイル名
 
         for problematicName in problematicFileNames do

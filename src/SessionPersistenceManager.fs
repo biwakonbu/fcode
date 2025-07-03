@@ -123,54 +123,61 @@ module SessionPersistenceManager =
     let savePaneState (config: PersistenceConfig) (sessionId: string) (paneState: PaneState) =
         try
             // セキュリティ検証: IDのサニタイズ
-            let safeSessionId = sanitizeSessionId sessionId
-            let safePaneId = sanitizePaneId paneState.PaneId
+            match sanitizeSessionId sessionId with
+            | Result.Error msg -> Error $"セッションIDサニタイズエラー: {msg}"
+            | Result.Ok safeSessionId ->
+                match sanitizePaneId paneState.PaneId with
+                | Result.Error msg -> Error $"ペインIDサニタイズエラー: {msg}"
+                | Result.Ok safePaneId ->
 
-            let sessionDir = Path.Combine(config.StorageDirectory, "sessions", safeSessionId)
+                    let sessionDir = Path.Combine(config.StorageDirectory, "sessions", safeSessionId)
 
-            // パスインジェクション防止: ベースディレクトリ外へのアクセスを拒否
-            let normalizedSessionDir = Path.GetFullPath(sessionDir)
-            let normalizedBaseDir = Path.GetFullPath(config.StorageDirectory)
+                    // パスインジェクション防止: ベースディレクトリ外へのアクセスを拒否
+                    let normalizedSessionDir = Path.GetFullPath(sessionDir)
+                    let normalizedBaseDir = Path.GetFullPath(config.StorageDirectory)
 
-            if not (normalizedSessionDir.StartsWith(normalizedBaseDir)) then
-                Error "セキュリティ検証失敗: パスインジェクション攻撃を検出"
-            else
-                Directory.CreateDirectory(sessionDir) |> ignore
+                    if not (normalizedSessionDir.StartsWith(normalizedBaseDir)) then
+                        Error "セキュリティ検証失敗: パスインジェクション攻撃を検出"
+                    else
+                        Directory.CreateDirectory(sessionDir) |> ignore
 
-                let stateDir = Path.Combine(sessionDir, "pane-states")
-                Directory.CreateDirectory(stateDir) |> ignore
+                        let stateDir = Path.Combine(sessionDir, "pane-states")
+                        Directory.CreateDirectory(stateDir) |> ignore
 
-                let historyDir = Path.Combine(sessionDir, "conversation-history")
-                Directory.CreateDirectory(historyDir) |> ignore
+                        let historyDir = Path.Combine(sessionDir, "conversation-history")
+                        Directory.CreateDirectory(historyDir) |> ignore
 
-                // 環境変数から機密情報を除去
-                let sanitizedEnvironment = sanitizeEnvironment paneState.Environment
+                        // 環境変数から機密情報を除去
+                        let sanitizedEnvironment = sanitizeEnvironment paneState.Environment
 
-                // 会話履歴から機密情報を除去
-                let sanitizedHistory = filterSensitiveConversation paneState.ConversationHistory
+                        // 会話履歴から機密情報を除去
+                        let sanitizedHistory = filterSensitiveConversation paneState.ConversationHistory
 
-                // ペイン状態の保存 (会話履歴除く、機密情報除去済み)
-                let stateWithoutHistory =
-                    { paneState with
-                        PaneId = safePaneId
-                        ConversationHistory = []
-                        Environment = sanitizedEnvironment }
+                        // ペイン状態の保存 (会話履歴除く、機密情報除去済み)
+                        let stateWithoutHistory =
+                            { paneState with
+                                PaneId = safePaneId
+                                ConversationHistory = []
+                                Environment = sanitizedEnvironment }
 
-                let stateJson = JsonSerializer.Serialize(stateWithoutHistory, jsonOptions)
-                let stateFile = Path.Combine(stateDir, $"{safePaneId}.json")
-                File.WriteAllText(stateFile, stateJson)
+                        let stateJson = JsonSerializer.Serialize(stateWithoutHistory, jsonOptions)
+                        let stateFile = Path.Combine(stateDir, $"{safePaneId}.json")
+                        File.WriteAllText(stateFile, stateJson)
 
-                // 会話履歴の圧縮保存（機密情報除去済み）
-                if config.CompressionEnabled && sanitizedHistory.Length > 0 then
-                    let compressedHistory = compressHistory sanitizedHistory
-                    let historyFile = Path.Combine(historyDir, $"{safePaneId}.history.gz")
-                    File.WriteAllBytes(historyFile, compressedHistory)
+                        // 会話履歴の圧縮保存（機密情報除去済み）
+                        if config.CompressionEnabled && sanitizedHistory.Length > 0 then
+                            let compressedHistory = compressHistory sanitizedHistory
+                            let historyFile = Path.Combine(historyDir, $"{safePaneId}.history.gz")
+                            File.WriteAllBytes(historyFile, compressedHistory)
 
-                Success()
+                        Success()
         with ex ->
             let sanitizedMessage = sanitizeLogMessage ex.Message
             Logger.logError "SessionPersistence" $"ペイン状態保存失敗: {sanitizedMessage}"
-            Error $"ペイン状態保存失敗 ({sanitizePaneId paneState.PaneId}): {sanitizedMessage}"
+
+            match sanitizePaneId paneState.PaneId with
+            | Result.Ok safePaneId -> Error $"ペイン状態保存失敗 ({safePaneId}): {sanitizedMessage}"
+            | Result.Error _ -> Error $"ペイン状態保存失敗: {sanitizedMessage}"
 
     /// ペイン状態の読み込み
     let loadPaneState (config: PersistenceConfig) (sessionId: string) (paneId: string) =

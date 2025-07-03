@@ -121,10 +121,10 @@ module FileLockManager =
 
     let private stringToLockType (str: string) =
         match str with
-        | "ReadLock" -> ReadLock
-        | "WriteLock" -> WriteLock
-        | "ExclusiveLock" -> ExclusiveLock
-        | _ -> failwith $"不正なLockType: {str}"
+        | "ReadLock" -> Ok ReadLock
+        | "WriteLock" -> Ok WriteLock
+        | "ExclusiveLock" -> Ok ExclusiveLock
+        | _ -> Error $"不正なLockType: {str}"
 
     // FileLock <-> SerializableFileLock 変換関数
     let private toSerializable (lock: FileLock) : SerializableFileLock =
@@ -137,15 +137,19 @@ module FileLockManager =
           ExpiresAt = lock.ExpiresAt
           LastHeartbeat = lock.LastHeartbeat }
 
-    let private fromSerializable (serializable: SerializableFileLock) : FileLock =
-        { LockId = serializable.LockId
-          FilePath = serializable.FilePath
-          LockType = stringToLockType serializable.LockType
-          PaneId = serializable.PaneId
-          ProcessId = serializable.ProcessId
-          AcquiredAt = serializable.AcquiredAt
-          ExpiresAt = serializable.ExpiresAt
-          LastHeartbeat = serializable.LastHeartbeat }
+    let private fromSerializable (serializable: SerializableFileLock) : Result<FileLock, string> =
+        match stringToLockType serializable.LockType with
+        | Ok lockType ->
+            Ok
+                { LockId = serializable.LockId
+                  FilePath = serializable.FilePath
+                  LockType = lockType
+                  PaneId = serializable.PaneId
+                  ProcessId = serializable.ProcessId
+                  AcquiredAt = serializable.AcquiredAt
+                  ExpiresAt = serializable.ExpiresAt
+                  LastHeartbeat = serializable.LastHeartbeat }
+        | Error msg -> Error msg
 
     // JsonSerializerOptions
     let private jsonOptions = JsonSerializerOptions(WriteIndented = true)
@@ -423,19 +427,23 @@ module FileLockManager =
                         let serializableLock =
                             JsonSerializer.Deserialize<SerializableFileLock>(json, jsonOptions)
 
-                        let lock = fromSerializable serializableLock
+                        match fromSerializable serializableLock with
+                        | Ok lock ->
+                            // 期限切れでない場合のみ復元
+                            let isValid =
+                                match lock.ExpiresAt with
+                                | Some expires -> expires > DateTime.UtcNow
+                                | None ->
+                                    (DateTime.UtcNow - lock.LastHeartbeat).TotalHours < float config.MaxLockAgeHours
 
-                        // 期限切れでない場合のみ復元
-                        let isValid =
-                            match lock.ExpiresAt with
-                            | Some expires -> expires > DateTime.UtcNow
-                            | None -> (DateTime.UtcNow - lock.LastHeartbeat).TotalHours < float config.MaxLockAgeHours
-
-                        if isValid then
-                            lockRegistry.AddLock(lock)
-                            restoredCount <- restoredCount + 1
-                        else
-                            File.Delete(lockFile)
+                            if isValid then
+                                lockRegistry.AddLock(lock)
+                                restoredCount <- restoredCount + 1
+                            else
+                                File.Delete(lockFile)
+                        | Error errorMsg ->
+                            Logger.logWarning "FileLockManager" $"ロックデシリアライゼーション失敗: {lockFile} - {errorMsg}"
+                            File.Delete(lockFile) // 破損ファイル削除
                     with ex ->
                         Logger.logWarning "FileLockManager" $"ロックファイル復元失敗: {lockFile} - {ex.Message}"
                         File.Delete(lockFile) // 破損ファイル削除

@@ -106,19 +106,15 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``シングルキーバインドテスト``() =
         // CI環境ではスキップ（Terminal.Gui Application.Refresh依存）
-        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+        skipIfCI ()
+        let panes = createMockFrameViews ()
+        let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
-        if isCI then
-            Assert.Ignore("Skipped in CI environment due to Terminal.Gui Application.Refresh dependencies")
-        else
-            let panes = createMockFrameViews ()
-            let handler = EmacsKeyHandler(panes, createMockSessionManager ())
+        // Ctrl+L (Refresh) のテスト
+        let refreshKey = KeyEvent(Key.CtrlMask ||| Key.L, KeyModifiers())
+        let handled = handler.HandleKey(refreshKey)
 
-            // Ctrl+L (Refresh) のテスト
-            let refreshKey = KeyEvent(Key.CtrlMask ||| Key.L, KeyModifiers())
-            let handled = handler.HandleKey(refreshKey)
-
-            Assert.That(handled, Is.True, "Ctrl+L キーが処理されること")
+        Assert.That(handled, Is.True, "Ctrl+L キーが処理されること")
 
     [<Test>]
     member _.``マルチキーシーケンステスト``() =
@@ -220,21 +216,17 @@ type KeyBindingsTests() =
     [<Test>]
     member _.``Ctrl-X Ctrl-C終了コマンドテスト``() =
         // CI環境ではスキップ（Terminal.Gui Application.RequestStop依存）
-        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+        skipIfCI ()
+        let panes = createMockFrameViews ()
+        let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
-        if isCI then
-            Assert.Ignore("Skipped in CI environment due to Terminal.Gui Application.RequestStop dependencies")
-        else
-            let panes = createMockFrameViews ()
-            let handler = EmacsKeyHandler(panes, createMockSessionManager ())
+        // Ctrl+X Ctrl+C による終了コマンドをテスト
+        let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
+        let secondKey = KeyEvent(Key.CtrlMask ||| Key.C, KeyModifiers())
 
-            // Ctrl+X Ctrl+C による終了コマンドをテスト
-            let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
-            let secondKey = KeyEvent(Key.CtrlMask ||| Key.C, KeyModifiers())
+        let firstHandled = handler.HandleKey(firstKey)
+        Assert.That(firstHandled, Is.True, "最初のキー（Ctrl+X）が処理されること")
 
-            let firstHandled = handler.HandleKey(firstKey)
-            Assert.That(firstHandled, Is.True, "最初のキー（Ctrl+X）が処理されること")
-
-            // 2番目のキーでExitアクションが実行される（Application.RequestStop()が呼ばれる）
-            let secondHandled = handler.HandleKey(secondKey)
-            Assert.That(secondHandled, Is.True, "2番目のキー（Ctrl+C）が処理されること")
+        // 2番目のキーでExitアクションが実行される（Application.RequestStop()が呼ばれる）
+        let secondHandled = handler.HandleKey(secondKey)
+        Assert.That(secondHandled, Is.True, "2番目のキー（Ctrl+C）が処理されること")

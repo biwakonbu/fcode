@@ -92,51 +92,54 @@ module SecurityUtils =
     let private pathSeparators = [ '/'; '\\' ]
 
     /// セッションIDを安全にサニタイズ
-    let sanitizeSessionId (sessionId: string) : string =
+    let sanitizeSessionId (sessionId: string) : Result<string, string> =
         if String.IsNullOrEmpty(sessionId) then
-            failwith "セッションIDが空です"
-
-        // 長さ制限（最大64文字）
-        let truncatedId =
-            if sessionId.Length > 64 then
-                sessionId.[..63]
-            else
-                sessionId
-
-        // 危険な文字を除去
-        let safeChars =
-            truncatedId.ToCharArray()
-            |> Array.filter (fun c ->
-                // 英数字、ハイフン、アンダースコアのみ許可
-                Char.IsLetterOrDigit(c) || c = '-' || c = '_')
-            |> Array.take (min 64 (Array.length (truncatedId.ToCharArray())))
-
-        if safeChars.Length = 0 then
-            // 完全に無効な場合はハッシュ値を使用
-            use sha = SHA256.Create()
-            let hashBytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(sessionId))
-            Convert.ToHexString(hashBytes).[..15] // 16文字のハッシュ
+            Error "セッションIDが空です"
         else
-            String(safeChars)
+            // 長さ制限（最大64文字）
+            let truncatedId =
+                if sessionId.Length > 64 then
+                    sessionId.[..63]
+                else
+                    sessionId
+
+            // 危険な文字を除去
+            let safeChars =
+                truncatedId.ToCharArray()
+                |> Array.filter (fun c ->
+                    // 英数字、ハイフン、アンダースコアのみ許可
+                    Char.IsLetterOrDigit(c) || c = '-' || c = '_')
+                |> Array.take (min 64 (Array.length (truncatedId.ToCharArray())))
+
+            let result =
+                if safeChars.Length = 0 then
+                    // 完全に無効な場合はハッシュ値を使用
+                    use sha = SHA256.Create()
+                    let hashBytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(sessionId))
+                    Convert.ToHexString(hashBytes).[..15] // 16文字のハッシュ
+                else
+                    String(safeChars)
+
+            Ok result
 
     /// ペインIDを安全にサニタイズ
-    let sanitizePaneId (paneId: string) : string =
+    let sanitizePaneId (paneId: string) : Result<string, string> =
         if String.IsNullOrEmpty(paneId) then
-            failwith "ペインIDが空です"
+            Error "ペインIDが空です"
+        else
+            // 長さ制限（最大32文字）
+            let truncatedId = if paneId.Length > 32 then paneId.[..31] else paneId
 
-        // 長さ制限（最大32文字）
-        let truncatedId = if paneId.Length > 32 then paneId.[..31] else paneId
+            // 危険な文字を除去・置換
+            let safeChars =
+                truncatedId.ToCharArray()
+                |> Array.map (fun c ->
+                    if Char.IsLetterOrDigit(c) || c = '-' || c = '_' then c
+                    elif c = ' ' then '_'
+                    else 'X') // 危険な文字は'X'に置換
+                |> Array.take (min 32 (Array.length (truncatedId.ToCharArray())))
 
-        // 危険な文字を除去・置換
-        let safeChars =
-            truncatedId.ToCharArray()
-            |> Array.map (fun c ->
-                if Char.IsLetterOrDigit(c) || c = '-' || c = '_' then c
-                elif c = ' ' then '_'
-                else 'X') // 危険な文字は'X'に置換
-            |> Array.take (min 32 (Array.length (truncatedId.ToCharArray())))
-
-        String(safeChars)
+            Ok(String(safeChars))
 
     /// ファイルパスの安全性を検証
     let validateFilePath (basePath: string) (targetPath: string) =
@@ -270,23 +273,42 @@ module SecurityUtils =
         : Result<string * Map<string, 'T>, string> =
         try
             // セッションIDのサニタイズ
-            let safeSessionId = sanitizeSessionId sessionId
-
-            // ペインIDのサニタイズ
-            let safePaneStates =
-                paneStates
-                |> Map.toList
-                |> List.map (fun (paneId, state) ->
-                    let safePaneId = sanitizePaneId paneId
-                    (safePaneId, state))
-                |> Map.ofList
-
-            // セッションディレクトリの安全性検証
-            let sessionDir = Path.Combine(basePath, "sessions", safeSessionId)
-
-            match validateDirectory basePath sessionDir with
-            | Ok _ -> Ok(safeSessionId, safePaneStates)
+            match sanitizeSessionId sessionId with
             | Error msg -> Error msg
+            | Ok safeSessionId ->
+                // ペインIDのサニタイズ
+                let paneResults =
+                    paneStates
+                    |> Map.toList
+                    |> List.map (fun (paneId, state) ->
+                        match sanitizePaneId paneId with
+                        | Ok safePaneId -> Ok(safePaneId, state)
+                        | Error msg -> Error msg)
+
+                // すべてのペインIDサニタイズが成功したかチェック
+                let errors =
+                    paneResults
+                    |> List.choose (function
+                        | Error e -> Some e
+                        | Ok _ -> None)
+
+                if not errors.IsEmpty then
+                    let errorMessage = String.Join("; ", errors)
+                    Error $"ペインIDサニタイズエラー: {errorMessage}"
+                else
+                    let safePaneStates =
+                        paneResults
+                        |> List.choose (function
+                            | Ok result -> Some result
+                            | Error _ -> None)
+                        |> Map.ofList
+
+                    // セッションディレクトリの安全性検証
+                    let sessionDir = Path.Combine(basePath, "sessions", safeSessionId)
+
+                    match validateDirectory basePath sessionDir with
+                    | Ok _ -> Ok(safeSessionId, safePaneStates)
+                    | Error msg -> Error msg
 
         with ex ->
             Error $"セッションセキュリティ検証エラー: {ex.Message}"

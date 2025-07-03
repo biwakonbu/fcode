@@ -154,10 +154,36 @@ type CollaborationConfig =
     { MaxConcurrentAgents: int
       TaskTimeoutMinutes: int
       StaleAgentThreshold: TimeSpan
-      MaxRetryAttempts: int }
+      MaxRetryAttempts: int
+      // SQLite設定
+      DatabasePath: string
+      ConnectionPoolSize: int
+      WALModeEnabled: bool
+      AutoVacuumEnabled: bool
+      MaxHistoryRetentionDays: int
+      BackupEnabled: bool
+      BackupIntervalHours: int }
 
     static member Default =
         { MaxConcurrentAgents = 10
           TaskTimeoutMinutes = 30
           StaleAgentThreshold = TimeSpan.FromMinutes(5.0)
-          MaxRetryAttempts = 3 }
+          MaxRetryAttempts = 3
+          DatabasePath = "~/.fcode/tasks.db"
+          ConnectionPoolSize = 5
+          WALModeEnabled = true
+          AutoVacuumEnabled = true
+          MaxHistoryRetentionDays = 30
+          BackupEnabled = true
+          BackupIntervalHours = 24 }
+
+    member this.ConnectionString =
+        let expandedPath =
+            System.IO.Path.GetFullPath(
+                this.DatabasePath.Replace(
+                    "~",
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile)
+                )
+            )
+
+        $"Data Source={expandedPath};Cache=Shared;Pooling=true;Max Pool Size={this.ConnectionPoolSize}"

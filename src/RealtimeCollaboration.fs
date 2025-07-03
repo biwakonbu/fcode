@@ -3,44 +3,7 @@ module FCode.RealtimeCollaboration
 open System
 open System.Collections.Concurrent
 open FCode.Logger
-
-/// エージェント状態を表現
-type AgentStatus =
-    | Idle
-    | Working
-    | Blocked
-    | Error
-    | Completed
-
-/// エージェント状態情報（簡略版）
-type AgentState =
-    { AgentId: string
-      Status: AgentStatus
-      Progress: float
-      LastUpdate: DateTime
-      CurrentTask: string option }
-
-/// タスク状態を表現
-type TaskStatus =
-    | Pending
-    | InProgress
-    | Completed
-    | Failed
-
-/// タスク情報（簡略版）
-type TaskInfo =
-    { TaskId: string
-      Title: string
-      Status: TaskStatus
-      AssignedAgent: string option
-      Priority: int }
-
-/// 進捗サマリー
-type ProgressSummary =
-    { TotalTasks: int
-      CompletedTasks: int
-      ActiveAgents: int
-      OverallProgress: float }
+open FCode.Collaboration.CollaborationTypes
 
 /// リアルタイム協調機能基盤（統合版）
 type RealtimeCollaborationManager() =
@@ -68,6 +31,7 @@ type RealtimeCollaborationManager() =
     member private this.CalculateProgressSummary() =
         let allTasks = tasks.Values |> Seq.toList
         let completedTasks = allTasks |> List.filter (fun t -> t.Status = Completed)
+        let inProgressTasks = allTasks |> List.filter (fun t -> t.Status = InProgress)
 
         let activeAgents =
             agentStates.Values |> Seq.filter (fun s -> s.Status = Working) |> Seq.length
@@ -80,8 +44,12 @@ type RealtimeCollaborationManager() =
 
         { TotalTasks = allTasks.Length
           CompletedTasks = completedTasks.Length
+          InProgressTasks = inProgressTasks.Length
+          BlockedTasks = 0 // 簡略版では計算しない
           ActiveAgents = activeAgents
-          OverallProgress = overallProgress }
+          OverallProgress = overallProgress
+          EstimatedTimeRemaining = None
+          LastUpdated = DateTime.UtcNow }
 
     /// エージェント状態更新
     member this.UpdateAgentState(agentId: string, status: AgentStatus, ?progress: float, ?currentTask: string) =
@@ -91,7 +59,9 @@ type RealtimeCollaborationManager() =
                   Status = status
                   Progress = defaultArg progress 0.0
                   LastUpdate = DateTime.UtcNow
-                  CurrentTask = currentTask }
+                  CurrentTask = currentTask
+                  WorkingDirectory = ""
+                  ProcessId = None }
 
             agentStates.AddOrUpdate(agentId, newState, fun _ _ -> newState) |> ignore
             stateChangedEvent.Trigger(agentId, newState)
@@ -104,12 +74,25 @@ type RealtimeCollaborationManager() =
     /// タスク追加
     member _.AddTask(taskId: string, title: string, ?assignedAgent: string, ?priority: int) =
         lock lockObj (fun () ->
+            let now = DateTime.UtcNow
+
+            let taskPriority =
+                match priority with
+                | Some p when p >= 1 && p <= 4 -> enum<TaskPriority> p
+                | _ -> TaskPriority.Medium
+
             let task =
                 { TaskId = taskId
                   Title = title
+                  Description = ""
                   Status = Pending
                   AssignedAgent = assignedAgent
-                  Priority = defaultArg priority 0 }
+                  Priority = taskPriority
+                  EstimatedDuration = None
+                  ActualDuration = None
+                  RequiredResources = []
+                  CreatedAt = now
+                  UpdatedAt = now }
 
             tasks.AddOrUpdate(taskId, task, fun _ _ -> task) |> ignore
             logInfo "RealtimeCollaboration" $"Task added: {taskId} - {title}")
@@ -119,7 +102,11 @@ type RealtimeCollaborationManager() =
         lock lockObj (fun () ->
             match tasks.TryGetValue(taskId) with
             | true, task ->
-                let completedTask = { task with Status = Completed }
+                let completedTask =
+                    { task with
+                        Status = Completed
+                        UpdatedAt = DateTime.UtcNow }
+
                 tasks.[taskId] <- completedTask
                 taskCompletedEvent.Trigger(taskId)
                 logInfo "RealtimeCollaboration" $"Task completed: {taskId}"

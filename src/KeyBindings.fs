@@ -4,6 +4,7 @@ open Terminal.Gui
 open System
 open FCode.Logger
 open FCode.ClaudeCodeProcess
+open FCode.FCodeError
 
 // キーバインドアクション定義
 type KeyAction =
@@ -138,9 +139,9 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
             // 全てのClaude Codeセッションをクリーンアップしてから終了
             try
                 sessionMgr.CleanupAllSessions()
-                logInfo "KeyBindings" "All sessions cleaned up successfully"
+                logInfo "KeyBindings" "All sessions cleaned up successfully" |> ignore
             with ex ->
-                logException "KeyBindings" "Error during session cleanup" ex
+                logException "KeyBindings" "Error during session cleanup" ex |> ignore
 
             Application.RequestStop()
         | NextPane ->
@@ -186,18 +187,16 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
 
                 match textViews with
                 | textView :: _ ->
-                    try
-                        let workingDir = System.Environment.CurrentDirectory
-                        let success = sessionMgr.StartSession(paneId, workingDir, textView)
+                    let workingDir = System.Environment.CurrentDirectory
 
-                        if success then
-                            MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインでClaude Codeを再起動しました", "OK")
-                            |> ignore
-                        else
-                            MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインでClaude Code起動に失敗しました", "OK")
-                            |> ignore
-                    with ex ->
-                        MessageBox.ErrorQuery("Error", $"操作エラー: {ex.Message}", "OK") |> ignore
+                    let success = sessionMgr.StartSession(paneId, workingDir, textView)
+
+                    if success then
+                        MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインでClaude Codeを再起動しました", "OK")
+                        |> ignore
+                    else
+                        MessageBox.ErrorQuery(50, 10, "Error", "Claude Code起動に失敗しました。詳細はログを確認してください。", "OK")
+                        |> ignore
                 | [] ->
                     MessageBox.Query(50, 10, "Claude Code", "このペインはClaude Code対応していません", "OK")
                     |> ignore
@@ -217,16 +216,13 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
                 | _ -> "unknown"
 
             if paneId <> "unknown" && currentPaneIndex > 0 then
-                try
-                    let success = sessionMgr.StopSession(paneId)
+                let success = sessionMgr.StopSession(paneId)
 
-                    if success then
-                        MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインのClaude Codeを終了しました", "OK")
-                        |> ignore
-                    else
-                        MessageBox.Query(50, 10, "Claude Code", "アクティブなセッションがありません", "OK") |> ignore
-                with ex ->
-                    MessageBox.ErrorQuery("Error", $"停止操作エラー: {ex.Message}", "OK") |> ignore
+                if success then
+                    MessageBox.Query(50, 10, "Claude Code", $"{paneId}ペインのClaude Codeを終了しました", "OK")
+                    |> ignore
+                else
+                    MessageBox.ErrorQuery(50, 10, "Error", "アクティブなセッションがありません", "OK") |> ignore
             else
                 MessageBox.Query(50, 10, "Claude Code", "会話ペインではClaude Code操作はできません", "OK")
                 |> ignore

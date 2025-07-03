@@ -11,6 +11,11 @@ open FCode.QAPromptManager
 open FCode.UXPromptManager
 open FCode.PMPromptManager
 open FCode.FCodeError
+open type FCode.FCodeError.FCodeError
+
+// Result型のコンストラクタを明示的にopen
+let Ok = Ok
+let Error = Error
 
 type ClaudeSession =
     { Process: Process option
@@ -23,21 +28,14 @@ type ClaudeSession =
 type SessionManager() =
     let mutable sessions = Map.empty<string, ClaudeSession>
 
-    member _.StartSession(paneId: string, workingDir: string, outputView: TextView) : Result<unit, FCodeError> =
+    member _.StartSession(paneId: string, workingDir: string, outputView: TextView) =
         logInfo "SessionManager" $"StartSession called - PaneId: {paneId}, WorkingDir: {workingDir}"
 
         match sessions.TryFind(paneId) with
         | Some session when session.IsActive ->
             logWarning "SessionManager" $"Session already active for pane: {paneId}"
 
-            let details =
-                { Component = "SessionManager"
-                  Operation = "StartSession"
-                  Message = $"Session already active for pane: {paneId}"
-                  Recoverable = true
-                  ProcessId = None }
-
-            Error(ProcessError details)
+            false
         | _ ->
             try
                 // Claude CLI実行可能性確認（改善されたパス検出）
@@ -86,25 +84,25 @@ type SessionManager() =
 
                 match findClaudePath () with
                 | None ->
+                    let currentPath =
+                        System.Environment.GetEnvironmentVariable("PATH")
+                        |> Option.ofObj
+                        |> Option.defaultValue "不明"
+
                     let errorMsg =
                         "[ERROR] Claude CLI が見つかりません。\n"
                         + "以下のいずれかでインストールしてください:\n"
                         + "• curl -fsSL https://claude.ai/cli.sh | sh\n"
-                        + "• npm install -g @anthropic-ai/claude-cli"
+                        + "• npm install -g @anthropic-ai/claude-cli\n"
+                        + $"• PATH環境変数の確認: {currentPath}\n"
+                        + $"• 作業ディレクトリ: {workingDir}"
 
                     logError "SessionManager" errorMsg |> ignore
                     outputView.Text <- errorMsg
                     outputView.SetNeedsDisplay()
                     Application.Refresh()
 
-                    let details =
-                        { Component = "SessionManager"
-                          Operation = "StartSession"
-                          Message = "Claude CLI not found"
-                          Recoverable = false
-                          ProcessId = None }
-
-                    Error(ProcessError details)
+                    false
                 | Some claudePath ->
                     logDebug "SessionManager" $"Creating ProcessStartInfo for pane: {paneId}"
                     let startInfo = ProcessStartInfo()
@@ -201,7 +199,9 @@ type SessionManager() =
                                 $"[ERROR] Claude CLI起動に失敗しました:\n"
                                 + $"パス: {claudePath}\n"
                                 + $"作業ディレクトリ: {workingDir}\n"
-                                + $"エラー: {ex.Message}"
+                                + $"エラー: {ex.Message}\n"
+                                + $"エラー種別: {ex.GetType().Name}\n"
+                                + $"環境情報: .NET {System.Environment.Version}, OS {System.Environment.OSVersion}"
 
                             logError "SessionManager" errorMsg |> ignore
                             outputView.Text <- errorMsg
@@ -314,7 +314,7 @@ type SessionManager() =
                         outputView.Text <- buffer.ToString()
                         outputView.SetNeedsDisplay()
 
-                    Ok()
+                    true
             with ex ->
                 logException "SessionManager" $"Failed to start session for pane: {paneId}" ex
 
@@ -324,9 +324,9 @@ type SessionManager() =
                 outputView.Text <- errorMsg
                 outputView.SetNeedsDisplay()
                 Application.Refresh()
-                Error(SystemError ex.Message)
+                false
 
-    member _.StopSession(paneId: string) : Result<unit, FCodeError> =
+    member _.StopSession(paneId: string) =
         logInfo "SessionManager" $"StopSession called for pane: {paneId}"
 
         match sessions.TryFind(paneId) with
@@ -361,38 +361,24 @@ type SessionManager() =
                         outputView.SetNeedsDisplay()
                     | None -> ()
 
-                    Ok()
+                    true
                 with ex ->
                     logException "SessionManager" $"Failed to stop session for pane: {paneId}" ex
 
-                    MessageBox.ErrorQuery("Error", $"Claude Code終了エラー: {ex.Message}", "OK")
+                    MessageBox.ErrorQuery(50, 10, "Error", $"Claude Code終了エラー: {ex.Message}", "OK")
                     |> ignore
 
-                    Error(SystemError ex.Message)
+                    false
             | None ->
                 logWarning "SessionManager" $"No process found for pane: {paneId}"
 
-                let details =
-                    { Component = "SessionManager"
-                      Operation = "StopSession"
-                      Message = $"No process found for pane: {paneId}"
-                      Recoverable = true
-                      ProcessId = None }
-
-                Error(ProcessError details)
+                false
         | _ ->
             logWarning "SessionManager" $"No active session found for pane: {paneId}"
 
-            let details =
-                { Component = "SessionManager"
-                  Operation = "StopSession"
-                  Message = $"No active session found for pane: {paneId}"
-                  Recoverable = true
-                  ProcessId = None }
+            false
 
-            Error(ProcessError details)
-
-    member _.SendInput(paneId: string, input: string) : Result<unit, FCodeError> =
+    member _.SendInput(paneId: string, input: string) =
         logDebug "SessionManager" $"SendInput called for pane: {paneId}, input: {input}"
 
         match sessions.TryFind(paneId) with
@@ -412,32 +398,18 @@ type SessionManager() =
                     proc.StandardInput.WriteLine(input)
                     proc.StandardInput.Flush()
                     logDebug "SessionManager" $"Input sent to pane: {paneId}"
-                    Ok()
+                    true
                 with ex ->
                     logException "SessionManager" $"Failed to send input to pane: {paneId}" ex
-                    Error(SystemError ex.Message)
+                    false
             | _ ->
                 logWarning "SessionManager" $"Process not available for input to pane: {paneId}"
 
-                let details =
-                    { Component = "SessionManager"
-                      Operation = "SendInput"
-                      Message = $"Process not available for input to pane: {paneId}"
-                      Recoverable = true
-                      ProcessId = None }
-
-                Error(ProcessError details)
+                false
         | _ ->
             logWarning "SessionManager" $"No active session for input to pane: {paneId}"
 
-            let details =
-                { Component = "SessionManager"
-                  Operation = "SendInput"
-                  Message = $"No active session for input to pane: {paneId}"
-                  Recoverable = true
-                  ProcessId = None }
-
-            Error(ProcessError details)
+            false
 
     member _.IsSessionActive(paneId: string) =
         match sessions.TryFind(paneId) with
@@ -450,15 +422,10 @@ type SessionManager() =
     member this.CleanupAllSessions() : unit =
         sessions
         |> Map.iter (fun paneId _ ->
-            match this.StopSession(paneId) with
-            | Ok _ -> ()
-            | Error error ->
-                let msg = error.ToUserMessage()
+            let success = this.StopSession(paneId)
 
-                logError "SessionManager" $"Failed to cleanup session {paneId}: {msg.UserMessage}"
-                |> ignore
-
-                ())
+            if not success then
+                logError "SessionManager" $"Failed to cleanup session {paneId}" |> ignore)
 
         sessions <- Map.empty
 

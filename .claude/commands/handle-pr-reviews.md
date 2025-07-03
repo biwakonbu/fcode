@@ -2,10 +2,13 @@
 
 CodeRabbitレビュー指摘事項の自動対応とレポート作成コマンド
 
+引数: `$ARGUMENTS` - 対象PR番号（省略時は現在のブランチから自動検出）
+
 ## 実行内容
 
 1. **PRレビュー状況確認**
-   - 現在のPRのレビューコメントを検索
+   - PR番号を$ARGUMENTSから取得（未指定時は現在ブランチから自動検出）
+   - 対象PRのレビューコメントを検索
    - CodeRabbit/coderabbitaiからの指摘事項を特定
    - 未対応項目の分類と優先度判定
 
@@ -39,6 +42,17 @@ CodeRabbitレビュー指摘事項の自動対応とレポート作成コマン�
 特定のPR番号を指定して実行:
 ```
 /handle-pr-reviews 53
+```
+
+実装時の$ARGUMENTS使用例:
+```bash
+# PR番号の取得
+PR_NUMBER=${$ARGUMENTS:-}
+if [ -z "$PR_NUMBER" ]; then
+    # 現在のブランチから自動検出
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    PR_NUMBER=$(gh pr list --head "$CURRENT_BRANCH" --json number --jq '.[0].number')
+fi
 ```
 
 ## 対応可能な修正パターン

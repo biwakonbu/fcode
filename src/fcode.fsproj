@@ -49,6 +49,7 @@
     <Compile Include="Collaboration/TaskStorageFactory.fs" />
     <Compile Include="Collaboration/TaskStorageMigration.fs" />
     <Compile Include="Collaboration/TaskStorageConfiguration.fs" />
+    <Compile Include="TaskAssignmentManager.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />
     <Compile Include="Program.fs" />

@@ -8,10 +8,12 @@ open FCode.Collaboration.IAgentStateManager
 open FCode.Collaboration.ITaskDependencyGraph
 open FCode.Collaboration.IProgressAggregator
 open FCode.Collaboration.ICollaborationCoordinator
+open FCode.Collaboration.IEscalationManager
 open FCode.Collaboration.AgentStateManager
 open FCode.Collaboration.TaskDependencyGraph
 open FCode.Collaboration.ProgressAggregator
 open FCode.Collaboration.CollaborationCoordinator
+open FCode.Collaboration.EscalationManager
 
 /// リアルタイム協調作業統合ファサード
 type RealtimeCollaborationFacade(config: CollaborationConfig) =
@@ -26,6 +28,15 @@ type RealtimeCollaborationFacade(config: CollaborationConfig) =
 
     let collaborationCoordinator =
         new CollaborationCoordinator(agentStateManager, taskDependencyGraph, config)
+
+    let escalationManager =
+        new EscalationManager(
+            agentStateManager,
+            taskDependencyGraph,
+            progressAggregator,
+            collaborationCoordinator,
+            config
+        )
 
     // 統合イベント
     let systemEvent = Event<SystemEvent>()
@@ -184,6 +195,47 @@ type RealtimeCollaborationFacade(config: CollaborationConfig) =
     member _.GetCollaborationStatistics() =
         collaborationCoordinator.GetCollaborationStatistics()
 
+    /// ==== エスカレーション管理 ====
+    /// 致命度評価
+    member _.EvaluateEscalationSeverity(taskId: string, agentId: string, error: string) =
+        escalationManager.EvaluateSeverity(taskId, agentId, error)
+
+    /// PO通知レベル判定
+    member _.DetermineEscalationNotificationLevel(severity: EscalationSeverity, factors: EscalationFactors) =
+        escalationManager.DetermineNotificationLevel(severity, factors)
+
+    /// エスカレーション発生処理
+    member _.TriggerEscalation(taskId: string, agentId: string, error: string) =
+        escalationManager.TriggerEscalation(taskId, agentId, error)
+
+    /// 自動復旧試行
+    member _.AttemptAutoRecovery(escalationContext: EscalationContext) =
+        escalationManager.AttemptAutoRecovery(escalationContext)
+
+    /// 判断待機管理
+    member _.ManageWaitingDecision(escalationId: string, maxWaitTime: TimeSpan) =
+        escalationManager.ManageWaitingDecision(escalationId, maxWaitTime)
+
+    /// 緊急対応フロー実行
+    member _.ExecuteEmergencyResponse(escalationContext: EscalationContext) =
+        escalationManager.ExecuteEmergencyResponse(escalationContext)
+
+    /// PO判断処理
+    member _.ProcessPODecision(escalationId: string, approved: bool, reason: string) =
+        escalationManager.ProcessPODecision(escalationId, approved, reason)
+
+    /// エスカレーション履歴取得
+    member _.GetEscalationHistory(?agentId: string, ?severity: EscalationSeverity) =
+        escalationManager.GetEscalationHistory(agentId, severity)
+
+    /// アクティブエスカレーション取得
+    member _.GetActiveEscalations() =
+        escalationManager.GetActiveEscalations()
+
+    /// エスカレーション統計取得
+    member _.GetEscalationStatistics() =
+        escalationManager.GetEscalationStatistics()
+
     /// ==== 高レベル統合機能 ====
     /// エージェントにタスクを自動割り当て
     member this.AutoAssignTask(taskId: string) =
@@ -212,7 +264,7 @@ type RealtimeCollaborationFacade(config: CollaborationConfig) =
                                 Result.Ok selectedAgent.AgentId
                             | Result.Error e -> Result.Error e
                         | Result.Error e -> Result.Error e
-                    | Result.Ok _ -> Result.Error(ResourceUnavailable "No idle agents available")
+                    | Result.Ok _ -> Result.Error(CollaborationError.ResourceUnavailable "No idle agents available")
                     | Result.Error e -> Result.Error e
                 | Result.Ok None -> Result.Error(NotFound(sprintf "Task not found: %s" taskId))
                 | Result.Error e -> Result.Error e
@@ -357,6 +409,7 @@ type RealtimeCollaborationFacade(config: CollaborationConfig) =
                 results.Add(("TaskDependencyGraph", taskDependencyGraph.Reset()))
                 results.Add(("ProgressAggregator", progressAggregator.Reset()))
                 results.Add(("CollaborationCoordinator", collaborationCoordinator.ResetCoordinationState()))
+                // エスカレーションマネージャーは状態をクリア（リセットメソッドは実装しない）
 
                 let allSuccess =
                     results
@@ -392,6 +445,7 @@ type RealtimeCollaborationFacade(config: CollaborationConfig) =
             disposed <- true
             progressAggregator.Dispose()
             collaborationCoordinator.Dispose()
+            escalationManager.Dispose()
             taskDependencyGraph.Dispose()
             agentStateManager.Dispose()
             logInfo "RealtimeCollaborationFacade" "RealtimeCollaborationFacade disposed"

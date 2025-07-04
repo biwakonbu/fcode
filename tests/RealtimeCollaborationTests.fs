@@ -22,7 +22,14 @@ let testConfig =
       AutoVacuumEnabled = false
       MaxHistoryRetentionDays = 7
       BackupEnabled = false
-      BackupIntervalHours = 24 }
+      BackupIntervalHours = 24
+      // エスカレーション設定
+      EscalationEnabled = true
+      AutoRecoveryMaxAttempts = 3
+      PONotificationThreshold = EscalationSeverity.Important
+      CriticalEscalationTimeoutMinutes = 5
+      DataProtectionModeEnabled = true
+      EmergencyShutdownEnabled = false }
 
 /// テスト用タスク作成
 let createTestTask taskId title priority estimatedDuration =

@@ -49,6 +49,13 @@
     <Compile Include="Collaboration/IEventProcessor.fs" />
     <Compile Include="Collaboration/EventProcessor.fs" />
     <Compile Include="VirtualTimeCoordinator.fs" />
+    <Compile Include="Collaboration/CompletionAssessmentManager.fs" />
+    <Compile Include="Collaboration/QualityEvaluationSummaryManager.fs" />
+    <Compile Include="Collaboration/NextSprintPlannerManager.fs" />
+    <Compile Include="Collaboration/CompletionCriteriaCheckerManager.fs" />
+    <Compile Include="Collaboration/POApprovalRequirementAnalyzerManager.fs" />
+    <Compile Include="Collaboration/AutoContinuationEngineManager.fs" />
+    <Compile Include="Collaboration/IterationManagerCore.fs" />
     <Compile Include="Collaboration/AgentStateManager.fs" />
     <Compile Include="Collaboration/TaskDependencyGraph.fs" />
     <Compile Include="Collaboration/ProgressAggregator.fs" />

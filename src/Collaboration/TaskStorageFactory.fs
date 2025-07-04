@@ -42,10 +42,12 @@ type TaskStorageFactory() =
         let envVar = Environment.GetEnvironmentVariable("FCODE_TASK_STORAGE_DESIGN")
 
         match envVar with
-        | "optimized" -> OptimizedDesign
+        | "6table" -> OptimizedDesign
+        | "3table"
         | "full"
         | null
         | "" -> FullTableDesign // デフォルトは包括設計
+        | "optimized" -> OptimizedDesign // 後方互換性のため残す
         | _ ->
             logWarning "TaskStorageFactory" $"Unknown storage design: {envVar}, using full design"
             FullTableDesign
@@ -69,15 +71,15 @@ type TaskStorageFactory() =
         match design with
         | FullTableDesign ->
             { Name = "Full Table Design"
-              TableCount = 6
-              IndexCount = 16
-              EstimatedComplexity = "Medium"
+              TableCount = 3
+              IndexCount = 7
+              EstimatedComplexity = "Low"
               Description = "Comprehensive design with normalized tables for maximum functionality" }
         | OptimizedDesign ->
             { Name = "Optimized Design"
               TableCount = 6
-              IndexCount = 12
-              EstimatedComplexity = "Low"
+              IndexCount = 16
+              EstimatedComplexity = "High"
               Description = "Performance-optimized variant with reduced indexing overhead" }
 
 /// 設計情報の型

@@ -16,16 +16,16 @@ type TimeCalculationManager(config: VirtualTimeConfig) =
         let totalMinutes = int realElapsed.TotalMinutes
         let virtualHours = totalMinutes // 1vh = 1分リアルタイム
 
-        // スプリント完了判定 (72分 = 3vd)
-        let sprintTotalMinutes = config.SprintDurationVD * 24
+        // スプリント完了判定 (18分 = 3vd)
+        let sprintTotalMinutes = config.SprintDurationVD * 6
 
         if virtualHours >= sprintTotalMinutes then
-            VirtualSprint config.SprintDurationVD
+            VirtualSprint(virtualHours / sprintTotalMinutes)
         else if
-            // 24分未満は時間単位、24分以上は日単位で表現
-            virtualHours >= 24
+            // 6分未満は時間単位、6分以上は日単位で表現
+            virtualHours >= 6
         then
-            VirtualDay(virtualHours / 24)
+            VirtualDay(virtualHours / 6)
         else
             VirtualHour virtualHours
 
@@ -33,8 +33,8 @@ type TimeCalculationManager(config: VirtualTimeConfig) =
     member this.CalculateRealDuration(virtualTime: VirtualTimeUnit) =
         match virtualTime with
         | VirtualHour hours -> TimeSpan.FromMinutes(float hours)
-        | VirtualDay days -> TimeSpan.FromMinutes(float (days * 24))
-        | VirtualSprint sprints -> TimeSpan.FromMinutes(float (sprints * config.SprintDurationVD * 24))
+        | VirtualDay days -> TimeSpan.FromMinutes(float (days * 6))
+        | VirtualSprint sprints -> TimeSpan.FromMinutes(float (sprints * config.SprintDurationVD * 6))
 
     /// 現在の仮想時間取得
     member this.GetCurrentVirtualTime(sprintId: string) =
@@ -89,7 +89,7 @@ type TimeCalculationManager(config: VirtualTimeConfig) =
             { StartTime = DateTime.UtcNow
               CurrentVirtualTime = VirtualHour 0
               ElapsedRealTime = TimeSpan.Zero
-              SprintDuration = TimeSpan.FromMinutes(float (config.SprintDurationVD * 24))
+              SprintDuration = TimeSpan.FromMinutes(float (config.SprintDurationVD * 6))
               IsActive = true
               LastUpdate = DateTime.UtcNow }
 
@@ -146,17 +146,17 @@ type TimeCalculationManager(config: VirtualTimeConfig) =
     member this.ToVirtualHours(virtualTime: VirtualTimeUnit) =
         match virtualTime with
         | VirtualHour hours -> hours
-        | VirtualDay days -> days * 24
-        | VirtualSprint sprints -> sprints * config.SprintDurationVD * 24
+        | VirtualDay days -> days * 6
+        | VirtualSprint sprints -> sprints * config.SprintDurationVD * 6
 
     /// VirtualHourから仮想時間単位作成
     member this.FromVirtualHours(hours: int, config: VirtualTimeConfig) =
-        let sprintTotalHours = config.SprintDurationVD * 24
+        let sprintTotalHours = config.SprintDurationVD * 6
 
         if hours >= sprintTotalHours then
             VirtualSprint(hours / sprintTotalHours)
-        elif hours >= 24 then
-            VirtualDay(hours / 24)
+        elif hours >= 6 then
+            VirtualDay(hours / 6)
         else
             VirtualHour hours
 

@@ -316,15 +316,15 @@ type EscalationStatistics =
 /// 仮想時間単位
 type VirtualTimeUnit =
     | VirtualHour of int // 1vh = 1分リアルタイム
-    | VirtualDay of int // 1vd = 24分リアルタイム
-    | VirtualSprint of int // 3vd = 72分リアルタイム
+    | VirtualDay of int // 1vd = 6vh = 6分リアルタイム
+    | VirtualSprint of int // 3vd = 18vh = 18分リアルタイム
 
 /// 仮想時間コンテキスト
 type VirtualTimeContext =
     { StartTime: DateTime // スプリント開始時刻
       CurrentVirtualTime: VirtualTimeUnit // 現在の仮想時間
       ElapsedRealTime: TimeSpan // 実経過時間
-      SprintDuration: TimeSpan // スプリント総時間 (72分)
+      SprintDuration: TimeSpan // スプリント総時間 (18分)
       IsActive: bool // アクティブ状態
       LastUpdate: DateTime } // 最終更新時刻
 
@@ -397,7 +397,7 @@ type TimeEvent =
 type VirtualTimeConfig =
     { VirtualHourDurationMs: int // 1vh = 60000ms (1分)
       StandupIntervalVH: int // 6vh毎
-      SprintDurationVD: int // 3vd
+      SprintDurationVD: int // 3vd (18分)
       AutoProgressReporting: bool
       EmergencyStopEnabled: bool
       MaxConcurrentSprints: int }
@@ -405,7 +405,7 @@ type VirtualTimeConfig =
     static member Default =
         { VirtualHourDurationMs = 60000 // 1分
           StandupIntervalVH = 6 // 6vh毎
-          SprintDurationVD = 3 // 3vd
+          SprintDurationVD = 3 // 3vd (18分)
           AutoProgressReporting = true
           EmergencyStopEnabled = true
           MaxConcurrentSprints = 5 }

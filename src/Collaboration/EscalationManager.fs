@@ -325,10 +325,7 @@ type EscalationManager
                       LessonsLearned = [ sprintf "致命度: %A" escalationContext.Severity ] }
 
                 escalationHistory.Add(result)
-                let mutable removedContext = escalationContext
-
-                activeEscalations.TryRemove(escalationContext.EscalationId, &removedContext)
-                |> ignore
+                activeEscalations.TryRemove(escalationContext.EscalationId) |> ignore
 
                 logInfo "EscalationManager"
                 <| sprintf "緊急対応フロー完了: %s" escalationContext.EscalationId
@@ -369,8 +366,7 @@ type EscalationManager
                           LessonsLearned = [ if approved then "PO判断: 承認" else "PO判断: 却下" ] }
 
                     escalationHistory.Add(result)
-                    let mutable removedContext = context
-                    activeEscalations.TryRemove(escalationId, &removedContext) |> ignore
+                    activeEscalations.TryRemove(escalationId) |> ignore
 
                     logInfo "EscalationManager" <| sprintf "PO判断処理完了: %s" escalationId
                     return Result.Ok result

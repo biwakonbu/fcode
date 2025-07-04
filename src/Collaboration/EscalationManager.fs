@@ -325,10 +325,14 @@ type EscalationManager
                       LessonsLearned = [ sprintf "致命度: %A" escalationContext.Severity ] }
 
                 escalationHistory.Add(result)
-                activeEscalations.TryRemove(escalationContext.EscalationId) |> ignore
 
-                logInfo "EscalationManager"
-                <| sprintf "緊急対応フロー完了: %s" escalationContext.EscalationId
+                match activeEscalations.TryRemove(escalationContext.EscalationId) with
+                | true, _ ->
+                    logInfo "EscalationManager"
+                    <| sprintf "緊急対応フロー完了・エスカレーション削除: %s" escalationContext.EscalationId
+                | false, _ ->
+                    logWarning "EscalationManager"
+                    <| sprintf "緊急対応フロー完了・エスカレーション削除失敗: %s" escalationContext.EscalationId
 
                 return Result.Ok result
             with ex ->
@@ -366,9 +370,13 @@ type EscalationManager
                           LessonsLearned = [ if approved then "PO判断: 承認" else "PO判断: 却下" ] }
 
                     escalationHistory.Add(result)
-                    activeEscalations.TryRemove(escalationId) |> ignore
 
-                    logInfo "EscalationManager" <| sprintf "PO判断処理完了: %s" escalationId
+                    match activeEscalations.TryRemove(escalationId) with
+                    | true, _ -> logInfo "EscalationManager" <| sprintf "PO判断処理完了・エスカレーション削除: %s" escalationId
+                    | false, _ ->
+                        logWarning "EscalationManager"
+                        <| sprintf "PO判断処理完了・エスカレーション削除失敗: %s" escalationId
+
                     return Result.Ok result
                 | false, _ ->
                     logError "EscalationManager" <| sprintf "エスカレーション未発見: %s" escalationId

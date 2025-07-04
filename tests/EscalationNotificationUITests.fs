@@ -199,7 +199,25 @@ type EscalationNotificationUITests() =
 
             manager.ProcessEscalationMessage(message))
 
+        // macOS CI環境での処理完了待機
+        let isMacOS =
+            System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                System.Runtime.InteropServices.OSPlatform.OSX
+            )
+
+        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
+        if isMacOS && isCI then
+            System.Threading.Thread.Sleep(50)
+
         let notifications = manager.GetAllNotifications()
+        // デバッグ情報を追加（CI環境のみ）
+        if isCI then
+            Console.WriteLine($"Expected: {testCases.Length}, Actual: {notifications.Length}")
+            let testCaseNames = testCases |> List.map fst |> String.concat ", "
+            Console.WriteLine($"Test cases: {testCaseNames}")
+            Console.WriteLine($"Notifications: {notifications.Length}")
+
         Assert.AreEqual(testCases.Length, notifications.Length)
 
         testCases

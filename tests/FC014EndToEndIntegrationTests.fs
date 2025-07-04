@@ -8,7 +8,10 @@ open FCode.Collaboration.TaskDependencyGraph
 open FCode.Collaboration.ProgressAggregator
 open FCode.Collaboration.CollaborationCoordinator
 open FCode.Collaboration.EscalationManager
-open FCode.VirtualTimeManager
+open FCode.VirtualTimeCoordinator
+open FCode.Collaboration.TimeCalculationManager
+open FCode.Collaboration.MeetingScheduler
+open FCode.Collaboration.EventProcessor
 open FCode.TaskAssignmentManager
 open FCode.QualityGateManager
 open FCode.Logger
@@ -40,8 +43,19 @@ type TestCollaborationSystem() =
     let escalationManager =
         new EscalationManager(agentStateManager, taskDependencyGraph, progressAggregator, config)
 
+    let timeCalculationManager = new TimeCalculationManager(VirtualTimeConfig.Default)
+
+    let meetingScheduler =
+        new MeetingScheduler(timeCalculationManager, VirtualTimeConfig.Default)
+
+    let eventProcessor =
+        new EventProcessor(timeCalculationManager, meetingScheduler, VirtualTimeConfig.Default)
+
+    let coordinator =
+        new VirtualTimeCoordinator(timeCalculationManager, meetingScheduler, eventProcessor, VirtualTimeConfig.Default)
+
     let virtualTimeManager =
-        new VirtualTimeManager(agentStateManager, taskDependencyGraph, progressAggregator, VirtualTimeConfig.Default)
+        coordinator :> FCode.Collaboration.IVirtualTimeManager.IVirtualTimeManager
 
     let taskAssignmentManager =
         new TaskAssignmentManager(agentStateManager, taskDependencyGraph, config)

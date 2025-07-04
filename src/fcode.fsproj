@@ -41,12 +41,19 @@
     <Compile Include="Collaboration/ICollaborationCoordinator.fs" />
     <Compile Include="Collaboration/IEscalationManager.fs" />
     <Compile Include="Collaboration/IVirtualTimeManager.fs" />
+    <!-- VirtualTime Components -->
+    <Compile Include="Collaboration/ITimeCalculationManager.fs" />
+    <Compile Include="Collaboration/TimeCalculationManager.fs" />
+    <Compile Include="Collaboration/IMeetingScheduler.fs" />
+    <Compile Include="Collaboration/MeetingScheduler.fs" />
+    <Compile Include="Collaboration/IEventProcessor.fs" />
+    <Compile Include="Collaboration/EventProcessor.fs" />
+    <Compile Include="VirtualTimeCoordinator.fs" />
     <Compile Include="Collaboration/AgentStateManager.fs" />
     <Compile Include="Collaboration/TaskDependencyGraph.fs" />
     <Compile Include="Collaboration/ProgressAggregator.fs" />
     <Compile Include="Collaboration/CollaborationCoordinator.fs" />
     <Compile Include="Collaboration/EscalationManager.fs" />
-    <Compile Include="VirtualTimeManager.fs" />
     <Compile Include="Collaboration/RealtimeCollaborationFacade.fs" />
     <Compile Include="Collaboration/TaskStorageManager.fs" />
     <!-- Unified Task Storage -->

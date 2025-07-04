@@ -10,6 +10,7 @@ let private priorityToScore priority =
     | TaskPriority.High -> 0.90
     | TaskPriority.Medium -> 0.75
     | TaskPriority.Low -> 0.60
+    | _ -> 0.50 // 未知の優先度に対するデフォルト値
 
 /// 完成度評価マネージャー
 type CompletionAssessmentManager() =

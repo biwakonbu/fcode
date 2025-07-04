@@ -65,7 +65,11 @@ type VirtualTimeManager
             with ex ->
                 logError "VirtualTimeManager" <| sprintf "タイマーイベント例外: %s" ex.Message
         }
-        |> Async.Start
+        |> (fun computation ->
+            try
+                Async.Start(computation)
+            with ex ->
+                logError "VirtualTimeManager" <| sprintf "タイマー非同期例外: %s" ex.Message)
 
     /// スプリント開始
     member this.StartSprint(sprintId: string) =

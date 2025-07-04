@@ -70,14 +70,13 @@ let ``VirtualTimeManager - 仮想時間計算テスト`` () =
     | VirtualHour 60 -> Assert.True(true)
     | _ -> Assert.True(false, sprintf "期待値: VirtualHour 60, 実際: %A" virtualTime)
 
-    // 25分 = 25vh → 1vd + 1vh
+    // 25分 = 25vh として正しく変換されているか確認
     let realTime25Min = TimeSpan.FromMinutes(25.0)
     let virtualTime25 = manager.CalculateVirtualTime(realTime25Min)
 
     match virtualTime25 with
-    | VirtualDay 1 -> Assert.True(true)
-    | VirtualHour 25 -> Assert.True(true)
-    | _ -> Assert.True(false, sprintf "期待値: VirtualDay 1 or VirtualHour 25, 実際: %A" virtualTime25)
+    | VirtualHour 25 -> Assert.True(true) // 25vhのまま
+    | _ -> Assert.True(false, sprintf "期待値: VirtualHour 25, 実際: %A" virtualTime25)
 
 [<Fact>]
 [<Trait("TestCategory", "Unit")>]

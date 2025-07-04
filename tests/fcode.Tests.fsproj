@@ -54,7 +54,7 @@
     <Compile Include="QualityGateManagerTests.fs"/>
     <Compile Include="EscalationManagerTests.fs"/>
     <Compile Include="VirtualTimeManagerTests.fs"/>
-    <!-- Temporarily disabled due to compatibility issues
+    <!-- Temporarily disabled due to constructor signature mismatches
     <Compile Include="FC014EndToEndIntegrationTests.fs"/>
     -->
     <Compile Include="Program.fs"/>

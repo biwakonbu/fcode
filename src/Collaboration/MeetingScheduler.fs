@@ -33,6 +33,7 @@ type MeetingScheduler(timeCalculationManager: ITimeCalculationManager, config: V
                     let nextMeetingTime =
                         this.CalculateNextMeetingTime(currentTime, config.StandupIntervalVH)
 
+                    // 仮想時間からの実時間計算
                     let actualTime =
                         DateTime.UtcNow.Add(timeCalculationManager.CalculateRealDuration(nextMeetingTime))
 

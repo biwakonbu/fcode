@@ -236,6 +236,7 @@ type EscalationEvent =
     | AutoRecoverySucceeded of string
     | AutoRecoveryFailed of string * string
 
+
 /// システムイベント
 type SystemEvent =
     | AgentStateChanged of AgentState

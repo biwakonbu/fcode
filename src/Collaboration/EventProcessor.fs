@@ -74,12 +74,12 @@ type EventProcessor
                     match eventsResult with
                     | Result.Ok events ->
                         let processedEvents = []
+                        let currentVH = timeCalculationManager.ToVirtualHours(currentTime)
 
                         // イベント処理ロジック
                         for event in events do
                             match event with
                             | StandupScheduled(scheduledTime, participants) ->
-                                let currentVH = timeCalculationManager.ToVirtualHours(currentTime)
                                 let scheduledVH = timeCalculationManager.ToVirtualHours(scheduledTime)
 
                                 if currentVH >= scheduledVH then
@@ -87,7 +87,6 @@ type EventProcessor
                                     ()
 
                             | ReviewMeetingTriggered scheduledTime ->
-                                let currentVH = timeCalculationManager.ToVirtualHours(currentTime)
                                 let scheduledVH = timeCalculationManager.ToVirtualHours(scheduledTime)
 
                                 if currentVH >= scheduledVH then
@@ -95,10 +94,10 @@ type EventProcessor
                                     ()
 
                             | TaskDeadlineApproaching(taskId, deadline) ->
-                                let currentVH = timeCalculationManager.ToVirtualHours(currentTime)
                                 let deadlineVH = timeCalculationManager.ToVirtualHours(deadline)
+                                let warningThreshold = deadlineVH - 6 // 6vh前に警告
 
-                                if currentVH >= (deadlineVH - 6) then // 6vh前に警告
+                                if currentVH >= warningThreshold then
                                     let! _ = this.ExecuteDeadlineEvent(sprintId, taskId)
                                     ()
 

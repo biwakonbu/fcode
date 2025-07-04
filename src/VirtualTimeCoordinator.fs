@@ -207,13 +207,21 @@ type VirtualTimeCoordinator
 
     /// リソース解放
     member this.Dispose() =
-        // 全タイマー停止
-        for kvp in sprintTimers do
-            kvp.Value.Stop()
-            kvp.Value.Dispose()
+        try
+            // 全タイマー停止（例外安全）
+            let timersToDispose = sprintTimers.Values |> Seq.toList
 
-        sprintTimers.Clear()
-        logInfo "VirtualTimeCoordinator" "VirtualTimeCoordinator disposed"
+            for timer in timersToDispose do
+                try
+                    timer.Stop()
+                    timer.Dispose()
+                with ex ->
+                    logError "VirtualTimeCoordinator" <| sprintf "タイマー解放エラー: %s" ex.Message
+
+            sprintTimers.Clear()
+            logInfo "VirtualTimeCoordinator" "VirtualTimeCoordinator disposed successfully"
+        with ex ->
+            logError "VirtualTimeCoordinator" <| sprintf "Dispose例外: %s" ex.Message
 
     interface IVirtualTimeManager with
         member this.StartSprint(sprintId) = this.StartSprint(sprintId)

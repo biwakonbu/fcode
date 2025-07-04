@@ -300,3 +300,104 @@ type EscalationStatistics =
       PONotificationCount: int
       TopBlockerTypes: (BlockerType * int) list
       LastUpdated: DateTime }
+
+// ========================================
+// VirtualTimeSystem 型定義
+// ========================================
+
+/// 仮想時間単位
+type VirtualTimeUnit =
+    | VirtualHour of int // 1vh = 1分リアルタイム
+    | VirtualDay of int // 1vd = 24分リアルタイム
+    | VirtualSprint of int // 3vd = 72分リアルタイム
+
+/// 仮想時間コンテキスト
+type VirtualTimeContext =
+    { StartTime: DateTime // スプリント開始時刻
+      CurrentVirtualTime: VirtualTimeUnit // 現在の仮想時間
+      ElapsedRealTime: TimeSpan // 実経過時間
+      SprintDuration: TimeSpan // スプリント総時間 (72分)
+      IsActive: bool // アクティブ状態
+      LastUpdate: DateTime } // 最終更新時刻
+
+/// スタンドアップMTG情報
+type StandupMeeting =
+    { MeetingId: string
+      ScheduledTime: VirtualTimeUnit // 6vh毎
+      ActualTime: DateTime
+      Participants: string list // 参加エージェント
+      ProgressReports: (string * string) list // エージェント別進捗報告
+      Decisions: string list // 決定事項
+      Adjustments: string list // 調整項目
+      NextMeetingTime: VirtualTimeUnit }
+
+/// レビューMTG情報
+type ReviewMeeting =
+    { MeetingId: string
+      TriggerTime: VirtualTimeUnit // 72分（3vd）時点
+      ActualTime: DateTime
+      CompletionAssessment: CompletionAssessment
+      QualityEvaluation: QualityEvaluationSummary
+      NextSprintPlan: NextSprintPlan option
+      ContinuationDecision: ContinuationDecision }
+
+/// 完成度評価
+and CompletionAssessment =
+    { TasksCompleted: int
+      TasksInProgress: int
+      TasksBlocked: int
+      OverallCompletionRate: float // 0.0-1.0
+      QualityScore: float // 0.0-1.0
+      AcceptanceCriteriaMet: bool
+      RequiresPOApproval: bool }
+
+/// 品質評価サマリー
+and QualityEvaluationSummary =
+    { CodeQuality: float // 0.0-1.0
+      TestCoverage: float // 0.0-1.0
+      DocumentationScore: float // 0.0-1.0
+      SecurityCompliance: bool
+      PerformanceMetrics: (string * float) list
+      IssuesFound: string list
+      RecommendedImprovements: string list }
+
+/// 次スプリント計画
+and NextSprintPlan =
+    { SprintId: string
+      Duration: VirtualTimeUnit
+      PriorityTasks: string list
+      ResourceAllocation: (string * int) list
+      Dependencies: string list
+      RiskMitigation: string list }
+
+/// 継続判定
+and ContinuationDecision =
+    | AutoContinue of string // 自動継続 + 理由
+    | RequirePOApproval of string // PO承認要求 + 理由
+    | StopExecution of string // 実行停止 + 理由
+    | EscalateToManagement of string // 経営陣エスカレーション + 理由
+
+/// タイムイベント
+type TimeEvent =
+    | StandupScheduled of VirtualTimeUnit * string list // 時刻 + 参加者
+    | ReviewMeetingTriggered of VirtualTimeUnit
+    | TaskDeadlineApproaching of string * VirtualTimeUnit // タスクID + 期限
+    | SprintCompleted of VirtualTimeUnit
+    | EmergencyStop of string // 緊急停止理由
+
+/// 仮想時間設定
+type VirtualTimeConfig =
+    { VirtualHourDurationMs: int // 1vh = 60000ms (1分)
+      StandupIntervalVH: int // 6vh毎
+      SprintDurationVD: int // 3vd
+      AutoProgressReporting: bool
+      EmergencyStopEnabled: bool
+      MaxConcurrentSprints: int }
+
+    static member Default =
+        { VirtualHourDurationMs = 60000 // 1分
+          StandupIntervalVH = 6 // 6vh毎
+          SprintDurationVD = 3 // 3vd
+          AutoProgressReporting = true
+          EmergencyStopEnabled = true
+          MaxConcurrentSprints = 5 }

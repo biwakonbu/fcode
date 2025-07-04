@@ -445,6 +445,7 @@ type RealtimeCollaborationFacade(config: CollaborationConfig) =
             disposed <- true
             progressAggregator.Dispose()
             collaborationCoordinator.Dispose()
+            escalationManager.Dispose()
             taskDependencyGraph.Dispose()
             agentStateManager.Dispose()
             logInfo "RealtimeCollaborationFacade" "RealtimeCollaborationFacade disposed"

@@ -573,3 +573,10 @@ type EscalationManager
 
         member this.GetActiveEscalations() = this.GetActiveEscalations()
         member this.GetEscalationStatistics() = this.GetEscalationStatistics()
+
+    /// リソース解放
+    member this.Dispose() =
+        logInfo "EscalationManager" "EscalationManager disposed"
+
+    interface IDisposable with
+        member this.Dispose() = this.Dispose()

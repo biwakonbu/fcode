@@ -45,13 +45,3 @@ type IEscalationManager =
 
     /// エスカレーション統計情報
     abstract member GetEscalationStatistics: unit -> Async<Result<EscalationStatistics, CollaborationError>>
-
-/// エスカレーション統計情報
-and EscalationStatistics =
-    { TotalEscalations: int
-      EscalationsBySeverity: Map<EscalationSeverity, int>
-      AutoRecoverySuccessRate: float
-      AverageResolutionTime: TimeSpan
-      PONotificationCount: int
-      TopBlockerTypes: (BlockerType * int) list
-      LastUpdated: DateTime }

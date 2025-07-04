@@ -290,3 +290,13 @@ type CollaborationConfig =
             )
 
         $"Data Source={expandedPath};Cache=Shared;Pooling=true;Max Pool Size={this.ConnectionPoolSize}"
+
+/// エスカレーション統計情報
+type EscalationStatistics =
+    { TotalEscalations: int
+      EscalationsBySeverity: Map<EscalationSeverity, int>
+      AutoRecoverySuccessRate: float
+      AverageResolutionTime: TimeSpan
+      PONotificationCount: int
+      TopBlockerTypes: (BlockerType * int) list
+      LastUpdated: DateTime }

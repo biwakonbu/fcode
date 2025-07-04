@@ -98,12 +98,12 @@ let ``TimeCalculationManager - 時間計算テスト`` () =
     let config = VirtualTimeConfig.Default
     let timeManager = new TimeCalculationManager(config)
 
-    // 実時間から仮想時間計算
+    // 実時間から仮想時間計算（30分 = 1日と6時間 = VirtualDay 1）
     let realElapsed = TimeSpan.FromMinutes(30.0)
     let virtualTime = timeManager.CalculateVirtualTime(realElapsed)
 
     match virtualTime with
-    | VirtualHour 30 -> Assert.True(true)
+    | VirtualDay 1 -> Assert.True(true)
     | _ -> Assert.True(false, sprintf "予期しない仮想時間: %A" virtualTime)
 
     // 仮想時間から実時間計算

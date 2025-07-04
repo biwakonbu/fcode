@@ -205,10 +205,6 @@ type VirtualTimeCoordinator
                     let message = $"イベント健全性チェック失敗: {eventError}"
                     logError "VirtualTimeCoordinator" message
                     return Result.Ok(false, message)
-                | _ ->
-                    let message = "健全性チェック予期しない失敗"
-                    logError "VirtualTimeCoordinator" message
-                    return Result.Ok(false, message)
 
             with ex ->
                 logError "VirtualTimeCoordinator" <| sprintf "健全性チェック例外: %s" ex.Message

@@ -403,9 +403,45 @@ type VirtualTimeConfig =
       MaxConcurrentSprints: int }
 
     static member Default =
-        { VirtualHourDurationMs = 60000 // 1分
-          StandupIntervalVH = 6 // 6vh毎
-          SprintDurationVD = 3 // 3vd (18分)
+        let virtualHourMs =
+            match System.Environment.GetEnvironmentVariable("FCODE_VIRTUAL_HOUR_MS") with
+            | null
+            | "" -> 60000 // デフォルト1分
+            | value ->
+                match System.Int32.TryParse(value) with
+                | true, ms when ms > 0 -> ms
+                | _ -> 60000
+
+        let standupInterval =
+            match System.Environment.GetEnvironmentVariable("FCODE_STANDUP_INTERVAL_VH") with
+            | null
+            | "" -> 6 // デフォルト6vh毎
+            | value ->
+                match System.Int32.TryParse(value) with
+                | true, interval when interval > 0 -> interval
+                | _ -> 6
+
+        let sprintDuration =
+            match System.Environment.GetEnvironmentVariable("FCODE_SPRINT_DURATION_VD") with
+            | null
+            | "" -> 3 // デフォルト3vd (18分)
+            | value ->
+                match System.Int32.TryParse(value) with
+                | true, duration when duration > 0 -> duration
+                | _ -> 3
+
+        let maxSprints =
+            match System.Environment.GetEnvironmentVariable("FCODE_MAX_CONCURRENT_SPRINTS") with
+            | null
+            | "" -> 5 // デフォルト5
+            | value ->
+                match System.Int32.TryParse(value) with
+                | true, max when max > 0 -> max
+                | _ -> 5
+
+        { VirtualHourDurationMs = virtualHourMs
+          StandupIntervalVH = standupInterval
+          SprintDurationVD = sprintDuration
           AutoProgressReporting = true
           EmergencyStopEnabled = true
-          MaxConcurrentSprints = 5 }
+          MaxConcurrentSprints = maxSprints }

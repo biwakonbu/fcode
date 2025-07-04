@@ -96,16 +96,9 @@ type VirtualTimeCoordinator
                 | true, timer ->
                     timer.Stop()
                     timer.Dispose()
-                    logInfo "VirtualTimeCoordinator" <| sprintf "タイマー停止: %s" sprintId
-                | false, _ -> logWarning "VirtualTimeCoordinator" <| sprintf "タイマー未発見: %s" sprintId
-
-                // コンテキスト削除（TimeCalculationManagerに適切なインターフェースメソッドを呼び出し）
-                let removed = true // 暫定的にtrueを返す、後でインターフェースに追加
-
-                if removed then
                     logInfo "VirtualTimeCoordinator" <| sprintf "スプリント停止完了: %s" sprintId
                     return Result.Ok()
-                else
+                | false, _ ->
                     logWarning "VirtualTimeCoordinator" <| sprintf "スプリント未発見: %s" sprintId
                     return Result.Error(NotFound $"スプリント {sprintId} が見つかりません")
 
@@ -154,9 +147,18 @@ type VirtualTimeCoordinator
                     logInfo "VirtualTimeCoordinator" <| sprintf "スプリント統計取得: %s" sprintId
                     return Result.Ok statistics
 
-                | _ ->
-                    logError "VirtualTimeCoordinator" <| sprintf "統計取得部分失敗: %s" sprintId
-                    return Result.Error(SystemError "統計取得部分失敗")
+                | (Result.Error progressError, _, _, _) ->
+                    logError "VirtualTimeCoordinator" <| sprintf "進捗統計取得失敗: %A" progressError
+                    return Result.Error(SystemError $"進捗統計取得失敗: {progressError}")
+                | (_, Result.Error remainingError, _, _) ->
+                    logError "VirtualTimeCoordinator" <| sprintf "残り時間統計取得失敗: %A" remainingError
+                    return Result.Error(SystemError $"残り時間統計取得失敗: {remainingError}")
+                | (_, _, Result.Error meetingError, _) ->
+                    logError "VirtualTimeCoordinator" <| sprintf "MTG統計取得失敗: %A" meetingError
+                    return Result.Error(SystemError $"MTG統計取得失敗: {meetingError}")
+                | (_, _, _, Result.Error eventError) ->
+                    logError "VirtualTimeCoordinator" <| sprintf "イベント統計取得失敗: %A" eventError
+                    return Result.Error(SystemError $"イベント統計取得失敗: {eventError}")
 
             with ex ->
                 logError "VirtualTimeCoordinator" <| sprintf "スプリント統計取得例外: %s" ex.Message
@@ -195,8 +197,16 @@ type VirtualTimeCoordinator
                     logInfo "VirtualTimeCoordinator" message
                     return Result.Ok(overallHealthy, message)
 
+                | (Result.Error meetingError, _) ->
+                    let message = $"MTG健全性チェック失敗: {meetingError}"
+                    logError "VirtualTimeCoordinator" message
+                    return Result.Ok(false, message)
+                | (_, Result.Error eventError) ->
+                    let message = $"イベント健全性チェック失敗: {eventError}"
+                    logError "VirtualTimeCoordinator" message
+                    return Result.Ok(false, message)
                 | _ ->
-                    let message = "健全性チェック部分失敗"
+                    let message = "健全性チェック予期しない失敗"
                     logError "VirtualTimeCoordinator" message
                     return Result.Ok(false, message)
 

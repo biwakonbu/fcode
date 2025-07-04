@@ -76,7 +76,7 @@ type IVirtualTimeManager =
     abstract member GetActiveSprints: unit -> Async<Result<VirtualTimeContext list, CollaborationError>>
 
     /// スプリント統計取得
-    abstract member GetSprintStatistics: sprintId: string -> Async<Result<(string * obj) list, CollaborationError>>
+    abstract member GetSprintStatistics: sprintId: string -> Async<Result<SprintStatistic list, CollaborationError>>
 
     /// システム健全性チェック
     abstract member PerformHealthCheck: unit -> Async<Result<bool * string, CollaborationError>>

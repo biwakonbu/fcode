@@ -252,13 +252,13 @@ type VirtualTimeManager
 
                 let meeting =
                     { MeetingId = meetingId
-                      ScheduledTime = VirtualHour 6 // 暫定値
+                      ScheduledTime = VirtualHour config.StandupIntervalVH // 設定値使用
                       ActualTime = DateTime.UtcNow
                       Participants = progressReports |> List.map fst
                       ProgressReports = progressReports
                       Decisions = decisions
                       Adjustments = adjustments
-                      NextMeetingTime = VirtualHour 12 // 暫定値
+                      NextMeetingTime = VirtualHour(config.StandupIntervalVH * 2) // 次回は倍の時間
                     }
 
                 logInfo "VirtualTimeManager"
@@ -494,11 +494,11 @@ type VirtualTimeManager
                 match activeSprints.TryGetValue(sprintId) with
                 | true, context ->
                     let statistics =
-                        [ ("SprintId", box sprintId)
-                          ("StartTime", box context.StartTime)
-                          ("ElapsedTime", box context.ElapsedRealTime)
-                          ("VirtualTime", box context.CurrentVirtualTime)
-                          ("IsActive", box context.IsActive) ]
+                        [ StringMetric("SprintId", sprintId)
+                          TimeSpanMetric("StartTime", context.StartTime - DateTime.UnixEpoch)
+                          TimeSpanMetric("ElapsedTime", context.ElapsedRealTime)
+                          StringMetric("VirtualTime", sprintf "%A" context.CurrentVirtualTime)
+                          StringMetric("IsActive", sprintf "%b" context.IsActive) ]
 
                     logInfo "VirtualTimeManager" <| sprintf "スプリント統計取得: %s" sprintId
                     return Result.Ok statistics

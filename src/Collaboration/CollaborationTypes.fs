@@ -128,6 +128,13 @@ type TaskStatistics =
       ExecutableTasks: int
       CompletionRate: float }
 
+/// スプリント統計情報
+type SprintStatistic =
+    | IntMetric of name: string * value: int
+    | FloatMetric of name: string * value: float
+    | TimeSpanMetric of name: string * value: TimeSpan
+    | StringMetric of name: string * value: string
+
 /// 依存関係情報
 type TaskDependency =
     { TaskId: string

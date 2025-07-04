@@ -151,6 +151,62 @@ let ``VirtualTimeManager - 継続判定テスト`` () =
 
 [<Fact>]
 [<Trait("TestCategory", "Unit")>]
+let ``VirtualTimeManager - 継続判定: 低品質ケース`` () =
+    use manager = createVirtualTimeManager ()
+    let sprintId = "test-sprint-low-quality"
+
+    // 低品質の場合
+    let lowQualityAssessment =
+        { TasksCompleted = 3
+          TasksInProgress = 2
+          TasksBlocked = 5
+          OverallCompletionRate = 0.3
+          QualityScore = 0.4 // 低品質
+          AcceptanceCriteriaMet = false
+          RequiresPOApproval = true }
+
+    let result =
+        manager.DecideContinuation(sprintId, lowQualityAssessment)
+        |> Async.RunSynchronously
+
+    match result with
+    | Result.Ok decision ->
+        match decision with
+        | RequirePOApproval _ -> Assert.True(true)
+        | StopExecution _ -> Assert.True(true)
+        | _ -> Assert.True(false, sprintf "期待値: RequirePOApproval or StopExecution, 実際: %A" decision)
+    | Result.Error error -> Assert.True(false, sprintf "継続判定失敗: %A" error)
+
+[<Fact>]
+[<Trait("TestCategory", "Unit")>]
+let ``VirtualTimeManager - 継続判定: ブロックタスク多数ケース`` () =
+    use manager = createVirtualTimeManager ()
+    let sprintId = "test-sprint-blocked"
+
+    // ブロックタスクが多い場合
+    let blockedAssessment =
+        { TasksCompleted = 2
+          TasksInProgress = 1
+          TasksBlocked = 7 // ブロックタスク多数
+          OverallCompletionRate = 0.2
+          QualityScore = 0.8 // 品質は良い
+          AcceptanceCriteriaMet = false
+          RequiresPOApproval = true }
+
+    let result =
+        manager.DecideContinuation(sprintId, blockedAssessment)
+        |> Async.RunSynchronously
+
+    match result with
+    | Result.Ok decision ->
+        match decision with
+        | StopExecution _ -> Assert.True(true) // ブロックタスク多数の場合は停止が正しい
+        | RequirePOApproval _ -> Assert.True(true)
+        | _ -> Assert.True(false, sprintf "期待値: StopExecution or RequirePOApproval, 実際: %A" decision)
+    | Result.Error error -> Assert.True(false, sprintf "継続判定失敗: %A" error)
+
+[<Fact>]
+[<Trait("TestCategory", "Unit")>]
 let ``VirtualTimeManager - イベント管理テスト`` () =
     use manager = createVirtualTimeManager ()
     let sprintId = "test-sprint-events"

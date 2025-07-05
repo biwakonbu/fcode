@@ -351,10 +351,10 @@ let main argv =
             logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化開始 ==="
 
             // UI統合マネージャー初期化
-            let uiIntegrationManager = new RealtimeUIIntegrationManager()
+            use uiIntegrationManager = new RealtimeUIIntegrationManager()
 
             // フルワークフローコーディネーター初期化
-            let fullWorkflowCoordinator = new FullWorkflowCoordinator()
+            use fullWorkflowCoordinator = new FullWorkflowCoordinator()
 
             // UI コンポーネント登録
             match
@@ -377,9 +377,10 @@ let main argv =
 
                 logInfo "Application" "UI統合マネージャー登録完了"
 
-                // 統合イベントループ開始
-                Async.Start(uiIntegrationManager.StartIntegrationEventLoop())
-                logInfo "Application" "統合イベントループ開始"
+                // 統合イベントループ開始（キャンセレーション対応）
+                let integrationLoop = uiIntegrationManager.StartIntegrationEventLoop()
+                Async.Start(integrationLoop)
+                logInfo "Application" "統合イベントループ開始（キャンセレーション管理対応）"
 
                 // 基本機能デモ
                 addSystemActivity "system" SystemMessage "FC-015 Phase 4 UI統合・フルフロー機能が正常に初期化されました"

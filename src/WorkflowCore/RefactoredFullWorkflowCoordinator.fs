@@ -337,7 +337,13 @@ type FullWorkflowCoordinator(?config: WorkflowConfig) =
         }
 
     /// リソース解放
-    member this.Dispose() = refactoredCoordinator.Dispose()
+    member this.Dispose() =
+        try
+            // 現在のワークフローをクリア
+            currentWorkflowId <- None
+            refactoredCoordinator.Dispose()
+        with ex ->
+            FCode.Logger.logError "FullWorkflowCoordinator" $"Dispose例外: {ex.Message}"
 
     interface IDisposable with
         member this.Dispose() = this.Dispose()

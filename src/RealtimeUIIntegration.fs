@@ -173,15 +173,14 @@ type private UIUpdateProcessor(stateManager: UIIntegrationStateManager) =
 type private EventLoopManager
     (stateManager: UIIntegrationStateManager, errorManager: ErrorRecoveryManager, updateProcessor: UIUpdateProcessor) =
 
-    /// メインイベントループ実行
+    /// メインイベントループ実行（ループベース実装でスタックオーバーフロー回避）
     member this.ExecuteMainEventLoop(cancellationToken: CancellationToken) : Async<Result<unit, string>> =
-        let rec eventLoop () =
-            async {
-                if cancellationToken.IsCancellationRequested then
-                    stateManager.SetRunning(false)
-                    logInfo "RealtimeUIIntegration" "イベントループがキャンセルされました"
-                    return Result.Ok()
-                else
+        async {
+            try
+                let mutable shouldContinue = true
+                let mutable result = Result.Ok()
+
+                while shouldContinue && not cancellationToken.IsCancellationRequested do
                     try
                         // 各更新処理を実行
                         let results =
@@ -199,8 +198,8 @@ type private EventLoopManager
 
                         if errors.IsEmpty then
                             errorManager.ResetBackoffState()
-                            do! Async.Sleep(1000) // updateIntervalMs
-                            return! eventLoop ()
+                            // キャンセレーション対応Sleep
+                            do! Async.Sleep(1000)
                         else
                             errorManager.IncrementRetryCount()
 
@@ -208,8 +207,8 @@ type private EventLoopManager
                                 let errorList = String.concat "; " errors
                                 let errorMsg = $"統合イベントループ最大リトライ回数到達。終了します: {errorList}"
                                 logError "RealtimeUIIntegration" errorMsg
-                                stateManager.SetRunning(false)
-                                return Result.Error errorMsg
+                                result <- Result.Error errorMsg
+                                shouldContinue <- false
                             else
                                 let backoffDelay = errorManager.CalculateBackoffDelay()
                                 let retryCount = errorManager.GetRetryCount()
@@ -220,22 +219,21 @@ type private EventLoopManager
                                     "RealtimeUIIntegration"
                                     $"統合イベントループエラー({retryCount}/{maxRetries}): {errorList}。{backoffDelay}ms後にリトライします"
 
+                                // キャンセレーション対応Sleep
                                 do! Async.Sleep(backoffDelay)
-                                return! eventLoop ()
 
                     with
                     | :? OperationCanceledException ->
-                        stateManager.SetRunning(false)
                         logInfo "RealtimeUIIntegration" "イベントループがキャンセルされました"
-                        return Result.Ok()
+                        shouldContinue <- false
                     | ex ->
                         errorManager.IncrementRetryCount()
 
                         if errorManager.IsMaxRetriesReached() then
                             let errorMsg = $"イベントループ致命的エラー: {ex.Message}"
                             logError "RealtimeUIIntegration" errorMsg
-                            stateManager.SetRunning(false)
-                            return Result.Error errorMsg
+                            result <- Result.Error errorMsg
+                            shouldContinue <- false
                         else
                             let backoffDelay = errorManager.CalculateBackoffDelay()
                             let retryCount = errorManager.GetRetryCount()
@@ -246,23 +244,13 @@ type private EventLoopManager
                                 "RealtimeUIIntegration"
                                 $"イベントループ例外({retryCount}/{maxRetries}): {exceptionMessage}。{backoffDelay}ms後にリトライします"
 
+                            // キャンセレーション対応Sleep
                             do! Async.Sleep(backoffDelay)
-                            return! eventLoop ()
-            }
 
-        async {
-            try
-                logInfo "RealtimeUIIntegration" "リアルタイムUI統合イベントループ開始"
-                stateManager.SetRunning(true)
-                let! result = eventLoop ()
-                stateManager.SetRunning(false)
-                logInfo "RealtimeUIIntegration" "イベントループ正常終了"
                 return result
-            with ex ->
-                stateManager.SetRunning(false)
-                let errorMsg = $"イベントループ致命的エラー: {ex.Message}"
-                logError "RealtimeUIIntegration" errorMsg
-                return Result.Error errorMsg
+            with :? OperationCanceledException ->
+                logInfo "RealtimeUIIntegration" "イベントループがキャンセルされました"
+                return Result.Ok()
         }
 
 // ===============================================

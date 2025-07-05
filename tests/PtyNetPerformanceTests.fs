@@ -6,7 +6,7 @@ open System.Threading.Tasks
 open System.Diagnostics
 open System.Threading
 open FCode
-open TuiPoC.Logger
+open FCode.Logger
 
 /// PTY Netパフォーマンステスト（スループット・レイテンシ計測）
 [<TestFixture>]

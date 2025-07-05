@@ -5,7 +5,7 @@ open System
 open System.Threading.Tasks
 open System.Threading
 open FCode
-open TuiPoC.Logger
+open FCode.Logger
 
 /// 実用的なコマンドでのPTY動作確認テスト
 [<TestFixture>]

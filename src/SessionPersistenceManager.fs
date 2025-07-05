@@ -79,9 +79,8 @@ module SessionPersistenceManager =
             Directory.CreateDirectory(configDir) |> ignore
 
             // ディレクトリ権限設定 (Unix系のみ)
-            if Environment.OSVersion.Platform = PlatformID.Unix then
-                // TODO: Unix権限設定の実装
-                ()
+            FCode.UnixPermissions.UnixPermissionHelper.setSessionDirectoryPermissions (sessionsDir)
+            |> ignore
 
             Success()
         with ex ->

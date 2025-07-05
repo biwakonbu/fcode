@@ -11,7 +11,6 @@ open FCode.Tests.TestHelpers
 
 [<TestFixture>]
 [<Category("Integration")>]
-[<Ignore("Temporarily disabled during WorkerProcessManager → SessionManager migration")>]
 type PMEndToEndTests() =
 
     let mutable testSessionManager: SessionManager option = None
@@ -39,7 +38,7 @@ type PMEndToEndTests() =
             testSessionManager <- None
         | None -> ()
 
-        workerManager.CleanupAllWorkers()
+        // Cleanup handled by using statements
 
         // TextViewsをクリーンアップ
         testTextViews |> List.iter (fun tv -> tv.Dispose())

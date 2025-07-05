@@ -146,12 +146,11 @@ type TestStrategyValidationSuite() =
         Assert.That(testAttribute.Length, Is.EqualTo(1))
 
         // 3. 統合テスト・堅牢性テスト基盤準備完了
-        let categoryAttribute =
+        let integrationTestMethods =
             this.GetType().GetMethods()
-            |> Array.tryFind (fun m -> m.Name.Contains("CI_environment"))
-            |> Option.map (fun m -> m.GetCustomAttributes(typeof<CategoryAttribute>, false))
+            |> Array.filter (fun m -> m.GetCustomAttributes(typeof<CategoryAttribute>, false).Length > 0)
 
-        Assert.That(categoryAttribute.IsSome, Is.True)
+        Assert.That(integrationTestMethods.Length, Is.GreaterThan(0))
 
         Assert.Pass("Phase 3: Test strategy enhancement completed successfully")
 

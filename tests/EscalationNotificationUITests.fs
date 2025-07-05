@@ -350,11 +350,11 @@ type EscalationNotificationUITests() =
         let manager = new EscalationNotificationManager()
 
         let testActions =
-            [ (Acknowledge, "acknowledged")
-              (ApproveWithComment "Test approval", "resolved")
-              (RequestMoreInfo "Need more details", "more_info_requested")
-              (EscalateToHigher "Escalate to CEO", "escalated_higher")
-              (Reject "Invalid request", "rejected") ]
+            [ (Acknowledge, Acknowledged)
+              (ApproveWithComment "Test approval", Resolved)
+              (RequestMoreInfo "Need more details", MoreInfoRequested)
+              (EscalateToHigher "Escalate to CEO", EscalatedHigher)
+              (Reject "Invalid request", Rejected) ]
 
         testActions
         |> List.iteri (fun i (action, expectedStatus) ->

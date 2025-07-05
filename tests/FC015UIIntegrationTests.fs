@@ -118,6 +118,7 @@ let ``FC-015 UI: リアルタイムUI統合マネージャーイベントルー�
 
             // UI コンポーネント登録
             manager.RegisterUIComponents(conversationView, pmTimelineView, qa1View, uxView, agentViews)
+            |> ignore
 
             // リソースのクリーンアップ
             conversationView.Dispose()
@@ -136,7 +137,7 @@ let ``FC-015 UI: リアルタイムUI統合マネージャーイベントルー�
 
             // 100ms後に緊急停止
             do! Async.Sleep(100)
-            manager.EmergencyShutdown("統合テスト完了")
+            manager.EmergencyShutdown("統合テスト完了") |> ignore
 
             Assert.True(true, "統合テスト成功")
 

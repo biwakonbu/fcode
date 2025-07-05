@@ -28,6 +28,7 @@ type UnifiedActivityViewTests() =
         let manager = new UnifiedActivityManager()
 
         manager.AddSystemActivity("test-agent", CodeGeneration, "Test code generation activity")
+        |> ignore
 
         Assert.AreEqual(1, manager.GetActivityCount())
 
@@ -36,7 +37,7 @@ type UnifiedActivityViewTests() =
         Assert.AreEqual("test-agent", activities.[0].AgentId)
         Assert.AreEqual(CodeGeneration, activities.[0].ActivityType)
         Assert.AreEqual("Test code generation activity", activities.[0].Message)
-        Assert.AreEqual("system", activities.[0].Status)
+        Assert.AreEqual(System, activities.[0].Status)
 
     [<Test>]
     [<Category("Unit")>]
@@ -54,7 +55,7 @@ type UnifiedActivityViewTests() =
                 .WithMetadata("task_id", "TASK-001")
                 .Build()
 
-        manager.AddActivityFromMessage(testMessage)
+        manager.AddActivityFromMessage(testMessage) |> ignore
 
         Assert.AreEqual(1, manager.GetActivityCount())
 
@@ -65,7 +66,7 @@ type UnifiedActivityViewTests() =
         Assert.AreEqual("Please review the implementation", activity.Message)
         Assert.AreEqual(High, activity.Priority)
         Assert.AreEqual(Some "TASK-001", activity.RelatedTaskId)
-        Assert.AreEqual("received", activity.Status)
+        Assert.AreEqual(Received, activity.Status)
 
     [<Test>]
     [<Category("Unit")>]
@@ -74,9 +75,15 @@ type UnifiedActivityViewTests() =
         let manager = new UnifiedActivityManager()
 
         manager.AddSystemActivity("agent1", CodeGeneration, "Agent1 activity 1")
-        manager.AddSystemActivity("agent2", Testing, "Agent2 activity 1")
+        |> ignore
+
+        manager.AddSystemActivity("agent2", Testing, "Agent2 activity 1") |> ignore
+
         manager.AddSystemActivity("agent1", ActivityType.QualityReview, "Agent1 activity 2")
+        |> ignore
+
         manager.AddSystemActivity("agent1", Documentation, "Agent1 activity 3")
+        |> ignore
 
         let agent1Activities = manager.GetLatestActivitiesByAgent("agent1", 5)
         let agent2Activities = manager.GetLatestActivitiesByAgent("agent2", 5)
@@ -93,9 +100,15 @@ type UnifiedActivityViewTests() =
         let manager = new UnifiedActivityManager()
 
         manager.AddSystemActivity("agent1", CodeGeneration, "Code generation 1")
-        manager.AddSystemActivity("agent2", Testing, "Testing 1")
+        |> ignore
+
+        manager.AddSystemActivity("agent2", Testing, "Testing 1") |> ignore
+
         manager.AddSystemActivity("agent3", CodeGeneration, "Code generation 2")
+        |> ignore
+
         manager.AddSystemActivity("agent1", ActivityType.QualityReview, "QA review 1")
+        |> ignore
 
         let codeGenActivities = manager.GetLatestActivitiesByType(CodeGeneration, 5)
         let testActivities = manager.GetLatestActivitiesByType(Testing, 5)
@@ -126,7 +139,7 @@ type UnifiedActivityViewTests() =
             let message =
                 MessageBuilder().From("test-agent").OfType(messageType).WithContent($"Test {messageType}").Build()
 
-            manager.AddActivityFromMessage(message)
+            manager.AddActivityFromMessage(message) |> ignore
 
         let activities = manager.GetAllActivities()
         Assert.AreEqual(testCases.Length, activities.Length)
@@ -140,12 +153,12 @@ type UnifiedActivityViewTests() =
         // 活動クリアテスト
         let manager = new UnifiedActivityManager()
 
-        manager.AddSystemActivity("agent1", CodeGeneration, "Activity 1")
-        manager.AddSystemActivity("agent2", Testing, "Activity 2")
+        manager.AddSystemActivity("agent1", CodeGeneration, "Activity 1") |> ignore
+        manager.AddSystemActivity("agent2", Testing, "Activity 2") |> ignore
 
         Assert.AreEqual(2, manager.GetActivityCount())
 
-        manager.ClearActivities()
+        manager.ClearActivities() |> ignore
 
         Assert.AreEqual(0, manager.GetActivityCount())
         Assert.AreEqual(0, manager.GetAllActivities().Length)
@@ -157,10 +170,14 @@ type UnifiedActivityViewTests() =
         let manager = new UnifiedActivityManager()
 
         // プライベートメソッドのテストのため、実際の表示を確認
-        manager.AddSystemActivity("agent1", CodeGeneration, "Code activity")
-        manager.AddSystemActivity("agent2", Testing, "Test activity")
+        manager.AddSystemActivity("agent1", CodeGeneration, "Code activity") |> ignore
+        manager.AddSystemActivity("agent2", Testing, "Test activity") |> ignore
+
         manager.AddSystemActivity("agent3", ActivityType.QualityReview, "QA activity")
+        |> ignore
+
         manager.AddSystemActivity("agent4", ActivityType.Escalation, "Escalation activity")
+        |> ignore
 
         Assert.AreEqual(4, manager.GetActivityCount())
 
@@ -182,9 +199,15 @@ type UnifiedActivityViewTests() =
         let manager = new UnifiedActivityManager()
 
         manager.AddSystemActivity("agent1", CodeGeneration, "Critical activity", Critical)
-        manager.AddSystemActivity("agent2", Testing, "High activity", High)
+        |> ignore
+
+        manager.AddSystemActivity("agent2", Testing, "High activity", High) |> ignore
+
         manager.AddSystemActivity("agent3", Documentation, "Normal activity", Normal)
+        |> ignore
+
         manager.AddSystemActivity("agent4", SystemMessage, "Low activity", Low)
+        |> ignore
 
         let activities = manager.GetAllActivities()
         Assert.AreEqual(4, activities.Length)

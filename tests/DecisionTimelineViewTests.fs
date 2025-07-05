@@ -39,7 +39,7 @@ type DecisionTimelineViewTests() =
         Assert.AreEqual(Problem, decisions.[0].Stage)
         Assert.AreEqual(High, decisions.[0].Priority)
         Assert.AreEqual([ "agent1"; "agent2" ], decisions.[0].Stakeholders)
-        Assert.AreEqual("active", decisions.[0].Status)
+        Assert.AreEqual(Active, decisions.[0].Status)
 
     [<Test>]
     [<Category("Unit")>]
@@ -76,7 +76,7 @@ type DecisionTimelineViewTests() =
         let decisions = manager.GetAllDecisions()
         Assert.AreEqual(1, decisions.Length)
         Assert.AreEqual(Review, decisions.[0].Stage)
-        Assert.AreEqual("completed", decisions.[0].Status)
+        Assert.AreEqual(Completed, decisions.[0].Status)
         Assert.IsTrue(snd decisions.[0].Timeline |> Option.isSome)
 
     [<Test>]

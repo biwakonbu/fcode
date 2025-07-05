@@ -363,7 +363,7 @@ let main argv =
                 use fullWorkflowCoordinator = new FullWorkflowCoordinator()
 
                 // 非同期タスク管理用CancellationTokenSource
-                let integrationCancellationSource = new System.Threading.CancellationTokenSource()
+                use integrationCancellationSource = new System.Threading.CancellationTokenSource()
 
                 // UI コンポーネント登録
                 match
@@ -391,13 +391,24 @@ let main argv =
 
                         logInfo "Application" "UI統合マネージャー登録完了"
 
-                        // 統合イベントループ開始（追跡可能・キャンセル可能）
+                        // 統合イベントループ開始（追跡可能・キャンセル可能・エラーハンドリング強化）
                         let integrationLoop = uiIntegrationManager.StartIntegrationEventLoop()
 
                         let integrationTask =
                             Async.StartAsTask(integrationLoop, cancellationToken = integrationCancellationSource.Token)
 
-                        logInfo "Application" "統合イベントループ開始（追跡・キャンセル対応）"
+                        // 統合タスクのエラーハンドリング設定
+                        integrationTask.ContinueWith(fun (task: System.Threading.Tasks.Task) ->
+                            if task.IsFaulted then
+                                let ex = task.Exception.GetBaseException()
+                                logError "Application" $"統合イベントループエラー: {ex.Message}"
+                            elif task.IsCanceled then
+                                logInfo "Application" "統合イベントループキャンセル完了"
+                            else
+                                logInfo "Application" "統合イベントループ正常終了")
+                        |> ignore
+
+                        logInfo "Application" "統合イベントループ開始（追跡・キャンセル・エラーハンドリング対応）"
 
                         // 基本機能デモ
                         addSystemActivity "system" SystemMessage "FC-015 Phase 4 UI統合・フルフロー機能が正常に初期化されました"
@@ -407,27 +418,31 @@ let main argv =
 
                         logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化完了 ==="
 
-                        // アプリケーション終了時のクリーンアップ処理を登録
-                        System.AppDomain.CurrentDomain.ProcessExit.Add(fun _ ->
-                            try
-                                logInfo "Application" "アプリケーション終了: 統合イベントループ停止中..."
-                                integrationCancellationSource.Cancel()
+                        // アプリケーション終了時のクリーンアップ処理を登録（登録解除可能）
+                        let processExitHandler =
+                            System.EventHandler(fun _ _ ->
+                                try
+                                    logInfo "Application" "アプリケーション終了: 統合イベントループ停止中..."
 
-                                if not integrationTask.IsCompleted then
-                                    integrationTask.Wait(System.TimeSpan.FromSeconds(5.0)) |> ignore
+                                    if not integrationCancellationSource.IsCancellationRequested then
+                                        integrationCancellationSource.Cancel()
 
-                                integrationCancellationSource.Dispose()
-                                logInfo "Application" "統合イベントループ正常停止完了"
-                            with ex ->
-                                logError "Application" $"統合イベントループ停止時エラー: {ex.Message}")
+                                    if not integrationTask.IsCompleted then
+                                        let completed = integrationTask.Wait(System.TimeSpan.FromSeconds(5.0))
+
+                                        if not completed then
+                                            logWarning "Application" "統合タスク停止タイムアウト - 強制終了"
+
+                                    logInfo "Application" "統合イベントループ正常停止完了"
+                                with ex ->
+                                    logError "Application" $"統合イベントループ停止時エラー: {ex.Message}")
+
+                        System.AppDomain.CurrentDomain.ProcessExit.AddHandler(processExitHandler)
 
                     with ex ->
                         logError "Application" $"UI統合マネージャー登録エラー: {ex.Message}"
-                        integrationCancellationSource.Dispose()
 
-                | _ ->
-                    logError "Application" "UI統合に必要なTextViewが見つかりません"
-                    integrationCancellationSource.Dispose()
+                | _ -> logError "Application" "UI統合に必要なTextViewが見つかりません"
 
             with ex ->
                 logError "Application" $"FC-015 Phase 4 初期化致命的エラー: {ex.Message}"

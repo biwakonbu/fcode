@@ -54,7 +54,7 @@ type EscalationNotificationUITests() =
         Assert.AreEqual("dev1", notifications.[0].RequestingAgent)
         Assert.AreEqual("PO", notifications.[0].TargetRole)
         Assert.AreEqual([ "task1"; "task2" ], notifications.[0].RelatedTaskIds)
-        Assert.AreEqual("pending", notifications.[0].Status)
+        Assert.AreEqual(Pending, notifications.[0].Status)
 
     [<Test>]
     [<Category("Unit")>]
@@ -106,7 +106,7 @@ type EscalationNotificationUITests() =
 
         let (found, notification) = manager.GetNotificationDetail(notificationId)
         Assert.IsTrue(found)
-        Assert.AreEqual("resolved", notification.Status)
+        Assert.AreEqual(Resolved, notification.Status)
         Assert.IsTrue(notification.ResponseContent.IsSome)
         Assert.IsTrue(notification.ResponseContent.Value.Contains("Approved for implementation"))
         Assert.IsTrue(notification.ResponseAt.IsSome)
@@ -136,7 +136,7 @@ type EscalationNotificationUITests() =
 
         let (found, notification) = manager.GetNotificationDetail(notificationId)
         Assert.IsTrue(found)
-        Assert.AreEqual("rejected", notification.Status)
+        Assert.AreEqual(Rejected, notification.Status)
         Assert.IsTrue(notification.ResponseContent.IsSome)
         Assert.IsTrue(notification.ResponseContent.Value.Contains("Not enough justification"))
 
@@ -429,7 +429,7 @@ type EscalationNotificationUITests() =
         let (found, notification) = manager.GetNotificationDetail(notificationId)
 
         Assert.IsTrue(found)
-        Assert.AreEqual("resolved", notification.Status)
+        Assert.AreEqual(Resolved, notification.Status)
         Assert.IsTrue(notification.ResponseContent.IsSome)
 
     [<TearDown>]

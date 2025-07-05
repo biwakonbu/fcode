@@ -198,14 +198,15 @@ type UnifiedActivityViewTests() =
     [<Category("Integration")>]
     member _.``Global UnifiedActivityManager Usage Test``() =
         // グローバル統合活動管理使用テスト
-        let initialCount = globalUnifiedActivityManager.GetActivityCount()
+        let initialCount = manager.GetActivityCount()
 
-        addSystemActivity "global-test" CodeGeneration "Global system activity"
+        manager.AddSystemActivity("global-test", CodeGeneration, "Global system activity")
+        |> ignore
 
-        let newCount = globalUnifiedActivityManager.GetActivityCount()
+        let newCount = manager.GetActivityCount()
         Assert.AreEqual(initialCount + 1, newCount)
 
-        let activities = globalUnifiedActivityManager.GetAllActivities()
+        let activities = manager.GetAllActivities()
         let latestActivity = activities |> Array.maxBy (fun a -> a.Timestamp)
         Assert.AreEqual("global-test", latestActivity.AgentId)
         Assert.AreEqual(CodeGeneration, latestActivity.ActivityType)
@@ -215,7 +216,8 @@ type UnifiedActivityViewTests() =
     [<Category("Integration")>]
     member _.``Global addActivityFromMessage Usage Test``() =
         // グローバル関数によるAgentMessage追加テスト
-        let initialCount = globalUnifiedActivityManager.GetActivityCount()
+        let manager = new UnifiedActivityManager()
+        let initialCount = manager.GetActivityCount()
 
         let testMessage =
             MessageBuilder()
@@ -225,12 +227,12 @@ type UnifiedActivityViewTests() =
                 .WithContent("Global message activity")
                 .Build()
 
-        addActivityFromMessage testMessage
+        manager.AddActivityFromMessage(testMessage) |> ignore
 
-        let newCount = globalUnifiedActivityManager.GetActivityCount()
+        let newCount = manager.GetActivityCount()
         Assert.AreEqual(initialCount + 1, newCount)
 
-        let activities = globalUnifiedActivityManager.GetAllActivities()
+        let activities = manager.GetAllActivities()
         let latestActivity = activities |> Array.maxBy (fun a -> a.Timestamp)
         Assert.AreEqual("global-agent", latestActivity.AgentId)
         Assert.AreEqual(ActivityType.Progress, latestActivity.ActivityType)

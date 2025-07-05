@@ -312,7 +312,7 @@ type EscalationNotificationUITests() =
 
         Assert.AreEqual(3, allNotifications.Length)
         Assert.AreEqual(2, activeNotifications.Length)
-        Assert.IsTrue(activeNotifications |> Array.forall (fun n -> n.Status = "pending"))
+        Assert.IsTrue(activeNotifications |> Array.forall (fun n -> n.Status = Pending))
 
     [<Test>]
     [<Category("Unit")>]
@@ -381,7 +381,7 @@ type EscalationNotificationUITests() =
     [<Category("Integration")>]
     member _.``Global EscalationNotificationManager Usage Test``() =
         // グローバルエスカレーション通知管理使用テスト
-        let initialCount = globalEscalationNotificationManager.GetNotificationCount()
+        let initialCount = manager.GetNotificationCount()
 
         let notificationId =
             createEscalationNotification
@@ -394,10 +394,10 @@ type EscalationNotificationUITests() =
                 [ "global-task" ]
                 None
 
-        let newCount = globalEscalationNotificationManager.GetNotificationCount()
+        let newCount = manager.GetNotificationCount()
         Assert.AreEqual(initialCount + 1, newCount)
 
-        let notifications = globalEscalationNotificationManager.GetAllNotifications()
+        let notifications = manager.GetAllNotifications()
         let latestNotification = notifications |> Array.maxBy (fun n -> n.CreatedAt)
         Assert.AreEqual("Global Test Notification", latestNotification.Title)
         Assert.AreEqual(EscalationNotificationType.ResourceRequest, latestNotification.NotificationType)
@@ -423,8 +423,7 @@ type EscalationNotificationUITests() =
 
         Assert.IsTrue(responseResult)
 
-        let (found, notification) =
-            globalEscalationNotificationManager.GetNotificationDetail(notificationId)
+        let (found, notification) = manager.GetNotificationDetail(notificationId)
 
         Assert.IsTrue(found)
         Assert.AreEqual("resolved", notification.Status)

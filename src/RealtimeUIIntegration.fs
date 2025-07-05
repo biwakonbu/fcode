@@ -25,9 +25,12 @@ type BackoffConfig =
       BackoffMultiplier: float
       MaxRetryAttempts: int }
 
-/// リアルタイムUI統合マネージャー
-type RealtimeUIIntegrationManager() =
+// ===============================================
+// 内部責務分離型 (SOLID準拠設計)
+// ===============================================
 
+/// UI統合状態管理責務 (Single Responsibility)
+type private UIIntegrationStateManager() =
     let mutable uiRegistry =
         { ConversationTextView = None
           PMTimelineTextView = None
@@ -35,23 +38,10 @@ type RealtimeUIIntegrationManager() =
           UXTextView = None
           AgentTextViews = Map.empty }
 
-    // エラーバックオフ設定
-    let backoffConfig =
-        { InitialDelayMs = 1000
-          MaxDelayMs = 30000
-          BackoffMultiplier = 2.0
-          MaxRetryAttempts = 5 }
-
-    // 現在のリトライ状態
-    let mutable currentRetryCount = 0
-    let mutable currentDelayMs = backoffConfig.InitialDelayMs
-
-    // Cancellation対応
     let mutable cancellationTokenSource: CancellationTokenSource option = None
     let mutable isRunning = false
     let lockObject = obj ()
 
-    /// UIコンポーネント登録
     member this.RegisterUIComponents
         (
             conversationView: TextView,
@@ -59,115 +49,78 @@ type RealtimeUIIntegrationManager() =
             qa1View: TextView,
             uxView: TextView,
             agentViews: Map<string, TextView>
-        ) =
+        ) : Result<unit, string> =
+        try
+            uiRegistry <-
+                { ConversationTextView = Some conversationView
+                  PMTimelineTextView = Some pmTimelineView
+                  QA1TextView = Some qa1View
+                  UXTextView = Some uxView
+                  AgentTextViews = agentViews }
+
+            Result.Ok()
+        with ex ->
+            Result.Error $"Failed to register UI components: {ex.Message}"
+
+    member this.GetUIRegistry() = uiRegistry
+    member this.IsRunning() = isRunning
+
+    member this.SetRunning(running: bool) =
+        lock lockObject (fun () -> isRunning <- running)
+
+    member this.SetCancellationTokenSource(cts: CancellationTokenSource option) =
+        lock lockObject (fun () -> cancellationTokenSource <- cts)
+
+    member this.GetCancellationTokenSource() = cancellationTokenSource
+
+    member this.ClearRegistry() =
         uiRegistry <-
-            { ConversationTextView = Some conversationView
-              PMTimelineTextView = Some pmTimelineView
-              QA1TextView = Some qa1View
-              UXTextView = Some uxView
-              AgentTextViews = agentViews }
+            { ConversationTextView = None
+              PMTimelineTextView = None
+              QA1TextView = None
+              UXTextView = None
+              AgentTextViews = Map.empty }
 
-        // 既存UIシステムとの統合
-        setConversationTextView conversationView
-        setTimelineTextView pmTimelineView
-        setNotificationTextView qa1View
-        setDashboardTextView uxView
+/// エラー回復管理責務 (Single Responsibility)
+type private ErrorRecoveryManager(config: BackoffConfig) =
+    let mutable currentRetryCount = 0
+    let mutable currentDelayMs = config.InitialDelayMs
 
-        logInfo "RealtimeUIIntegration" "UI components registered successfully"
-
-    /// 指数バックオフによるエラー回復
-    member private this.CalculateBackoffDelay() =
-        let delay = min currentDelayMs backoffConfig.MaxDelayMs
-        currentDelayMs <- int (float currentDelayMs * backoffConfig.BackoffMultiplier)
+    member this.CalculateBackoffDelay() : int =
+        let delay = min currentDelayMs config.MaxDelayMs
+        currentDelayMs <- int (float currentDelayMs * config.BackoffMultiplier)
         delay
 
-    /// エラー状態リセット
-    member private this.ResetBackoffState() =
+    member this.ResetBackoffState() =
         currentRetryCount <- 0
-        currentDelayMs <- backoffConfig.InitialDelayMs
+        currentDelayMs <- config.InitialDelayMs
 
-    /// リアルタイムUI更新イベントループ開始
-    member this.StartIntegrationEventLoop() =
-        async {
-            lock lockObject (fun () ->
-                if isRunning then
-                    logWarning "RealtimeUIIntegration" "既にイベントループが実行中です"
-                    failwith "既にイベントループが実行中です"
+    member this.IncrementRetryCount() =
+        currentRetryCount <- currentRetryCount + 1
 
-                cancellationTokenSource <- Some(new CancellationTokenSource())
-                isRunning <- true)
+    member this.GetRetryCount() = currentRetryCount
 
-            let token = cancellationTokenSource.Value.Token
-            logInfo "RealtimeUIIntegration" "リアルタイムUI統合イベントループ開始"
+    member this.IsMaxRetriesReached() =
+        currentRetryCount >= config.MaxRetryAttempts
 
-            // UI更新間隔（1秒間隔でリアルタイム性を向上）
-            let updateIntervalMs = 1000
+    member this.GetConfig() = config
 
-            // 再帰ではなくwhileループで実装
-            try
-                while not token.IsCancellationRequested do
-                    try
-                        // 1. 進捗情報の更新
-                        this.UpdateProgressInformation()
-
-                        // 2. エージェント状態の同期
-                        this.SynchronizeAgentStates()
-
-                        // 3. タスク状態の反映
-                        this.UpdateTaskStatuses()
-
-                        // 4. エスカレーション通知の更新
-                        this.UpdateEscalationNotifications()
-
-                        // 成功時はバックオフ状態をリセット
-                        this.ResetBackoffState()
-
-                        do! Async.Sleep(updateIntervalMs)
-
-                    with
-                    | :? OperationCanceledException ->
-                        logInfo "RealtimeUIIntegration" "イベントループがキャンセルされました"
-                        return ()
-                    | ex ->
-                        currentRetryCount <- currentRetryCount + 1
-
-                        if currentRetryCount >= backoffConfig.MaxRetryAttempts then
-                            logError
-                                "RealtimeUIIntegration"
-                                $"統合イベントループ最大リトライ回数({backoffConfig.MaxRetryAttempts})到達。終了します: {ex.Message}"
-
-                            return ()
-                        else
-                            let backoffDelay = this.CalculateBackoffDelay()
-
-                            logWarning
-                                "RealtimeUIIntegration"
-                                $"統合イベントループエラー({currentRetryCount}/{backoffConfig.MaxRetryAttempts}): {ex.Message}。{backoffDelay}ms後にリトライします"
-
-                            do! Async.Sleep(backoffDelay)
-
-            finally
-                lock lockObject (fun () ->
-                    isRunning <- false
-                    cancellationTokenSource |> Option.iter (fun cts -> cts.Dispose())
-                    cancellationTokenSource <- None)
-
-                logInfo "RealtimeUIIntegration" "イベントループ終了"
-        }
+/// UI更新処理責務 (Single Responsibility)
+type private UIUpdateProcessor(stateManager: UIIntegrationStateManager) =
 
     /// 進捗情報の更新
-    member private this.UpdateProgressInformation() =
+    member this.UpdateProgressInformation() : Result<unit, string> =
         try
-            // システム全体の進捗情報を表示
-            addSystemActivity "system" SystemMessage "UI統合: システム状態更新中"
-
+            addSystemActivity "system" SystemMessage "UI統合: システム状態更新中" |> ignore
+            Result.Ok()
         with ex ->
-            logWarning "RealtimeUIIntegration" $"進捗情報更新エラー: {ex.Message}"
+            Result.Error $"進捗情報更新エラー: {ex.Message}"
 
     /// エージェント状態の同期
-    member private this.SynchronizeAgentStates() =
+    member this.SynchronizeAgentStates() : Result<unit, string> =
         try
-            // 基本的なエージェント状態表示
+            let uiRegistry = stateManager.GetUIRegistry()
+
             uiRegistry.AgentTextViews
             |> Map.iter (fun agentId textView ->
                 if not (isNull textView) then
@@ -180,17 +133,17 @@ type RealtimeUIIntegrationManager() =
                         | "qa2" -> "探索的テスト準備完了"
                         | _ -> "待機中"
 
-                    addSystemActivity agentId SystemMessage $"状態: {status}"
+                    addSystemActivity agentId SystemMessage $"状態: {status}" |> ignore
                 else
                     logWarning "RealtimeUIIntegration" $"エージェント {agentId} のTextViewがnullです")
 
+            Result.Ok()
         with ex ->
-            logWarning "RealtimeUIIntegration" $"エージェント状態同期エラー: {ex.Message}"
+            Result.Error $"エージェント状態同期エラー: {ex.Message}"
 
     /// タスク状態の反映
-    member private this.UpdateTaskStatuses() =
+    member this.UpdateTaskStatuses() : Result<unit, string> =
         try
-            // タスク進捗のUI反映（サンプル）
             let taskUpdates =
                 [ ("dev1", "コア機能実装", 75)
                   ("dev2", "UI実装", 60)
@@ -199,75 +152,234 @@ type RealtimeUIIntegrationManager() =
 
             taskUpdates
             |> List.iter (fun (agentId, taskName, progress) ->
-                addSystemActivity agentId Progress $"{taskName}: {progress}%%完了")
+                addSystemActivity agentId Progress $"{taskName}: {progress}%%完了" |> ignore)
 
+            Result.Ok()
         with ex ->
-            logWarning "RealtimeUIIntegration" $"タスク状態更新エラー: {ex.Message}"
+            Result.Error $"タスク状態更新エラー: {ex.Message}"
 
     /// エスカレーション通知の更新
-    member private this.UpdateEscalationNotifications() =
+    member this.UpdateEscalationNotifications() : Result<unit, string> =
         try
-            // QA1ペイン（エスカレーション通知）に重要情報を表示
+            let uiRegistry = stateManager.GetUIRegistry()
+
             match uiRegistry.QA1TextView with
-            | Some textView ->
-                // エスカレーション情報は EscalationNotificationUI が自動更新
-                ()
-            | None -> ()
-
+            | Some textView -> Result.Ok()
+            | None -> Result.Ok()
         with ex ->
-            logWarning "RealtimeUIIntegration" $"エスカレーション通知更新エラー: {ex.Message}"
+            Result.Error $"エスカレーション通知更新エラー: {ex.Message}"
 
-    /// 安全な強制停止
-    member this.EmergencyShutdown(reason: string) =
+/// イベントループ管理責務 (Single Responsibility)
+type private EventLoopManager
+    (stateManager: UIIntegrationStateManager, errorManager: ErrorRecoveryManager, updateProcessor: UIUpdateProcessor) =
+
+    /// メインイベントループ実行
+    member this.ExecuteMainEventLoop(cancellationToken: CancellationToken) : Async<Result<unit, string>> =
+        let rec eventLoop () =
+            async {
+                if cancellationToken.IsCancellationRequested then
+                    stateManager.SetRunning(false)
+                    logInfo "RealtimeUIIntegration" "イベントループがキャンセルされました"
+                    return Result.Ok()
+                else
+                    try
+                        // 各更新処理を実行
+                        let results =
+                            [ updateProcessor.UpdateProgressInformation()
+                              updateProcessor.SynchronizeAgentStates()
+                              updateProcessor.UpdateTaskStatuses()
+                              updateProcessor.UpdateEscalationNotifications() ]
+
+                        // エラーチェック
+                        let errors =
+                            results
+                            |> List.choose (function
+                                | Result.Error e -> Some e
+                                | _ -> None)
+
+                        if errors.IsEmpty then
+                            errorManager.ResetBackoffState()
+                            do! Async.Sleep(1000) // updateIntervalMs
+                            return! eventLoop ()
+                        else
+                            errorManager.IncrementRetryCount()
+
+                            if errorManager.IsMaxRetriesReached() then
+                                let errorList = String.concat "; " errors
+                                let errorMsg = $"統合イベントループ最大リトライ回数到達。終了します: {errorList}"
+                                logError "RealtimeUIIntegration" errorMsg
+                                stateManager.SetRunning(false)
+                                return Result.Error errorMsg
+                            else
+                                let backoffDelay = errorManager.CalculateBackoffDelay()
+                                let retryCount = errorManager.GetRetryCount()
+                                let maxRetries = errorManager.GetConfig().MaxRetryAttempts
+                                let errorList = String.concat "; " errors
+
+                                logWarning
+                                    "RealtimeUIIntegration"
+                                    $"統合イベントループエラー({retryCount}/{maxRetries}): {errorList}。{backoffDelay}ms後にリトライします"
+
+                                do! Async.Sleep(backoffDelay)
+                                return! eventLoop ()
+
+                    with
+                    | :? OperationCanceledException ->
+                        stateManager.SetRunning(false)
+                        logInfo "RealtimeUIIntegration" "イベントループがキャンセルされました"
+                        return Result.Ok()
+                    | ex ->
+                        errorManager.IncrementRetryCount()
+
+                        if errorManager.IsMaxRetriesReached() then
+                            let errorMsg = $"イベントループ致命的エラー: {ex.Message}"
+                            logError "RealtimeUIIntegration" errorMsg
+                            stateManager.SetRunning(false)
+                            return Result.Error errorMsg
+                        else
+                            let backoffDelay = errorManager.CalculateBackoffDelay()
+                            let retryCount = errorManager.GetRetryCount()
+                            let maxRetries = errorManager.GetConfig().MaxRetryAttempts
+                            let exceptionMessage = ex.Message
+
+                            logWarning
+                                "RealtimeUIIntegration"
+                                $"イベントループ例外({retryCount}/{maxRetries}): {exceptionMessage}。{backoffDelay}ms後にリトライします"
+
+                            do! Async.Sleep(backoffDelay)
+                            return! eventLoop ()
+            }
+
+        async {
+            try
+                logInfo "RealtimeUIIntegration" "リアルタイムUI統合イベントループ開始"
+                stateManager.SetRunning(true)
+                let! result = eventLoop ()
+                stateManager.SetRunning(false)
+                logInfo "RealtimeUIIntegration" "イベントループ正常終了"
+                return result
+            with ex ->
+                stateManager.SetRunning(false)
+                let errorMsg = $"イベントループ致命的エラー: {ex.Message}"
+                logError "RealtimeUIIntegration" errorMsg
+                return Result.Error errorMsg
+        }
+
+// ===============================================
+// リアルタイムUI統合マネージャー (依存性注入によるSOLID設計)
+// ===============================================
+
+/// リアルタイムUI統合マネージャー (リファクタリング版)
+type RealtimeUIIntegrationManager() =
+
+    // エラーバックオフ設定
+    let backoffConfig =
+        { InitialDelayMs = 1000
+          MaxDelayMs = 30000
+          BackoffMultiplier = 2.0
+          MaxRetryAttempts = 5 }
+
+    // 依存性注入による責務分離
+    let stateManager = UIIntegrationStateManager()
+    let errorManager = ErrorRecoveryManager(backoffConfig)
+    let updateProcessor = UIUpdateProcessor(stateManager)
+    let eventLoopManager = EventLoopManager(stateManager, errorManager, updateProcessor)
+
+    /// UIコンポーネント登録 - Result型対応
+    member this.RegisterUIComponents
+        (
+            conversationView: TextView,
+            pmTimelineView: TextView,
+            qa1View: TextView,
+            uxView: TextView,
+            agentViews: Map<string, TextView>
+        ) : Result<unit, string> =
+        match stateManager.RegisterUIComponents(conversationView, pmTimelineView, qa1View, uxView, agentViews) with
+        | Result.Ok() ->
+            // 既存UIシステムとの統合（互換性）
+            setConversationTextView conversationView
+            setTimelineTextView pmTimelineView
+            setNotificationTextView qa1View
+            setDashboardTextView uxView
+            logInfo "RealtimeUIIntegration" "UI components registered successfully"
+            Result.Ok()
+        | Result.Error error ->
+            logError "RealtimeUIIntegration" $"UIコンポーネント登録失敗: {error}"
+            Result.Error error
+
+    /// リアルタイムUI更新イベントループ開始 - Result型対応
+    member this.StartIntegrationEventLoop() : Async<Result<unit, string>> =
+        async {
+            try
+                if stateManager.IsRunning() then
+                    let errorMsg = "既にイベントループが実行中です"
+                    logWarning "RealtimeUIIntegration" errorMsg
+                    return Result.Error errorMsg
+                else
+                    let cts = new CancellationTokenSource()
+                    stateManager.SetCancellationTokenSource(Some cts)
+
+                    let! result = eventLoopManager.ExecuteMainEventLoop(cts.Token)
+
+                    // クリーンアップ
+                    stateManager.SetCancellationTokenSource(None)
+                    cts.Dispose()
+
+                    return result
+
+            with ex ->
+                let errorMsg = $"イベントループ開始失敗: {ex.Message}"
+                logError "RealtimeUIIntegration" errorMsg
+                return Result.Error errorMsg
+        }
+
+    /// 安全な強制停止 - Result型対応
+    member this.EmergencyShutdown(reason: string) : Result<unit, string> =
         try
             logWarning "RealtimeUIIntegration" $"緊急停止要求: {reason}"
 
-            lock lockObject (fun () ->
-                // CancellationTokenでループを停止
-                cancellationTokenSource |> Option.iter (fun cts -> cts.Cancel())
+            match stateManager.GetCancellationTokenSource() with
+            | Some cts ->
+                cts.Cancel()
+                stateManager.SetCancellationTokenSource(None)
+                cts.Dispose()
+            | None -> ()
 
-                // リトライカウンタを最大値に設定してループ終了を強制
-                currentRetryCount <- backoffConfig.MaxRetryAttempts)
+            stateManager.SetRunning(false)
+            errorManager.IncrementRetryCount() // 強制停止でリトライ回数を最大に
 
             logInfo "RealtimeUIIntegration" "緊急停止完了"
+            Result.Ok()
         with ex ->
-            logError "RealtimeUIIntegration" $"緊急停止エラー: {ex.Message}"
+            let errorMsg = $"緊急停止エラー: {ex.Message}"
+            logError "RealtimeUIIntegration" errorMsg
+            Result.Error errorMsg
 
-    /// リソース解放
-    member this.Dispose() =
+    /// リソース解放 - Result型対応
+    member this.Dispose() : Result<unit, string> =
         try
             // 緊急停止を実行
-            this.EmergencyShutdown("Dispose処理による停止")
+            match this.EmergencyShutdown("Dispose処理による停止") with
+            | Result.Ok() ->
+                // 完全に停止するまで待機
+                let mutable waitCount = 0
 
-            // 完全に停止するまで待機
-            let mutable waitCount = 0
-
-            while isRunning && waitCount < 50 do // 最大5秒待機
-                System.Threading.Thread.Sleep(100)
-                waitCount <- waitCount + 1
-
-            lock lockObject (fun () ->
-                // CancellationTokenSourceのリソース解放
-                cancellationTokenSource
-                |> Option.iter (fun cts ->
-                    try
-                        cts.Dispose()
-                    with _ ->
-                        ())
-
-                cancellationTokenSource <- None
+                while stateManager.IsRunning() && waitCount < 50 do // 最大5秒待機
+                    System.Threading.Thread.Sleep(100)
+                    waitCount <- waitCount + 1
 
                 // UIレジストリをクリア
-                uiRegistry <-
-                    { ConversationTextView = None
-                      PMTimelineTextView = None
-                      QA1TextView = None
-                      UXTextView = None
-                      AgentTextViews = Map.empty })
+                stateManager.ClearRegistry()
 
-            logInfo "RealtimeUIIntegration" "RealtimeUIIntegrationManager disposed"
+                logInfo "RealtimeUIIntegration" "RealtimeUIIntegrationManager disposed"
+                Result.Ok()
+            | Result.Error error ->
+                logError "RealtimeUIIntegration" $"Dispose処理中の緊急停止失敗: {error}"
+                Result.Error error
         with ex ->
-            logError "RealtimeUIIntegration" ("Dispose例外: " + ex.Message)
+            let errorMsg = $"Dispose例外: {ex.Message}"
+            logError "RealtimeUIIntegration" errorMsg
+            Result.Error errorMsg
 
     interface IDisposable with
-        member this.Dispose() = this.Dispose()
+        member this.Dispose() = this.Dispose() |> ignore

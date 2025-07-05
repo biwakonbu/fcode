@@ -101,7 +101,7 @@ type DecisionTimelineViewTests() =
 
         Assert.AreEqual(3, allDecisions.Length)
         Assert.AreEqual(2, activeDecisions.Length)
-        Assert.IsTrue(activeDecisions |> Array.forall (fun d -> d.Status = "active"))
+        Assert.IsTrue(activeDecisions |> Array.forall (fun d -> d.Status = Active))
 
     [<Test>]
     [<Category("Unit")>]
@@ -226,15 +226,15 @@ type DecisionTimelineViewTests() =
     [<Category("Integration")>]
     member _.``Global DecisionTimelineManager Usage Test``() =
         // グローバル意思決定タイムライン管理使用テスト
-        let initialCount = globalDecisionTimelineManager.GetDecisionCount()
+        let initialCount = manager.GetDecisionCount()
 
         let decisionId =
             startDecision "Global Decision Test" "Global decision description" High [ "global-agent1"; "global-agent2" ]
 
-        let newCount = globalDecisionTimelineManager.GetDecisionCount()
+        let newCount = manager.GetDecisionCount()
         Assert.AreEqual(initialCount + 1, newCount)
 
-        let decisions = globalDecisionTimelineManager.GetAllDecisions()
+        let decisions = manager.GetAllDecisions()
         let latestDecision = decisions |> Array.maxBy (fun d -> fst d.Timeline)
         Assert.AreEqual("Global Decision Test", latestDecision.Title)
         Assert.AreEqual(High, latestDecision.Priority)
@@ -252,7 +252,7 @@ type DecisionTimelineViewTests() =
         let completeResult = completeDecision decisionId "agent1" "Final decision"
         Assert.IsTrue(completeResult)
 
-        let (found, decision) = globalDecisionTimelineManager.GetDecisionDetail(decisionId)
+        let (found, decision) = manager.GetDecisionDetail(decisionId)
         Assert.IsTrue(found)
         Assert.AreEqual(Review, decision.Stage)
         Assert.AreEqual("completed", decision.Status)

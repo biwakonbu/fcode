@@ -83,7 +83,10 @@ let main argv =
 
             // 初期システム活動追加
             addSystemActivity "system" SystemMessage "fcode TUI Application 起動完了 - エージェント協調開発環境準備中"
+            |> ignore
+
             addSystemActivity "system" SystemMessage "会話ペイン統合 - 全エージェント活動をリアルタイム表示"
+            |> ignore
 
             // ----------------------------------------------------------------------
             // Right-hand container – holds all other panes
@@ -239,27 +242,29 @@ let main argv =
                     // 実際のタスク完了率を取得 (将来的にProgressAggregatorから)
                     75.0 // デフォルト値、将来的に動的取得実装
 
-                let taskCompletionId =
-                    createMetric TaskCompletion "Overall Task Completion" actualProgress 100.0 "%"
+                match createMetric TaskCompletion "Overall Task Completion" actualProgress 100.0 "%" with
+                | Result.Ok taskCompletionId ->
+                    let qualityScore = 85.0 // QualityGateManagerから取得予定
 
-                let qualityScore = 85.0 // QualityGateManagerから取得予定
+                    match createMetric CodeQuality "Code Quality Score" qualityScore 100.0 "pts" with
+                    | Result.Ok codeQualityId ->
+                        let sprintProgress = (actualProgress + qualityScore) / 2.0
 
-                let codeQualityId =
-                    createMetric CodeQuality "Code Quality Score" qualityScore 100.0 "pts"
-
-                let overallKPIId =
-                    let sprintProgress = (actualProgress + qualityScore) / 2.0
-
-                    createKPI
-                        "Sprint Progress"
-                        "現在スプリントの進捗率"
-                        sprintProgress
-                        100.0
-                        "%"
-                        "sprint"
-                        [ taskCompletionId; codeQualityId ]
-
-                logInfo "UI" $"Sample metrics and KPIs created for progress dashboard"
+                        match
+                            createKPI
+                                "Sprint Progress"
+                                "現在スプリントの進捗率"
+                                sprintProgress
+                                100.0
+                                "%"
+                                "sprint"
+                                [ taskCompletionId; codeQualityId ]
+                        with
+                        | Result.Ok overallKPIId ->
+                            logInfo "UI" $"Sample metrics and KPIs created for progress dashboard"
+                        | Result.Error error -> logError "UI" $"Failed to create overall KPI: {error}"
+                    | Result.Error error -> logError "UI" $"Failed to create code quality metric: {error}"
+                | Result.Error error -> logError "UI" $"Failed to create task completion metric: {error}"
 
             | None -> logWarning "UI" "UX TextView not found for ProgressDashboard integration"
 
@@ -372,13 +377,17 @@ let main argv =
                                 paneTextViews.TryFind(paneId) |> Option.map (fun tv -> paneId, tv))
                             |> Map.ofList
 
-                        uiIntegrationManager.RegisterUIComponents(
-                            conversationTextView,
-                            pmTimelineView,
-                            qa1View,
-                            uxView,
-                            agentViewsMap
-                        )
+                        match
+                            uiIntegrationManager.RegisterUIComponents(
+                                conversationTextView,
+                                pmTimelineView,
+                                qa1View,
+                                uxView,
+                                agentViewsMap
+                            )
+                        with
+                        | Result.Ok() -> ()
+                        | Result.Error error -> logError "Application" $"UI registration failed: {error}"
 
                         logInfo "Application" "UI統合マネージャー登録完了"
 
@@ -392,7 +401,9 @@ let main argv =
 
                         // 基本機能デモ
                         addSystemActivity "system" SystemMessage "FC-015 Phase 4 UI統合・フルフロー機能が正常に初期化されました"
-                        addSystemActivity "PO" TaskAssignment "サンプルワークフロー準備完了 - フルフロー実装進行中"
+                        |> ignore
+
+                        addSystemActivity "PO" TaskAssignment "サンプルワークフロー準備完了 - フルフロー実装進行中" |> ignore
 
                         logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化完了 ==="
 

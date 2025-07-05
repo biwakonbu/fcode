@@ -82,6 +82,9 @@
     <Compile Include="FullWorkflowCoordinator.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />
+    <!-- Phase 4: Security & Performance Enhancement -->
+    <Compile Include="InputValidation.fs" />
+    <Compile Include="PerformanceOptimizer.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -64,6 +64,8 @@
     <!-- Temporarily disabled due to constructor signature mismatches
     <Compile Include="FC014EndToEndIntegrationTests.fs"/>
     -->
+    <!-- FC-015 Phase 4 UI Integration & Full Workflow Tests -->
+    <Compile Include="FC015UIIntegrationTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

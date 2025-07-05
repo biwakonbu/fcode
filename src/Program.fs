@@ -13,6 +13,8 @@ open FCode.UnifiedActivityView
 open FCode.DecisionTimelineView
 open FCode.EscalationNotificationUI
 open FCode.ProgressDashboard
+open FCode.RealtimeUIIntegration
+open FCode.FullWorkflowCoordinator
 
 [<EntryPoint>]
 let main argv =
@@ -344,6 +346,48 @@ let main argv =
 
                         logError "AutoStart" $"=== ROOT CAUSE: UI structure investigation completed ==="
                         |> ignore
+
+            // FC-015: Phase 4 UI統合・フルフロー機能初期化（簡易版）
+            logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化開始 ==="
+
+            // UI統合マネージャー初期化
+            let uiIntegrationManager = new RealtimeUIIntegrationManager()
+
+            // フルワークフローコーディネーター初期化
+            let fullWorkflowCoordinator = new FullWorkflowCoordinator()
+
+            // UI コンポーネント登録
+            match
+                (paneTextViews.TryFind("PM / PdM タイムライン"), paneTextViews.TryFind("qa1"), paneTextViews.TryFind("ux"))
+            with
+            | (Some pmTimelineView, Some qa1View, Some uxView) ->
+                let agentViewsMap =
+                    agentPanes
+                    |> List.choose (fun (paneId, _) ->
+                        paneTextViews.TryFind(paneId) |> Option.map (fun tv -> paneId, tv))
+                    |> Map.ofList
+
+                uiIntegrationManager.RegisterUIComponents(
+                    conversationTextView,
+                    pmTimelineView,
+                    qa1View,
+                    uxView,
+                    agentViewsMap
+                )
+
+                logInfo "Application" "UI統合マネージャー登録完了"
+
+                // 統合イベントループ開始
+                Async.Start(uiIntegrationManager.StartIntegrationEventLoop())
+                logInfo "Application" "統合イベントループ開始"
+
+                // 基本機能デモ
+                addSystemActivity "system" SystemMessage "FC-015 Phase 4 UI統合・フルフロー機能が正常に初期化されました"
+                addSystemActivity "PO" TaskAssignment "サンプルワークフロー準備完了 - フルフロー実装進行中"
+
+                logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化完了 ==="
+
+            | _ -> logError "Application" "UI統合に必要なTextViewが見つかりません"
 
             // UI初期化完了後の遅延自動起動機能で実行するため、即座の自動起動は削除
             logInfo "AutoStart" "Immediate auto-start disabled - will use delayed auto-start after UI completion"

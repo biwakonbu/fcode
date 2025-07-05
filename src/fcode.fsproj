@@ -69,6 +69,9 @@
     <Compile Include="Collaboration/TaskStorageConfiguration.fs" />
     <Compile Include="TaskAssignmentManager.fs" />
     <Compile Include="QualityGateManager.fs" />
+    <!-- FC-015 Phase 4 UI Integration & Full Workflow -->
+    <Compile Include="RealtimeUIIntegration.fs" />
+    <Compile Include="FullWorkflowCoordinator.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />
     <Compile Include="Program.fs" />

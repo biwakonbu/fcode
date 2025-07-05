@@ -56,7 +56,14 @@ type UnifiedActivityManager() =
     member this.SetConversationTextView(textView: TextView) =
         if not (isNull textView) then
             conversationTextView <- Some textView
-            logInfo "UnifiedActivityView" "Conversation TextView set for unified activity display"
+            // TextView初期化の確認
+            try
+                if not (isNull textView.Text) then
+                    logInfo "UnifiedActivityView" "Conversation TextView set for unified activity display"
+                else
+                    logInfo "UnifiedActivityView" "Conversation TextView set (Text property not yet initialized)"
+            with ex ->
+                logWarning "UnifiedActivityView" $"TextView validation failed: {ex.Message}"
         else
             logWarning "UnifiedActivityView" "Attempted to set null TextView for conversation display"
 
@@ -155,15 +162,27 @@ type UnifiedActivityManager() =
 
                     if not isCI then
                         try
-                            Application.MainLoop.Invoke(fun () ->
+                            // Application.MainLoopの安全性チェック
+                            if not (isNull Application.MainLoop) then
+                                Application.MainLoop.Invoke(fun () ->
+                                    try
+                                        if not (isNull textView) then
+                                            textView.Text <- ustring.Make(displayText: string)
+                                            textView.SetNeedsDisplay()
+                                        else
+                                            logWarning "UnifiedActivityView" "TextView is null during UI update"
+                                    with ex ->
+                                        logException "UnifiedActivityView" "UI thread update failed" ex)
+                            else
+                                // MainLoopが利用できない場合は直接更新を試行
                                 try
                                     if not (isNull textView) then
                                         textView.Text <- ustring.Make(displayText: string)
                                         textView.SetNeedsDisplay()
                                     else
-                                        logWarning "UnifiedActivityView" "TextView is null during UI update"
+                                        logWarning "UnifiedActivityView" "TextView is null during direct UI update"
                                 with ex ->
-                                    logException "UnifiedActivityView" "UI thread update failed" ex)
+                                    logWarning "UnifiedActivityView" $"Direct UI update failed: {ex.Message}"
                         with ex ->
                             logException "UnifiedActivityView" "MainLoop.Invoke failed" ex
                     else

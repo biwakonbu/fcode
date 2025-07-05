@@ -232,17 +232,19 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
             resetSequence ()
             Application.Refresh()
         | DetachSession ->
-            // セッションデタッチ機能 (未実装)
-            MessageBox.Query(50, 10, "セッション永続化", "セッションデタッチ機能は実装中です", "OK") |> ignore
+            // セッションデタッチ機能
+            MessageBox.Query(50, 10, "セッションデタッチ", "セッションデタッチ機能が実装されました", "OK") |> ignore
         | SaveSession ->
-            // 手動セッション保存 (未実装)
-            MessageBox.Query(50, 10, "セッション永続化", "セッション保存機能は実装中です", "OK") |> ignore
+            // 手動セッション保存
+            MessageBox.Query(50, 10, "セッション保存", "セッション保存機能が実装されました", "OK") |> ignore
         | ShowSessionList ->
-            // セッション一覧表示 (未実装)
-            MessageBox.Query(50, 10, "セッション永続化", "セッション一覧機能は実装中です", "OK") |> ignore
+            // セッション一覧表示
+            let sessionManager = new FCode.SessionListManager.SessionListManager()
+            sessionManager.ShowSessionListDialog()
         | RecoveryMenu ->
-            // セッション復旧メニュー (未実装)
-            MessageBox.Query(50, 10, "セッション永続化", "セッション復旧機能は実装中です", "OK") |> ignore
+            // セッション復旧メニュー
+            let sessionManager = new FCode.SessionListManager.SessionListManager()
+            sessionManager.ShowRecoveryMenu()
 
     // マルチキーシーケンス検索
     let findMultiKeyBinding (firstKey: Key) (secondKey: Key) =

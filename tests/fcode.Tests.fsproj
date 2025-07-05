@@ -22,24 +22,19 @@
     <Compile Include="UXPromptManagerTests.fs"/>
     <Compile Include="UXEndToEndTests.fs"/>
     <Compile Include="PMPromptManagerTests.fs"/>
-    <!-- Temporarily disabled during migration
     <Compile Include="PMEndToEndTests.fs"/>
-    -->
     <Compile Include="KeyBindingsTests.fs"/>
     <Compile Include="ColorSchemesTests.fs"/>
     <Compile Include="ResourceMonitorTests.fs"/>
     <Compile Include="ResourceControllerTests.fs"/>
     <Compile Include="ClaudeCodeProcessTests.fs"/>
+    <Compile Include="ClaudeCodeIntegrationTests.fs"/>
     <Compile Include="UIHelpersTests.fs"/>
-    <!-- Temporarily disabled due to namespace issues
     <Compile Include="PtyNetPerformanceTests.fs"/>
     <Compile Include="PtyNetSigwinchTests.fs"/>
     <Compile Include="PtyNetRealWorldTests.fs"/>
-    -->
-    <!-- Temporarily disabled during migration
     <Compile Include="EndToEndIntegrationTests.fs"/>
     <Compile Include="ResourceManagementTests.fs"/>
-    -->
     <Compile Include="SessionIsolationTests.fs"/>
     <Compile Include="SessionPersistenceTests.fs"/>
     <Compile Include="DetachAttachTests.fs"/>
@@ -61,11 +56,10 @@
     <Compile Include="POApprovalRequirementAnalyzerTests.fs"/>
     <Compile Include="AutoContinuationEngineTests.fs"/>
     <Compile Include="IterationManagerTests.fs"/>
-    <!-- Temporarily disabled due to constructor signature mismatches
     <Compile Include="FC014EndToEndIntegrationTests.fs"/>
-    -->
     <!-- FC-015 Phase 4 UI Integration & Full Workflow Tests -->
     <Compile Include="FC015UIIntegrationTests.fs"/>
+    <Compile Include="MinimalWorkflowTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

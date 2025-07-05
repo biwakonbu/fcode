@@ -7,7 +7,7 @@ open System.Threading.Tasks
 open System.Threading
 open System.Text.RegularExpressions
 open FCode
-open TuiPoC.Logger
+open FCode.Logger
 
 /// PTY Net SIGWINCH検証テスト（ウィンドウリサイズ動作確認）
 [<TestFixture>]

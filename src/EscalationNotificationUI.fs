@@ -286,15 +286,27 @@ type EscalationNotificationManager() =
 
                 if not isCI then
                     try
-                        Application.MainLoop.Invoke(fun () ->
+                        // Application.MainLoopの安全性チェック
+                        if not (isNull Application.MainLoop) then
+                            Application.MainLoop.Invoke(fun () ->
+                                try
+                                    if not (isNull textView) then
+                                        textView.Text <- ustring.Make(displayText: string)
+                                        textView.SetNeedsDisplay()
+                                    else
+                                        logWarning "EscalationNotificationUI" "TextView is null during UI update"
+                                with ex ->
+                                    logException "EscalationNotificationUI" "UI thread update failed" ex)
+                        else
+                            // MainLoopが利用できない場合は直接更新を試行
                             try
                                 if not (isNull textView) then
                                     textView.Text <- ustring.Make(displayText: string)
                                     textView.SetNeedsDisplay()
                                 else
-                                    logWarning "EscalationNotificationUI" "TextView is null during UI update"
+                                    logWarning "EscalationNotificationUI" "TextView is null during direct UI update"
                             with ex ->
-                                logException "EscalationNotificationUI" "UI thread update failed" ex)
+                                logWarning "EscalationNotificationUI" $"Direct UI update failed: {ex.Message}"
                     with ex ->
                         logException "EscalationNotificationUI" "MainLoop.Invoke failed" ex
                 else

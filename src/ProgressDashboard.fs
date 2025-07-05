@@ -331,15 +331,27 @@ type ProgressDashboardManager() =
 
                 if not isCI then
                     try
-                        Application.MainLoop.Invoke(fun () ->
+                        // Application.MainLoopの安全性チェック
+                        if not (isNull Application.MainLoop) then
+                            Application.MainLoop.Invoke(fun () ->
+                                try
+                                    if not (isNull textView) then
+                                        textView.Text <- ustring.Make(displayText: string)
+                                        textView.SetNeedsDisplay()
+                                    else
+                                        logWarning "ProgressDashboard" "TextView is null during UI update"
+                                with ex ->
+                                    logException "ProgressDashboard" "UI thread update failed" ex)
+                        else
+                            // MainLoopが利用できない場合は直接更新を試行
                             try
                                 if not (isNull textView) then
                                     textView.Text <- ustring.Make(displayText: string)
                                     textView.SetNeedsDisplay()
                                 else
-                                    logWarning "ProgressDashboard" "TextView is null during UI update"
+                                    logWarning "ProgressDashboard" "TextView is null during direct UI update"
                             with ex ->
-                                logException "ProgressDashboard" "UI thread update failed" ex)
+                                logWarning "ProgressDashboard" $"Direct UI update failed: {ex.Message}"
                     with ex ->
                         logException "ProgressDashboard" "MainLoop.Invoke failed" ex
                 else

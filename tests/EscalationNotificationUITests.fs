@@ -381,6 +381,7 @@ type EscalationNotificationUITests() =
     [<Category("Integration")>]
     member _.``Global EscalationNotificationManager Usage Test``() =
         // グローバルエスカレーション通知管理使用テスト
+        let manager = new EscalationNotificationManager()
         let initialCount = manager.GetNotificationCount()
 
         let notificationId =
@@ -407,6 +408,8 @@ type EscalationNotificationUITests() =
     [<Category("Integration")>]
     member _.``Global Functions Integration Test``() =
         // グローバル関数統合テスト
+        let manager = new EscalationNotificationManager()
+
         let notificationId =
             createEscalationNotification
                 "Integration Test"

@@ -60,10 +60,11 @@ type TestStrategyValidationSuite() =
                 activityManager.AddSystemActivity("agent", SystemMessage, "Valid operation")
 
             Assert.That(
-                validResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false, Is.True
+                (validResult
+                 |> function
+                     | Result.Ok _ -> true
+                     | _ -> false),
+                Is.True
             )
 
             // 並行性安全性確認（IDisposable実装）

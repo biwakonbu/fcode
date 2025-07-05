@@ -226,6 +226,7 @@ type DecisionTimelineViewTests() =
     [<Category("Integration")>]
     member _.``Global DecisionTimelineManager Usage Test``() =
         // グローバル意思決定タイムライン管理使用テスト
+        let manager = new DecisionTimelineManager()
         let initialCount = manager.GetDecisionCount()
 
         let decisionId =
@@ -243,6 +244,8 @@ type DecisionTimelineViewTests() =
     [<Category("Integration")>]
     member _.``Global Functions Integration Test``() =
         // グローバル関数統合テスト
+        let manager = new DecisionTimelineManager()
+
         let decisionId =
             startDecision "Integration Test Decision" "Test integration" Normal [ "agent1" ]
 
@@ -255,4 +258,4 @@ type DecisionTimelineViewTests() =
         let (found, decision) = manager.GetDecisionDetail(decisionId)
         Assert.IsTrue(found)
         Assert.AreEqual(Review, decision.Stage)
-        Assert.AreEqual("completed", decision.Status)
+        Assert.AreEqual(Completed, decision.Status)

@@ -198,6 +198,7 @@ type UnifiedActivityViewTests() =
     [<Category("Integration")>]
     member _.``Global UnifiedActivityManager Usage Test``() =
         // グローバル統合活動管理使用テスト
+        let manager = new UnifiedActivityManager()
         let initialCount = manager.GetActivityCount()
 
         manager.AddSystemActivity("global-test", CodeGeneration, "Global system activity")

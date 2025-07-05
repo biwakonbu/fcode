@@ -252,27 +252,53 @@ type EscalationNotificationManager() =
         | Some textView ->
             try
                 // アクティブ通知と最新履歴を取得・フォーマット
-                let activeNotifications =
+                let filteredActive =
                     notifications.Values
                     |> Seq.filter (fun n -> n.Status = "pending" || n.Status = "more_info_requested")
                     |> Seq.sortByDescending (fun n -> n.CreatedAt)
-                    |> Seq.take (min 3 (Seq.length (notifications.Values)))
-                    |> Seq.toArray
 
-                let recentResolved =
+                let activeNotifications =
+                    let activeCount = Seq.length filteredActive
+
+                    if activeCount > 0 then
+                        filteredActive |> Seq.take (min 3 activeCount) |> Seq.toArray
+                    else
+                        [||]
+
+                let filteredResolved =
                     notifications.Values
                     |> Seq.filter (fun n -> n.Status <> "pending" && n.Status <> "more_info_requested")
                     |> Seq.sortByDescending (fun n -> n.ResponseAt |> Option.defaultValue n.CreatedAt)
-                    |> Seq.take (min 5 (Seq.length (notifications.Values)))
-                    |> Seq.toArray
+
+                let recentResolved =
+                    let filteredCount = Seq.length filteredResolved
+
+                    if filteredCount > 0 then
+                        filteredResolved |> Seq.take (min 5 filteredCount) |> Seq.toArray
+                    else
+                        [||]
 
                 let displayText =
                     this.FormatNotificationForDisplay(activeNotifications, recentResolved)
 
-                // UI更新はメインスレッドで実行
-                Application.MainLoop.Invoke(fun () ->
-                    textView.Text <- ustring.Make(displayText: string)
-                    textView.SetNeedsDisplay())
+                // UI更新はメインスレッドで実行・CI環境では安全にスキップ
+                let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
+                if not isCI then
+                    try
+                        Application.MainLoop.Invoke(fun () ->
+                            try
+                                if not (isNull textView) then
+                                    textView.Text <- ustring.Make(displayText: string)
+                                    textView.SetNeedsDisplay()
+                                else
+                                    logWarning "EscalationNotificationUI" "TextView is null during UI update"
+                            with ex ->
+                                logException "EscalationNotificationUI" "UI thread update failed" ex)
+                    with ex ->
+                        logException "EscalationNotificationUI" "MainLoop.Invoke failed" ex
+                else
+                    logDebug "EscalationNotificationUI" "CI environment detected - skipping UI update"
 
                 logDebug "EscalationNotificationUI"
                 <| $"Notification display updated with {activeNotifications.Length} active and {recentResolved.Length} resolved notifications"

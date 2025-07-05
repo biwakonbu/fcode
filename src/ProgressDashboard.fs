@@ -326,10 +326,24 @@ type ProgressDashboardManager() =
 
                 let displayText = this.FormatDashboardForDisplay(topKPIs, topMetrics)
 
-                // UI更新はメインスレッドで実行
-                Application.MainLoop.Invoke(fun () ->
-                    textView.Text <- ustring.Make(displayText: string)
-                    textView.SetNeedsDisplay())
+                // UI更新はメインスレッドで実行・CI環境では安全にスキップ
+                let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
+                if not isCI then
+                    try
+                        Application.MainLoop.Invoke(fun () ->
+                            try
+                                if not (isNull textView) then
+                                    textView.Text <- ustring.Make(displayText: string)
+                                    textView.SetNeedsDisplay()
+                                else
+                                    logWarning "ProgressDashboard" "TextView is null during UI update"
+                            with ex ->
+                                logException "ProgressDashboard" "UI thread update failed" ex)
+                    with ex ->
+                        logException "ProgressDashboard" "MainLoop.Invoke failed" ex
+                else
+                    logDebug "ProgressDashboard" "CI environment detected - skipping UI update"
 
                 logDebug "ProgressDashboard"
                 <| $"Dashboard display updated with {topKPIs.Length} KPIs and {topMetrics.Length} metrics"

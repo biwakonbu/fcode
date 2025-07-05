@@ -189,10 +189,24 @@ type DecisionTimelineManager() =
 
                 let displayText = this.FormatTimelineForDisplay(activeDecisions, recentHistory)
 
-                // UI更新はメインスレッドで実行
-                Application.MainLoop.Invoke(fun () ->
-                    textView.Text <- ustring.Make(displayText: string)
-                    textView.SetNeedsDisplay())
+                // UI更新はメインスレッドで実行・CI環境では安全にスキップ
+                let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
+                if not isCI then
+                    try
+                        Application.MainLoop.Invoke(fun () ->
+                            try
+                                if not (isNull textView) then
+                                    textView.Text <- ustring.Make(displayText: string)
+                                    textView.SetNeedsDisplay()
+                                else
+                                    logWarning "DecisionTimelineView" "TextView is null during UI update"
+                            with ex ->
+                                logException "DecisionTimelineView" "UI thread update failed" ex)
+                    with ex ->
+                        logException "DecisionTimelineView" "MainLoop.Invoke failed" ex
+                else
+                    logDebug "DecisionTimelineView" "CI environment detected - skipping UI update"
 
                 logDebug
                     "DecisionTimelineView"

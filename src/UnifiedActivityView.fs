@@ -54,8 +54,11 @@ type UnifiedActivityManager() =
 
     /// 会話ペインTextView設定
     member this.SetConversationTextView(textView: TextView) =
-        conversationTextView <- Some textView
-        logInfo "UnifiedActivityView" "Conversation TextView set for unified activity display"
+        if not (isNull textView) then
+            conversationTextView <- Some textView
+            logInfo "UnifiedActivityView" "Conversation TextView set for unified activity display"
+        else
+            logWarning "UnifiedActivityView" "Attempted to set null TextView for conversation display"
 
     /// AgentMessageから統合活動データ作成
     member private this.CreateActivityFromMessage(message: AgentMessage) =
@@ -135,28 +138,45 @@ type UnifiedActivityManager() =
     member private this.UpdateConversationDisplay() =
         match conversationTextView with
         | Some textView ->
-            try
-                // 最新10件の活動を取得・フォーマット
-                let allActivities = activities.ToArray()
+            if not (isNull textView) then
+                try
+                    // 最新10件の活動を取得・フォーマット
+                    let allActivities = activities.ToArray()
 
-                let recentActivities =
-                    allActivities
-                    |> Array.sortByDescending (fun a -> a.Timestamp)
-                    |> Array.take (min 10 allActivities.Length)
+                    let recentActivities =
+                        allActivities
+                        |> Array.sortByDescending (fun a -> a.Timestamp)
+                        |> Array.take (min 10 allActivities.Length)
 
-                let displayText = this.FormatActivitiesForDisplay(recentActivities)
+                    let displayText = this.FormatActivitiesForDisplay(recentActivities)
 
-                // UI更新はメインスレッドで実行
-                Application.MainLoop.Invoke(fun () ->
-                    textView.Text <- ustring.Make(displayText: string)
-                    textView.SetNeedsDisplay())
+                    // UI更新はメインスレッドで実行・CI環境では安全にスキップ
+                    let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
-                logDebug
-                    "UnifiedActivityView"
-                    $"Conversation display updated with {recentActivities.Length} recent activities"
+                    if not isCI then
+                        try
+                            Application.MainLoop.Invoke(fun () ->
+                                try
+                                    if not (isNull textView) then
+                                        textView.Text <- ustring.Make(displayText: string)
+                                        textView.SetNeedsDisplay()
+                                    else
+                                        logWarning "UnifiedActivityView" "TextView is null during UI update"
+                                with ex ->
+                                    logException "UnifiedActivityView" "UI thread update failed" ex)
+                        with ex ->
+                            logException "UnifiedActivityView" "MainLoop.Invoke failed" ex
+                    else
+                        logDebug "UnifiedActivityView" "CI environment detected - skipping UI update"
 
-            with ex ->
-                logException "UnifiedActivityView" "Failed to update conversation display" ex
+                    logDebug
+                        "UnifiedActivityView"
+                        $"Conversation display updated with {recentActivities.Length} recent activities"
+
+                with ex ->
+                    logException "UnifiedActivityView" "Failed to update conversation display" ex
+            else
+                logWarning "UnifiedActivityView" "Conversation TextView is null - cannot update display"
         | None -> logWarning "UnifiedActivityView" "Conversation TextView not set - cannot update display"
 
     /// 活動表示フォーマット

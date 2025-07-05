@@ -37,8 +37,10 @@ let ``ClaudeCodeIntegrationManager - プロセス起動テスト`` () =
         // 起動テスト（Claude Code CLIが利用できない環境では失敗する）
         let result = manager.StartClaudeCode(workingDir)
 
-        // 結果に関わらず、テスト自体は成功とする（環境依存のため）
-        Assert.True(true)
+        // 結果の検証（模擬環境での動作確認）
+        match result with
+        | Result.Ok message -> Assert.True(message.Contains("シミュレーション"), "模擬環境での成功メッセージ")
+        | Result.Error errorMsg -> Assert.True(errorMsg.Length > 0, "エラーメッセージが有効")
 
         manager.Dispose()
 

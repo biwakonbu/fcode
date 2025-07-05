@@ -1,6 +1,7 @@
 module FCode.RealtimeUIIntegration
 
 open System
+open System.Threading
 open Terminal.Gui
 open FCode.Logger
 open FCode.UnifiedActivityView
@@ -45,6 +46,11 @@ type RealtimeUIIntegrationManager() =
     let mutable currentRetryCount = 0
     let mutable currentDelayMs = backoffConfig.InitialDelayMs
 
+    // Cancellation対応
+    let mutable cancellationTokenSource: CancellationTokenSource option = None
+    let mutable isRunning = false
+    let lockObject = obj ()
+
     /// UIコンポーネント登録
     member this.RegisterUIComponents
         (
@@ -83,13 +89,23 @@ type RealtimeUIIntegrationManager() =
     /// リアルタイムUI更新イベントループ開始
     member this.StartIntegrationEventLoop() =
         async {
+            lock lockObject (fun () ->
+                if isRunning then
+                    logWarning "RealtimeUIIntegration" "既にイベントループが実行中です"
+                    failwith "既にイベントループが実行中です"
+
+                cancellationTokenSource <- Some(new CancellationTokenSource())
+                isRunning <- true)
+
+            let token = cancellationTokenSource.Value.Token
             logInfo "RealtimeUIIntegration" "リアルタイムUI統合イベントループ開始"
 
             // UI更新間隔（1秒間隔でリアルタイム性を向上）
             let updateIntervalMs = 1000
 
-            let rec eventLoop () =
-                async {
+            // 再帰ではなくwhileループで実装
+            try
+                while not token.IsCancellationRequested do
                     try
                         // 1. 進捗情報の更新
                         this.UpdateProgressInformation()
@@ -107,9 +123,12 @@ type RealtimeUIIntegrationManager() =
                         this.ResetBackoffState()
 
                         do! Async.Sleep(updateIntervalMs)
-                        return! eventLoop ()
 
-                    with ex ->
+                    with
+                    | :? OperationCanceledException ->
+                        logInfo "RealtimeUIIntegration" "イベントループがキャンセルされました"
+                        return ()
+                    | ex ->
                         currentRetryCount <- currentRetryCount + 1
 
                         if currentRetryCount >= backoffConfig.MaxRetryAttempts then
@@ -117,7 +136,7 @@ type RealtimeUIIntegrationManager() =
                                 "RealtimeUIIntegration"
                                 $"統合イベントループ最大リトライ回数({backoffConfig.MaxRetryAttempts})到達。終了します: {ex.Message}"
 
-                            return () // ループを終了
+                            return ()
                         else
                             let backoffDelay = this.CalculateBackoffDelay()
 
@@ -126,11 +145,14 @@ type RealtimeUIIntegrationManager() =
                                 $"統合イベントループエラー({currentRetryCount}/{backoffConfig.MaxRetryAttempts}): {ex.Message}。{backoffDelay}ms後にリトライします"
 
                             do! Async.Sleep(backoffDelay)
-                            return! eventLoop ()
-                }
 
-            // バックグラウンドで実行
-            return! eventLoop ()
+            finally
+                lock lockObject (fun () ->
+                    isRunning <- false
+                    cancellationTokenSource |> Option.iter (fun cts -> cts.Dispose())
+                    cancellationTokenSource <- None)
+
+                logInfo "RealtimeUIIntegration" "イベントループ終了"
         }
 
     /// 進捗情報の更新
@@ -200,8 +222,12 @@ type RealtimeUIIntegrationManager() =
         try
             logWarning "RealtimeUIIntegration" $"緊急停止要求: {reason}"
 
-            // リトライカウンタを最大値に設定してループ終了を強制
-            currentRetryCount <- backoffConfig.MaxRetryAttempts
+            lock lockObject (fun () ->
+                // CancellationTokenでループを停止
+                cancellationTokenSource |> Option.iter (fun cts -> cts.Cancel())
+
+                // リトライカウンタを最大値に設定してループ終了を強制
+                currentRetryCount <- backoffConfig.MaxRetryAttempts)
 
             logInfo "RealtimeUIIntegration" "緊急停止完了"
         with ex ->
@@ -213,13 +239,31 @@ type RealtimeUIIntegrationManager() =
             // 緊急停止を実行
             this.EmergencyShutdown("Dispose処理による停止")
 
-            // UIレジストリをクリア
-            uiRegistry <-
-                { ConversationTextView = None
-                  PMTimelineTextView = None
-                  QA1TextView = None
-                  UXTextView = None
-                  AgentTextViews = Map.empty }
+            // 完全に停止するまで待機
+            let mutable waitCount = 0
+
+            while isRunning && waitCount < 50 do // 最大5秒待機
+                System.Threading.Thread.Sleep(100)
+                waitCount <- waitCount + 1
+
+            lock lockObject (fun () ->
+                // CancellationTokenSourceのリソース解放
+                cancellationTokenSource
+                |> Option.iter (fun cts ->
+                    try
+                        cts.Dispose()
+                    with _ ->
+                        ())
+
+                cancellationTokenSource <- None
+
+                // UIレジストリをクリア
+                uiRegistry <-
+                    { ConversationTextView = None
+                      PMTimelineTextView = None
+                      QA1TextView = None
+                      UXTextView = None
+                      AgentTextViews = Map.empty })
 
             logInfo "RealtimeUIIntegration" "RealtimeUIIntegrationManager disposed"
         with ex ->

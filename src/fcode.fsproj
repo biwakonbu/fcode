@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Logger.fs" />
+    <Compile Include="UIAbstractions.fs" />
     <Compile Include="FCodeError.fs" />
     <Compile Include="ColorSchemes.fs" />
     <Compile Include="ConfigurationManager.fs" />

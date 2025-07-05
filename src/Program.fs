@@ -347,48 +347,80 @@ let main argv =
                         logError "AutoStart" $"=== ROOT CAUSE: UI structure investigation completed ==="
                         |> ignore
 
-            // FC-015: Phase 4 UI統合・フルフロー機能初期化（簡易版）
+            // FC-015: Phase 4 UI統合・フルフロー機能初期化（堅牢版）
             logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化開始 ==="
 
-            // UI統合マネージャー初期化
-            use uiIntegrationManager = new RealtimeUIIntegrationManager()
+            try
+                // UI統合マネージャー初期化
+                use uiIntegrationManager = new RealtimeUIIntegrationManager()
 
-            // フルワークフローコーディネーター初期化
-            use fullWorkflowCoordinator = new FullWorkflowCoordinator()
+                // フルワークフローコーディネーター初期化
+                use fullWorkflowCoordinator = new FullWorkflowCoordinator()
 
-            // UI コンポーネント登録
-            match
-                (paneTextViews.TryFind("PM / PdM タイムライン"), paneTextViews.TryFind("qa1"), paneTextViews.TryFind("ux"))
-            with
-            | (Some pmTimelineView, Some qa1View, Some uxView) ->
-                let agentViewsMap =
-                    agentPanes
-                    |> List.choose (fun (paneId, _) ->
-                        paneTextViews.TryFind(paneId) |> Option.map (fun tv -> paneId, tv))
-                    |> Map.ofList
+                // 非同期タスク管理用CancellationTokenSource
+                let integrationCancellationSource = new System.Threading.CancellationTokenSource()
 
-                uiIntegrationManager.RegisterUIComponents(
-                    conversationTextView,
-                    pmTimelineView,
-                    qa1View,
-                    uxView,
-                    agentViewsMap
-                )
+                // UI コンポーネント登録
+                match
+                    (paneTextViews.TryFind("PM / PdM タイムライン"), paneTextViews.TryFind("qa1"), paneTextViews.TryFind("ux"))
+                with
+                | (Some pmTimelineView, Some qa1View, Some uxView) ->
+                    try
+                        let agentViewsMap =
+                            agentPanes
+                            |> List.choose (fun (paneId, _) ->
+                                paneTextViews.TryFind(paneId) |> Option.map (fun tv -> paneId, tv))
+                            |> Map.ofList
 
-                logInfo "Application" "UI統合マネージャー登録完了"
+                        uiIntegrationManager.RegisterUIComponents(
+                            conversationTextView,
+                            pmTimelineView,
+                            qa1View,
+                            uxView,
+                            agentViewsMap
+                        )
 
-                // 統合イベントループ開始（キャンセレーション対応）
-                let integrationLoop = uiIntegrationManager.StartIntegrationEventLoop()
-                Async.Start(integrationLoop)
-                logInfo "Application" "統合イベントループ開始（キャンセレーション管理対応）"
+                        logInfo "Application" "UI統合マネージャー登録完了"
 
-                // 基本機能デモ
-                addSystemActivity "system" SystemMessage "FC-015 Phase 4 UI統合・フルフロー機能が正常に初期化されました"
-                addSystemActivity "PO" TaskAssignment "サンプルワークフロー準備完了 - フルフロー実装進行中"
+                        // 統合イベントループ開始（追跡可能・キャンセル可能）
+                        let integrationLoop = uiIntegrationManager.StartIntegrationEventLoop()
 
-                logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化完了 ==="
+                        let integrationTask =
+                            Async.StartAsTask(integrationLoop, cancellationToken = integrationCancellationSource.Token)
 
-            | _ -> logError "Application" "UI統合に必要なTextViewが見つかりません"
+                        logInfo "Application" "統合イベントループ開始（追跡・キャンセル対応）"
+
+                        // 基本機能デモ
+                        addSystemActivity "system" SystemMessage "FC-015 Phase 4 UI統合・フルフロー機能が正常に初期化されました"
+                        addSystemActivity "PO" TaskAssignment "サンプルワークフロー準備完了 - フルフロー実装進行中"
+
+                        logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化完了 ==="
+
+                        // アプリケーション終了時のクリーンアップ処理を登録
+                        System.AppDomain.CurrentDomain.ProcessExit.Add(fun _ ->
+                            try
+                                logInfo "Application" "アプリケーション終了: 統合イベントループ停止中..."
+                                integrationCancellationSource.Cancel()
+
+                                if not integrationTask.IsCompleted then
+                                    integrationTask.Wait(System.TimeSpan.FromSeconds(5.0)) |> ignore
+
+                                integrationCancellationSource.Dispose()
+                                logInfo "Application" "統合イベントループ正常停止完了"
+                            with ex ->
+                                logError "Application" $"統合イベントループ停止時エラー: {ex.Message}")
+
+                    with ex ->
+                        logError "Application" $"UI統合マネージャー登録エラー: {ex.Message}"
+                        integrationCancellationSource.Dispose()
+
+                | _ ->
+                    logError "Application" "UI統合に必要なTextViewが見つかりません"
+                    integrationCancellationSource.Dispose()
+
+            with ex ->
+                logError "Application" $"FC-015 Phase 4 初期化致命的エラー: {ex.Message}"
+                logError "Application" $"スタックトレース: {ex.StackTrace}"
 
             // UI初期化完了後の遅延自動起動機能で実行するため、即座の自動起動は削除
             logInfo "AutoStart" "Immediate auto-start disabled - will use delayed auto-start after UI completion"

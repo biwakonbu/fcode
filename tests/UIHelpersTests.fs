@@ -245,7 +245,6 @@ type UIHelpersTests() =
         Assert.IsTrue(texts.Contains("type conversion test 2"))
 
     [<Test>]
-    [<Category("Unit")>]
     [<Category("Performance")>]
     member _.``findTextViews - 大量View階層パフォーマンステスト``() =
         // Arrange - 深い階層と多数のViewを持つ構造

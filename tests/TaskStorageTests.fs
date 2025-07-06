@@ -211,6 +211,7 @@ let ``TaskStorageManager progress summary test`` () =
             File.Delete(dbPath)
 
 [<Test>]
+[<Category("Unit")>]
 [<Category("Integration")>]
 let ``TaskRepository save and retrieve test`` () =
     let testDbPath = Path.GetTempFileName()
@@ -257,6 +258,7 @@ let ``TaskRepository save and retrieve test`` () =
             File.Delete(testDbPath)
 
 [<Test>]
+[<Category("Unit")>]
 [<Category("Integration")>]
 let ``AgentRepository state management test`` () =
     let testDbPath = Path.GetTempFileName()
@@ -302,6 +304,7 @@ let ``AgentRepository state management test`` () =
             File.Delete(testDbPath)
 
 [<Test>]
+[<Category("Unit")>]
 [<Category("Integration")>]
 let ``ProgressRepository progress management test`` () =
     let testDbPath = Path.GetTempFileName()

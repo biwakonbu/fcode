@@ -15,6 +15,7 @@ type QAPromptManagerTests() =
     member _.TearDown() = shutdownTerminalGui ()
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QA役割定義テスト``() =
         // Arrange & Act
         let qa1Config = getQAPromptConfig QA1
@@ -28,6 +29,7 @@ type QAPromptManagerTests() =
         Assert.IsNotEmpty(qa2Config.SystemPrompt, "QA2システムプロンプトが設定されていること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QA1専用設定内容テスト``() =
         // Arrange & Act
         let qa1Config = getQAPromptConfig QA1
@@ -43,6 +45,7 @@ type QAPromptManagerTests() =
         Assert.That(qa1Config.SystemPrompt, Does.Contain("境界値分析"), "境界値分析が含まれること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QA2専用設定内容テスト``() =
         // Arrange & Act
         let qa2Config = getQAPromptConfig QA2
@@ -59,6 +62,7 @@ type QAPromptManagerTests() =
         Assert.That(qa2Config.SystemPrompt, Does.Contain("セキュリティ"), "セキュリティが含まれること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ペインIDからQA役割特定テスト``() =
         // Arrange & Act & Assert
         Assert.AreEqual(Some QA1, getQARoleFromPaneId "qa1", "qa1ペインがQA1役割に特定されること")
@@ -72,6 +76,7 @@ type QAPromptManagerTests() =
         Assert.AreEqual(None, getQARoleFromPaneId "pm", "pmペインはQA役割でないこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QA専用環境変数設定テスト``() =
         // Arrange & Act
         let qa1EnvVars = getQAEnvironmentVariables QA1
@@ -97,12 +102,14 @@ type QAPromptManagerTests() =
         Assert.That(qa2EnvMap.["QA_OUTPUT_FORMAT"], Does.Contain("bug_report"), "QA2出力形式")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QA役割表示名テスト``() =
         // Arrange & Act & Assert
         Assert.AreEqual("QA1 (テスト戦略)", getQARoleDisplayName QA1, "QA1表示名が正しいこと")
         Assert.AreEqual("QA2 (品質分析)", getQARoleDisplayName QA2, "QA2表示名が正しいこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QA設定検証機能テスト``() =
         // Arrange
         let validQA1Config = getQAPromptConfig QA1
@@ -122,6 +129,7 @@ type QAPromptManagerTests() =
         Assert.IsFalse(validateQAPromptConfig invalidConfig, "無効な設定は検証に失敗すること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QA設定の一意性テスト``() =
         // Arrange & Act
         let qa1Config = getQAPromptConfig QA1
@@ -134,6 +142,7 @@ type QAPromptManagerTests() =
         Assert.AreNotEqual(qa1Config.TestingApproach, qa2Config.TestingApproach, "QA1とQA2のアプローチが異なること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QAプロンプト内容品質テスト``() =
         // Arrange & Act
         let qa1Config = getQAPromptConfig QA1
@@ -152,6 +161,7 @@ type QAPromptManagerTests() =
         Assert.Greater(qa2Config.SkillFocus.Length, 3, "QA2が十分なスキル重点項目を持つこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QA環境変数統合テスト``() =
         // Arrange
         let qa1EnvVars = getQAEnvironmentVariables QA1
@@ -185,6 +195,7 @@ type QAPromptManagerTests() =
 type QAPromptIntegrationTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QA設定とClaudeCodeProcess統合テスト``() =
         // Arrange - QA役割の設定取得をシミュレート
         let qa1Role = getQARoleFromPaneId "qa1"
@@ -211,6 +222,7 @@ type QAPromptIntegrationTests() =
         | None -> Assert.Fail("qa2ペインからQA役割が特定できない")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QA設定ログ出力統合テスト``() =
         // Arrange
         let qa1Role = QA1
@@ -221,6 +233,7 @@ type QAPromptIntegrationTests() =
         Assert.DoesNotThrow(fun () -> logQAPromptApplication "qa2" qa2Role)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``全QA設定の整合性テスト``() =
         // Arrange
         let allQARoles = [ QA1; QA2 ]

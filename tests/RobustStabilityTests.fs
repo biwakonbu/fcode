@@ -18,6 +18,7 @@ open FCode.DecisionTimelineView
 type RobustStabilityTestSuite() =
 
     [<Test>]
+    [<Category("Stability")>]
     member this.``High volume operations stability``() =
         let activityManager = new UnifiedActivityManager()
 
@@ -41,6 +42,7 @@ type RobustStabilityTestSuite() =
             activityManager.Dispose()
 
     [<Test>]
+    [<Category("Stability")>]
     member this.``Memory pressure resistance test``() =
         let initialMemory = GC.GetTotalMemory(true)
         let managers = ResizeArray<UnifiedActivityManager>()
@@ -71,6 +73,7 @@ type RobustStabilityTestSuite() =
                 manager.Dispose()
 
     [<Test>]
+    [<Category("Stability")>]
     member this.``Resource exhaustion recovery test``() =
         let maxManagers = 1000
         let managers = ResizeArray<UnifiedActivityManager>()
@@ -117,6 +120,7 @@ type RobustStabilityTestSuite() =
                     () // Dispose時の例外は無視
 
     [<Test>]
+    [<Category("Stability")>]
     member this.``Rapid creation and disposal stress test``() =
         let cycles = 1000
 
@@ -148,6 +152,7 @@ type RobustStabilityTestSuite() =
 type LongTermStabilityTestSuite() =
 
     [<Test>]
+    [<Category("Stability")>]
     member this.``Extended runtime stability test``() =
         let activityManager = new UnifiedActivityManager()
         let progressManager = new ProgressDashboardManager()
@@ -191,6 +196,7 @@ type LongTermStabilityTestSuite() =
 type ConcurrencyStressTestSuite() =
 
     [<Test>]
+    [<Category("Stability")>]
     member this.``High concurrency stress test``() =
         let activityManager = new UnifiedActivityManager()
         let threadCount = Environment.ProcessorCount * 4
@@ -218,6 +224,7 @@ type ConcurrencyStressTestSuite() =
             activityManager.Dispose()
 
     [<Test>]
+    [<Category("Stability")>]
     member this.``Resource contention handling test``() =
         let managers = Array.init 20 (fun _ -> new UnifiedActivityManager())
 

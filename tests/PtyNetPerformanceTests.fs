@@ -45,6 +45,7 @@ type PtyNetPerformanceTests() =
 
     /// スループット計測テスト - yesコマンドで60fps相当の大量出力
     [<Test>]
+    [<Category("Performance")>]
     member this.ThroughputTest_YesCommand_60FPS() =
         // CI環境ではパフォーマンステストをスキップ
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
@@ -120,6 +121,7 @@ type PtyNetPerformanceTests() =
 
     /// レイテンシ計測テスト - 99パーセンタイル16ms未満
     [<Test>]
+    [<Category("Performance")>]
     member this.LatencyTest_99Percentile_Under16ms() =
         // CI環境ではパフォーマンステストをスキップ
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))

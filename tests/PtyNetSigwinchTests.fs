@@ -11,6 +11,7 @@ open FCode.Logger
 
 /// PTY Net SIGWINCH検証テスト（ウィンドウリサイズ動作確認）
 [<TestFixture>]
+[<Category("Integration")>]
 type PtyNetSigwinchTests() =
 
     let mutable ptyManager: PtyNetManager option = None
@@ -45,6 +46,7 @@ type PtyNetSigwinchTests() =
 
     /// htopリサイズテスト - 画面サイズ変更時の正しい追従確認
     [<Test>]
+    [<Category("Integration")>]
     member this.SigwinchTest_Htop_Resize() =
         async {
             // htopコマンドの存在確認
@@ -121,6 +123,7 @@ type PtyNetSigwinchTests() =
 
     /// vimリサイズテスト - エディタでのウィンドウサイズ変更対応確認
     [<Test>]
+    [<Category("Integration")>]
     member this.SigwinchTest_Vim_Resize() =
         async {
             // vimコマンドの存在確認

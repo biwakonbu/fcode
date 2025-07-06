@@ -15,6 +15,7 @@ type PMPromptManagerTests() =
     member _.TearDown() = shutdownTerminalGui ()
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PM役割定義テスト``() =
         // Arrange & Act
         let pmConfig = getPMPromptConfig ProjectManager
@@ -28,6 +29,7 @@ type PMPromptManagerTests() =
         Assert.IsNotEmpty(pdmConfig.SystemPrompt, "ProductManagerシステムプロンプトが設定されていること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ProjectManager専用設定内容テスト``() =
         // Arrange & Act
         let pmConfig = getPMPromptConfig ProjectManager
@@ -46,6 +48,7 @@ type PMPromptManagerTests() =
         Assert.AreEqual("agile_kanban", pmEnvMap.["PM_METHODOLOGY"], "PM_METHODOLOGY設定")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ProductManager専用設定内容テスト``() =
         // Arrange & Act
         let pdmConfig = getPMPromptConfig ProductManager
@@ -64,6 +67,7 @@ type PMPromptManagerTests() =
         Assert.AreEqual("lean_startup", pdmEnvMap.["PM_METHODOLOGY"], "PM_METHODOLOGY設定")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ペインIDからPM役割特定テスト``() =
         // Arrange & Act & Assert
         Assert.AreEqual(Some ProjectManager, getPMRoleFromPaneId "pm", "pmペインがProjectManager役割に特定されること")
@@ -77,6 +81,7 @@ type PMPromptManagerTests() =
         Assert.AreEqual(None, getPMRoleFromPaneId "ux", "uxペインはPM役割でないこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PM専用環境変数設定テスト``() =
         // Arrange & Act
         let pmEnvVars = getPMEnvironmentVariables ProjectManager
@@ -102,12 +107,14 @@ type PMPromptManagerTests() =
         Assert.AreEqual("lean_startup", pdmEnvMap.["PM_METHODOLOGY"], "ProductManager手法設定")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PM役割表示名テスト``() =
         // Arrange & Act & Assert
         Assert.AreEqual("プロジェクトマネージャー", getPMRoleDisplayName ProjectManager, "ProjectManager表示名が正しいこと")
         Assert.AreEqual("プロダクトマネージャー", getPMRoleDisplayName ProductManager, "ProductManager表示名が正しいこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PM設定の一意性テスト``() =
         // Arrange & Act
         let pmConfig = getPMPromptConfig ProjectManager
@@ -135,6 +142,7 @@ type PMPromptManagerTests() =
         Assert.AreNotEqual(pdmEnvMap.["PM_METHODOLOGY"], pmEnvMap.["PM_METHODOLOGY"], "PM_METHODOLOGYが異なること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PMプロンプト内容品質テスト``() =
         // Arrange & Act
         let pmConfig = getPMPromptConfig ProjectManager
@@ -157,6 +165,7 @@ type PMPromptManagerTests() =
         Assert.Greater(pdmConfig.EnvironmentVars.Length, 4, "ProductManagerが十分な環境変数を持つこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PM環境変数統合テスト``() =
         // Arrange
         let pmEnvVars = getPMEnvironmentVariables ProjectManager
@@ -186,6 +195,7 @@ type PMPromptManagerTests() =
         Assert.IsTrue(Set.isSubset requiredKeys pdmKeys, "ProductManagerが必須環境変数をすべて含むこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PMログ機能テスト``() =
         // Arrange
         let pmRole = ProjectManager
@@ -200,6 +210,7 @@ type PMPromptManagerTests() =
 type PMPromptIntegrationTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PM設定とClaudeCodeProcess統合テスト``() =
         // Arrange - PM役割の設定取得をシミュレート
         let pmRole = getPMRoleFromPaneId "pm"
@@ -227,6 +238,7 @@ type PMPromptIntegrationTests() =
         | None -> Assert.Fail("timelineペインからPM役割が特定できない")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PM設定ログ出力統合テスト``() =
         // Arrange
         let pmRole = ProjectManager
@@ -237,6 +249,7 @@ type PMPromptIntegrationTests() =
         Assert.DoesNotThrow(fun () -> logPMPromptApplication "PM / PdM タイムライン" pdmRole)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``全PM設定の整合性テスト``() =
         // Arrange
         let allPMRoles = [ ProjectManager; ProductManager ]
@@ -255,6 +268,7 @@ type PMPromptIntegrationTests() =
             Assert.AreEqual(displayName, config.DisplayName, $"{displayName}設定と表示名が一致すること"))
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PM役割とQA/UX役割の独立性テスト``() =
         // Arrange - 他役割との重複がないことを確認
         let pmPaneIds = [ "pm"; "timeline"; "PM"; "PM / PdM タイムライン" ]

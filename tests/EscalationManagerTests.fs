@@ -666,6 +666,7 @@ let ``EscalationManager handles null/empty parameters gracefully`` () =
 /// ==== 統合テスト ====
 
 [<Test>]
+[<Category("Unit")>]
 [<Category("Integration")>]
 let ``Complete escalation workflow from trigger to resolution`` () =
     async {
@@ -726,6 +727,7 @@ let ``Complete escalation workflow from trigger to resolution`` () =
 /// ==== パフォーマンステスト ====
 
 [<Test>]
+[<Category("Unit")>]
 [<Category("Performance")>]
 let ``Large number of escalations performance test`` () =
     async {
@@ -765,6 +767,7 @@ let ``Large number of escalations performance test`` () =
     |> Async.RunSynchronously
 
 [<Test>]
+[<Category("Unit")>]
 [<Category("Performance")>]
 let ``Concurrent escalation resolution performance test`` () =
     async {

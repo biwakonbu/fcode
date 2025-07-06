@@ -18,6 +18,7 @@ open FCode.AgentMessaging
 type CICompatibilityTestSuite() =
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``CI environment should handle UI-less operations``() =
         // CI環境シミュレート
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
@@ -45,6 +46,7 @@ type CICompatibilityTestSuite() =
             Environment.SetEnvironmentVariable("CI", originalCIValue)
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Progress dashboard should work without UI in CI``() =
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
         Environment.SetEnvironmentVariable("CI", "true")
@@ -70,6 +72,7 @@ type CICompatibilityTestSuite() =
             Environment.SetEnvironmentVariable("CI", originalCIValue)
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Escalation manager should work without UI in CI``() =
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
         Environment.SetEnvironmentVariable("CI", "true")
@@ -98,6 +101,7 @@ type CICompatibilityTestSuite() =
             Environment.SetEnvironmentVariable("CI", originalCIValue)
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Decision timeline should work without UI in CI``() =
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
         Environment.SetEnvironmentVariable("CI", "true")
@@ -130,6 +134,7 @@ type CICompatibilityTestSuite() =
 type CIConcurrencyTestSuite() =
 
     [<Test>]
+    [<Category("Integration")>]
     member this.``Multiple managers should work concurrently in CI``() =
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
         Environment.SetEnvironmentVariable("CI", "true")

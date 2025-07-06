@@ -34,6 +34,7 @@ type SessionPersistenceTests() =
             printfn $"テストクリーンアップ警告: {ex.Message}"
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``ストレージディレクトリ初期化テスト``() =
         // 必要なディレクトリが作成されているか確認
         let sessionsDir = Path.Combine(testConfig.StorageDirectory, "sessions")
@@ -45,6 +46,7 @@ type SessionPersistenceTests() =
         Assert.IsTrue(Directory.Exists(configDir), "config ディレクトリが作成されていません")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``セッションID生成テスト``() =
         let sessionId1 = generateSessionId ()
         let sessionId2 = generateSessionId ()
@@ -61,6 +63,7 @@ type SessionPersistenceTests() =
         Assert.IsTrue(sessionId1.Contains("-"), "セッションIDにハイフンが含まれていません")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``会話履歴圧縮・展開テスト``() =
         let originalHistory =
             [ "こんにちは"; "F#でのプログラミングについて教えてください"; "セッション永続化機能を実装中です"; "テストケースを作成しています" ]
@@ -76,6 +79,7 @@ type SessionPersistenceTests() =
         Assert.AreEqual(originalHistory, decompressed)
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``基本的なペイン状態保存・読み込みテスト``() =
         let sessionId = generateSessionId ()
 
@@ -105,6 +109,7 @@ type SessionPersistenceTests() =
         | Error msg -> Assert.Fail($"ペイン状態読み込み失敗: {msg}")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``セッションスナップショット保存・読み込みテスト``() =
         let sessionId = generateSessionId ()
 
@@ -158,6 +163,7 @@ type SessionPersistenceTests() =
         | Error msg -> Assert.Fail($"セッション読み込み失敗: {msg}")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``セッション一覧取得テスト``() =
         // 複数のセッションを作成
         let sessions = [ generateSessionId (); generateSessionId (); generateSessionId () ]
@@ -196,6 +202,7 @@ type SessionPersistenceTests() =
             Assert.IsTrue(sessionIds.Contains(sessionId), $"セッション {sessionId} が一覧に含まれていません")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``アクティブセッション設定・取得テスト``() =
         let sessionId = generateSessionId ()
 
@@ -211,6 +218,7 @@ type SessionPersistenceTests() =
         | Error msg -> Assert.Fail($"アクティブセッション取得失敗: {msg}")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``存在しないセッション読み込みエラーテスト``() =
         let nonExistentSessionId = "non-existent-session"
 
@@ -219,6 +227,7 @@ type SessionPersistenceTests() =
         | Error msg -> Assert.IsTrue(msg.Contains("見つかりません"), $"期待されるエラーメッセージではありません: {msg}")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``空の会話履歴での圧縮・展開テスト``() =
         let emptyHistory: string list = []
 

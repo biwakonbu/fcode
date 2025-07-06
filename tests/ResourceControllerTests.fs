@@ -8,6 +8,7 @@ open FCode.ResourceController
 let Setup () = ()
 
 [<Test>]
+[<Category("Unit")>]
 let ``defaultConfig should have reasonable values`` () =
     Assert.AreEqual(2000, defaultConfig.MonitoringIntervalMs)
     Assert.AreEqual(5000, defaultConfig.CpuThrottleIntervalMs)
@@ -16,11 +17,13 @@ let ``defaultConfig should have reasonable values`` () =
     Assert.AreEqual(10000, defaultConfig.RestartCooldownMs)
 
 [<Test>]
+[<Category("Unit")>]
 let ``ResourceController should create instance successfully`` () =
     let controller = ResourceController(defaultConfig)
     Assert.IsNotNull(controller)
 
 [<Test>]
+[<Category("Unit")>]
 let ``ResourceController Start and Stop should work`` () =
     let controller = ResourceController(defaultConfig)
 
@@ -36,6 +39,7 @@ let ``ResourceController Start and Stop should work`` () =
     Assert.Pass()
 
 [<Test>]
+[<Category("Unit")>]
 let ``ExecuteAction should not throw exceptions`` () =
     let controller = ResourceController(defaultConfig)
 
@@ -50,18 +54,21 @@ let ``ExecuteAction should not throw exceptions`` () =
         Assert.DoesNotThrow(fun () -> controller.ExecuteAction(action))
 
 [<Test>]
+[<Category("Unit")>]
 let ``GetSuspendedPanes should return empty initially`` () =
     let controller = ResourceController(defaultConfig)
     let suspendedPanes = controller.GetSuspendedPanes()
     Assert.AreEqual(0, suspendedPanes.Length)
 
 [<Test>]
+[<Category("Unit")>]
 let ``IsPaneSuspended should return false initially`` () =
     let controller = ResourceController(defaultConfig)
     let isSuspended = controller.IsPaneSuspended("test-pane")
     Assert.IsFalse(isSuspended)
 
 [<Test>]
+[<Category("Unit")>]
 let ``ResourceAction should have proper discrimination`` () =
     let action1 = ThrottleCpu("pane1", 50.0)
     let action2 = ForceGarbageCollection "pane2"
@@ -76,6 +83,7 @@ let ``ResourceAction should have proper discrimination`` () =
     Assert.AreNotEqual(action4, action5)
 
 [<Test>]
+[<Category("Unit")>]
 let ``InterventionStrategy should have valid options`` () =
     let strategies =
         [ GradualThrottling; ImmediateRestart; ProcessSuspension; LoadBalancing ]
@@ -84,6 +92,7 @@ let ``InterventionStrategy should have valid options`` () =
         Assert.IsNotNull(strategy)
 
 [<Test>]
+[<Category("Unit")>]
 let ``globalResourceController should be accessible`` () =
     Assert.IsNotNull(globalResourceController)
 
@@ -94,6 +103,7 @@ let ``globalResourceController should be accessible`` () =
         globalResourceController.Stop())
 
 [<Test>]
+[<Category("Unit")>]
 let ``ResourceController monitoring loop should handle exceptions gracefully`` () =
     let controller = ResourceController(defaultConfig)
 
@@ -106,6 +116,7 @@ let ``ResourceController monitoring loop should handle exceptions gracefully`` (
     Assert.Pass()
 
 [<Test>]
+[<Category("Unit")>]
 let ``ResourceAction should serialize to string properly`` () =
     let actions =
         [ ThrottleCpu("test-pane", 25.0)

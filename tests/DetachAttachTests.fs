@@ -42,6 +42,7 @@ type DetachAttachTests() =
             printfn $"テストクリーンアップ警告: {ex.Message}"
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``プロセスロックファイルパス生成テスト``() =
         let sessionId = "test-session-123"
         let lockFile = getProcessLockFile testConfig sessionId
@@ -57,6 +58,7 @@ type DetachAttachTests() =
         Assert.IsTrue(lockFile.StartsWith(expectedDir))
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``プロセスロック保存・読み込みテスト``() =
         let sessionId = generateSessionId ()
         let currentPid = Process.GetCurrentProcess().Id
@@ -75,6 +77,7 @@ type DetachAttachTests() =
         | None -> Assert.Fail("プロセスロック読み込みが失敗しました")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``プロセスロック削除テスト``() =
         let sessionId = generateSessionId ()
         let currentPid = Process.GetCurrentProcess().Id
@@ -97,12 +100,14 @@ type DetachAttachTests() =
         | None -> () // 正常
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``現在プロセスの生存確認テスト``() =
         let currentPid = Process.GetCurrentProcess().Id
         let isAlive = isProcessAlive currentPid
         Assert.IsTrue(isAlive, "現在のプロセスが生存していないと判定されました")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``存在しないプロセスの生存確認テスト``() =
         // 存在しない可能性の高いプロセスID
         let nonExistentPid = 999999
@@ -110,6 +115,7 @@ type DetachAttachTests() =
         Assert.IsFalse(isAlive, "存在しないプロセスが生存していると判定されました")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``デタッチセッション一覧取得テスト``() =
         let sessionIds = [ generateSessionId (); generateSessionId () ]
         let currentPid = Process.GetCurrentProcess().Id
@@ -131,6 +137,7 @@ type DetachAttachTests() =
             Assert.IsTrue(detachedSessionIds.Contains(sessionId), $"デタッチセッション {sessionId} が一覧に含まれていません")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``存在しないセッションのアタッチテスト``() =
         let nonExistentSessionId = "non-existent-session"
 
@@ -142,6 +149,7 @@ type DetachAttachTests() =
         | _ -> Assert.Fail("存在しないセッションに対して適切なエラーが返されませんでした")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``復旧候補セッション検索テスト``() =
         // 最近のセッションを作成
         let recentSessionId = generateSessionId ()
@@ -205,6 +213,7 @@ type DetachAttachTests() =
         Assert.IsFalse(recoverableIds.Contains(oldSessionId), "古いセッションが復旧候補に含まれています")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``孤立プロセスロック清理テスト``() =
         let sessionId = generateSessionId ()
         let fakePid = 999999 // 存在しないプロセスID

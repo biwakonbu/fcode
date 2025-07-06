@@ -6,6 +6,7 @@ open FCode.ClaudeCodeProcess
 open System.IO
 
 [<TestFixture>]
+[<Category("Integration")>]
 type ClaudeCodeProcessTests() =
 
     let mutable sessionManager: SessionManager option = None
@@ -37,12 +38,14 @@ type ClaudeCodeProcessTests() =
             () // Not initialized or already shutdown
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``SessionManager初期化テスト``() =
         match sessionManager with
         | Some manager -> Assert.AreEqual(0, manager.GetActiveSessionCount(), "初期状態でアクティブセッション数が0であること")
         | None -> Assert.Fail("SessionManagerが初期化されていない")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``セッション状態確認テスト``() =
         match sessionManager with
         | Some manager ->
@@ -52,6 +55,7 @@ type ClaudeCodeProcessTests() =
         | None -> Assert.Fail("SessionManagerが初期化されていない")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``無効なセッション停止テスト``() =
         match sessionManager with
         | Some manager ->
@@ -62,6 +66,7 @@ type ClaudeCodeProcessTests() =
         | None -> Assert.Fail("SessionManagerが初期化されていない")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``セッション入力送信テスト - 非アクティブセッション``() =
         match sessionManager with
         | Some manager ->
@@ -73,6 +78,7 @@ type ClaudeCodeProcessTests() =
         | None -> Assert.Fail("SessionManagerが初期化されていない")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``アクティブセッション数カウントテスト``() =
         match sessionManager with
         | Some manager ->
@@ -83,6 +89,7 @@ type ClaudeCodeProcessTests() =
         | None -> Assert.Fail("SessionManagerが初期化されていない")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``全セッションクリーンアップテスト``() =
         match sessionManager with
         | Some manager ->
@@ -93,6 +100,7 @@ type ClaudeCodeProcessTests() =
         | None -> Assert.Fail("SessionManagerが初期化されていない")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``重複セッション起動テスト - モック``() =
         // CI環境ではスキップ（実際のプロセス起動が必要）
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))

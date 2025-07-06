@@ -378,6 +378,7 @@ type EscalationNotificationUITests() =
             Assert.AreEqual(expectedStatus, notification.Status))
 
     [<Test>]
+    [<Category("Unit")>]
     [<Category("Integration")>]
     member _.``Global EscalationNotificationManager Usage Test``() =
         // グローバルエスカレーション通知管理使用テスト
@@ -405,6 +406,7 @@ type EscalationNotificationUITests() =
         Assert.AreEqual(EscalationUrgency.Urgent, latestNotification.Urgency)
 
     [<Test>]
+    [<Category("Unit")>]
     [<Category("Integration")>]
     member _.``Global Functions Integration Test``() =
         // グローバル関数統合テスト

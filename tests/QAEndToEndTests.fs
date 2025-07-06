@@ -46,6 +46,7 @@ type QAEndToEndTests() =
         shutdownTerminalGui ()
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``QA1ペイン専用プロンプト適用E2Eテスト``() =
         // CI環境ではスキップ
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
@@ -84,6 +85,7 @@ type QAEndToEndTests() =
             | _ -> Assert.Fail("SessionManagerまたはTextViewの初期化に失敗")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``QA2ペイン専用プロンプト適用E2Eテスト``() =
         // CI環境ではスキップ
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
@@ -110,6 +112,7 @@ type QAEndToEndTests() =
             | _ -> Assert.Fail("SessionManagerまたはTextViewの初期化に失敗")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``QA1とQA2の設定独立性E2Eテスト``() =
         // Arrange & Act
         let qa1Config = getQAPromptConfig QA1
@@ -132,6 +135,7 @@ type QAEndToEndTests() =
         Assert.That(qa2Config.SystemPrompt, Does.Contain("品質分析"), "QA2が品質分析に特化")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``dev1-3とqa1-2の役割分離E2Eテスト``() =
         // Arrange & Act - dev1-3ペインはQA設定対象外であることを確認
         let devRoles = [ "dev1"; "dev2"; "dev3" ] |> List.map getQARoleFromPaneId
@@ -151,6 +155,7 @@ type QAEndToEndTests() =
 type QAMultiPaneIntegrationTests() =
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``複数QAペイン同時設定適用テスト``() =
         // Arrange - 複数QAペインの同時設定シミュレーション
         let qa1Role = getQARoleFromPaneId "qa1"
@@ -190,6 +195,7 @@ type QAMultiPaneIntegrationTests() =
         | _ -> Assert.Fail("QA環境変数の取得に失敗")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``QA設定の並行処理安全性テスト``() =
         // Arrange - 並行処理でのQA設定取得テスト
         let qaRoles = [ QA1; QA2 ]

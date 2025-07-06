@@ -43,6 +43,7 @@ type UXEndToEndTests() =
         shutdownTerminalGui ()
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``UXペイン専用プロンプト適用E2Eテスト``() =
         // CI環境ではスキップ
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
@@ -82,6 +83,7 @@ type UXEndToEndTests() =
             | _ -> Assert.Fail("SessionManagerまたはTextViewの初期化に失敗")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``UX設定の独立性確認テスト``() =
         // Arrange & Act
         let uxConfig = getUXPromptConfig UX
@@ -99,6 +101,7 @@ type UXEndToEndTests() =
         Assert.That(uxEnvVars.["UX_FOCUS_AREA"], Does.Contain("accessibility"), "アクセシビリティフォーカス")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``dev・qa・uxの役割分離E2Eテスト``() =
         // Arrange & Act - dev1-3, qa1-2ペインはUX設定対象外であることを確認
         let devRoles = [ "dev1"; "dev2"; "dev3" ] |> List.map getUXRoleFromPaneId
@@ -121,6 +124,7 @@ type UXEndToEndTests() =
 type UXMultiPaneIntegrationTests() =
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``全ペイン役割分離統合テスト``() =
         // Arrange - 全ペインの役割設定確認
         let devRole = "dev1"
@@ -142,6 +146,7 @@ type UXMultiPaneIntegrationTests() =
         | None -> Assert.Fail("UX役割の特定に失敗")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``UX設定の並行処理安全性テスト``() =
         // Arrange - 並行処理でのUX設定取得テスト
         let uxRole = UX
@@ -167,6 +172,7 @@ type UXMultiPaneIntegrationTests() =
             Assert.AreEqual("UX (UI/UXデザイン)", displayName, "並行処理でも役割名が正しいこと"))
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``UXログ出力の競合状態テスト``() =
         // Arrange - 同時ログ出力でのスレッドセーフティテスト
         let testTasks =
@@ -191,6 +197,7 @@ type UXMultiPaneIntegrationTests() =
             |> List.iter (fun task -> Assert.IsTrue(task.Result, "競合状態でも設定検証が成功すること")))
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``6ペイン同時設定適用シミュレーションテスト``() =
         // Arrange - dev1-3, qa1-2, ux の6ペイン同時設定
         let allPanes = [ "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux" ]

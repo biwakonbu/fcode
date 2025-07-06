@@ -53,6 +53,7 @@ type PMEndToEndTests() =
                 ()
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``PMペイン完全フロー統合テスト - PM専用設定から動作確認まで``() =
         task {
             // Arrange
@@ -98,6 +99,7 @@ type PMEndToEndTests() =
         }
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``PM timelineペイン統合テスト - timeline専用設定検証``() =
         task {
             // Arrange
@@ -134,6 +136,7 @@ type PMEndToEndTests() =
         }
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``PM vs ProductManager役割差分テスト``() =
         task {
             // Arrange & Act
@@ -183,6 +186,7 @@ type PMEndToEndTests() =
         }
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``PM設定と他ロール設定の独立性テスト``() =
         task {
             // Arrange - 各ペインIDでの役割特定テスト
@@ -207,6 +211,7 @@ type PMEndToEndTests() =
         }
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``PM全機能統合動作テスト``() =
         task {
             // Arrange
@@ -234,6 +239,7 @@ type PMEndToEndTests() =
         }
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``PM統合管理機能特化テスト``() =
         task {
             // Arrange
@@ -252,6 +258,7 @@ type PMEndToEndTests() =
         }
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``PM品質保証機能テスト``() =
         task {
             // Arrange

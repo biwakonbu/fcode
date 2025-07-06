@@ -16,6 +16,7 @@ open FCode.ProgressDashboard
 type TestStrategyValidationSuite() =
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``SOLID design refactoring Phase 1-2 completion verification``() =
         // Phase 1完了確認: 責務分離と依存性注入
         let activityManager = new UnifiedActivityManager()
@@ -51,6 +52,7 @@ type TestStrategyValidationSuite() =
             progressManager.Dispose()
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Error handling and concurrency safety verification``() =
         let activityManager = new UnifiedActivityManager()
 
@@ -81,6 +83,7 @@ type TestStrategyValidationSuite() =
                     ()
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``CI environment compatibility verification``() =
         // CI環境シミュレート
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
@@ -110,6 +113,7 @@ type TestStrategyValidationSuite() =
             Environment.SetEnvironmentVariable("CI", originalCIValue)
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Resource management and memory leak prevention verification``() =
         let initialMemory = GC.GetTotalMemory(true)
 
@@ -134,6 +138,7 @@ type TestStrategyValidationSuite() =
         Assert.Pass("Resource management and memory leak prevention verified")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Phase 3 test strategy enhancement completion verification``() =
         // Phase 3の完了確認
         // 1. SOLID設計テストの存在
@@ -164,6 +169,7 @@ type TestStrategyValidationSuite() =
 type CIRobustnessTestSuite() =
 
     [<Test>]
+    [<Category("Integration")>]
     member this.``System stability under CI environment constraints``() =
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
         Environment.SetEnvironmentVariable("CI", "true")

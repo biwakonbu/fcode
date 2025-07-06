@@ -27,6 +27,7 @@ type PtyNetRealWorldTests() =
 
     /// 基本コマンドテスト - ls, echo, date
     [<Test>]
+    [<Category("Unit")>]
     member _.BasicCommands_Success() =
         async {
             match ptyManager with
@@ -76,6 +77,7 @@ type PtyNetRealWorldTests() =
 
     /// 存在しないコマンドのエラーハンドリングテスト
     [<Test>]
+    [<Category("Unit")>]
     member _.NonExistentCommand_ErrorHandling() =
         async {
             match ptyManager with
@@ -106,6 +108,7 @@ type PtyNetRealWorldTests() =
 
     /// 複数セッション同時実行テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.MultipleSessionsConcurrent_Isolation() =
         async {
             match ptyManager with
@@ -185,6 +188,7 @@ type PtyNetRealWorldTests() =
 
     /// 長時間実行コマンドと中断テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.LongRunningCommand_EarlyTermination() =
         async {
             match ptyManager with
@@ -241,6 +245,7 @@ type PtyNetRealWorldTests() =
 
     /// セキュリティテスト - コマンドインジェクション耐性
     [<Test>]
+    [<Category("Unit")>]
     member _.SecurityTest_CommandInjectionResistance() =
         async {
             match ptyManager with

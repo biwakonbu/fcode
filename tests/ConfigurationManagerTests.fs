@@ -26,6 +26,7 @@ let cleanupTempDir (dir: string) =
 type ConfigurationManagerTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``DefaultConfiguration should have valid structure``() =
         let config = defaultConfiguration
 
@@ -35,6 +36,7 @@ type ConfigurationManagerTests() =
         Assert.AreEqual(None, config.ClaudeConfig.ProjectPath)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``DefaultPaneConfigs should include all required panes``() =
         let paneIds = defaultPaneConfigs |> Array.map (_.PaneId) |> Set.ofArray
 
@@ -44,6 +46,7 @@ type ConfigurationManagerTests() =
         Assert.AreEqual(expectedPanes, paneIds)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PaneConfigs should have differentiated roles``() =
         let roles = defaultPaneConfigs |> Array.map (_.Role) |> Set.ofArray
 
@@ -57,6 +60,7 @@ type ConfigurationManagerTests() =
         Assert.AreEqual(7, nonConversationRoles.Count, "Each role should be unique")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``Senior engineer should have highest resource allocation``() =
         let dev1Config = defaultPaneConfigs |> Array.find (fun p -> p.PaneId = "dev1")
         let otherConfigs = defaultPaneConfigs |> Array.filter (fun p -> p.PaneId <> "dev1")
@@ -65,6 +69,7 @@ type ConfigurationManagerTests() =
         Assert.AreEqual("senior_engineer", dev1Config.Role)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``DefaultKeyBindings should include essential actions``() =
         let actions = defaultKeyBindings |> Array.map (_.Action) |> Set.ofArray
 
@@ -74,6 +79,7 @@ type ConfigurationManagerTests() =
         Assert.IsTrue(actions.IsSupersetOf(essentialActions))
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ConfigurationManager should initialize with defaults``() =
         let manager = ConfigurationManager()
         let config = manager.GetConfiguration()
@@ -82,6 +88,7 @@ type ConfigurationManagerTests() =
         Assert.AreEqual(9, config.PaneConfigs.Length)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``GetPaneConfig should return correct pane configuration``() =
         let manager = ConfigurationManager()
 
@@ -90,6 +97,7 @@ type ConfigurationManagerTests() =
         Assert.AreEqual("senior_engineer", dev1Config.Value.Role)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``GetPaneConfig should return None for non-existent pane``() =
         let manager = ConfigurationManager()
 
@@ -97,6 +105,7 @@ type ConfigurationManagerTests() =
         Assert.IsTrue(nonExistentConfig.IsNone)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``GetKeyBinding should return correct key binding``() =
         let manager = ConfigurationManager()
 
@@ -105,6 +114,7 @@ type ConfigurationManagerTests() =
         Assert.AreEqual("Ctrl+X Ctrl+C", exitBinding.Value.KeySequence)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UpdateClaudeConfig should update configuration correctly``() =
         let manager = ConfigurationManager()
 
@@ -121,6 +131,7 @@ type ConfigurationManagerTests() =
         Assert.AreEqual(Some "/test/project", config.ClaudeConfig.ProjectPath)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UpdatePaneConfig should update specific pane configuration``() =
         let manager = ConfigurationManager()
 
@@ -137,6 +148,7 @@ type ConfigurationManagerTests() =
         Assert.AreEqual(Some "Updated system prompt", dev1Config.Value.SystemPrompt)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UpdateKeyBinding should update specific key binding``() =
         let manager = ConfigurationManager()
 
@@ -158,6 +170,7 @@ type ConfigurationFileTests() =
     member _.Cleanup() = cleanupTempDir (tempDir)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``SaveConfiguration should create valid JSON file``() =
         let manager = ConfigurationManager()
         let originalGetPath = manager.GetConfigPath
@@ -177,6 +190,7 @@ type ConfigurationFileTests() =
             Assert.IsTrue(File.Exists(actualConfigPath))
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``LoadConfiguration should read saved configuration``() =
         let manager = ConfigurationManager()
 
@@ -203,6 +217,7 @@ type ConfigurationFileTests() =
             Assert.AreEqual(Some "test-key", loadedConfig.ClaudeConfig.ApiKey)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``CreateDefaultConfiguration should create and save defaults``() =
         let manager = ConfigurationManager()
 
@@ -218,6 +233,7 @@ type ConfigurationFileTests() =
 type ConfigurationValidationTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ValidateConfiguration should detect Claude CLI availability``() =
         let manager = ConfigurationManager()
 
@@ -228,6 +244,7 @@ type ConfigurationValidationTests() =
         Assert.IsInstanceOf<string[]>(errors)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``LoadEnvironmentOverrides should apply environment variables``() =
         // 環境変数を設定
         Environment.SetEnvironmentVariable("CLAUDE_CLI_PATH", "/env/claude")
@@ -249,6 +266,7 @@ type ConfigurationValidationTests() =
 type ConfigurationStructureTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PaneConfig should have valid default values``() =
         let dev1Config = defaultPaneConfigs |> Array.find (fun p -> p.PaneId = "dev1")
 
@@ -256,6 +274,7 @@ type ConfigurationStructureTests() =
         Assert.IsTrue(dev1Config.SystemPrompt.IsSome)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``KeyBindingConfig should have required fields``() =
         let exitBinding =
             defaultKeyBindings |> Array.find (fun kb -> kb.Action = "ExitApplication")
@@ -264,6 +283,7 @@ type ConfigurationStructureTests() =
         Assert.IsNotEmpty(exitBinding.Description)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ResourceConfig should have reasonable defaults``() =
         let config = defaultConfiguration
 
@@ -271,6 +291,7 @@ type ConfigurationStructureTests() =
         Assert.AreEqual(Some 2000, config.ResourceConfig.MonitoringIntervalMs)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UIConfig should have valid defaults``() =
         let config = defaultConfiguration
 

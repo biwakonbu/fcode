@@ -10,6 +10,7 @@ type MockFrameViewTests() =
 
     /// MockFrameView基本機能テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.``MockFrameView basic properties test``() =
         let mockView = new MockFrameView("test-pane")
 
@@ -23,6 +24,7 @@ type MockFrameViewTests() =
 
     /// MockFrameView ColorScheme変更追跡テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.``MockFrameView color scheme tracking test``() =
         let mockView = new MockFrameView("test-pane")
         let originalScheme = mockView.ColorScheme
@@ -36,6 +38,7 @@ type MockFrameViewTests() =
 
     /// ITestableView インターフェース実装テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.``MockFrameView ITestableView interface test``() =
         let mockView = new MockFrameView("test-pane") :> ITestableView
 
@@ -48,6 +51,7 @@ type MockFrameViewTests() =
 
     /// createMockFrameViewArray テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.``createMockFrameViewArray creates correct array``() =
         let mockViews = createMockFrameViewArray 5 "test"
 
@@ -63,6 +67,7 @@ type MockFrameViewTests() =
 
     /// createMockFrameViewSingle テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.``createMockFrameViewSingle creates single view``() =
         let mockView = createMockFrameViewSingle "single-test"
 
@@ -71,6 +76,7 @@ type MockFrameViewTests() =
 
     /// TestFrameView下位互換性テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.``TestFrameView backward compatibility test``() =
         let testView = new TestFrameView("compat-test")
 
@@ -86,6 +92,7 @@ type MockFrameViewTests() =
 
     /// UI依存性分離テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.``MockFrameView UI independence test``() =
         let testPassed =
             validateUIIndependence (fun () ->
@@ -102,6 +109,7 @@ type MockFrameViewTests() =
 
     /// 並行MockFrameView操作テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.``MockFrameView concurrent operations test``() =
         let mockViews = createMockFrameViewArray 10 "concurrent"
 
@@ -127,6 +135,7 @@ type MockFrameViewTests() =
 
     /// MockFrameView初期化タイムスタンプテスト
     [<Test>]
+    [<Category("Unit")>]
     member _.``MockFrameView initialization timestamp test``() =
         let beforeCreation = System.DateTime.UtcNow
         System.Threading.Thread.Sleep(1) // 1ms待機でタイムスタンプ差を確保
@@ -146,6 +155,7 @@ type MockFrameViewPerformanceTests() =
 
     /// 大量MockFrameView作成パフォーマンステスト
     [<Test>]
+    [<Category("Performance")>]
     member _.``MockFrameView performance test large array``() =
         let startTime = System.DateTime.UtcNow
         let largeArray = createMockFrameViewArray 1000 "perf"
@@ -167,6 +177,7 @@ type MockFrameViewIntegrationTests() =
 
     /// createTestableFrameView CI環境対応テスト
     [<Test>]
+    [<Category("Integration")>]
     member _.``createTestableFrameView CI environment handling``() =
         // CI環境の状態を保存
         let originalCIValue = System.Environment.GetEnvironmentVariable("CI")

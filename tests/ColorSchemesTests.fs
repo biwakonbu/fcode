@@ -16,6 +16,7 @@ type ColorSchemesTests() =
     member _.TearDown() = shutdownTerminalGui ()
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``カラースキーム定義の存在テスト``() =
         // 各カラースキームが定義されていることを確認
         Assert.IsNotNull(chatScheme, "chatSchemeが定義されていること")
@@ -25,6 +26,7 @@ type ColorSchemesTests() =
         Assert.IsNotNull(pmScheme, "pmSchemeが定義されていること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``カラースキームの属性設定テスト``() =
         // カラースキームの基本属性が設定されていることを確認
         Assert.IsNotNull(chatScheme.Normal, "chatScheme.Normalが設定されていること")
@@ -33,6 +35,7 @@ type ColorSchemesTests() =
         Assert.IsNotNull(chatScheme.HotFocus, "chatScheme.HotFocusが設定されていること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``開発者ペイン用カラースキーム適用テスト``() =
         let frameView = createTestableFrameView "test"
 
@@ -49,6 +52,7 @@ type ColorSchemesTests() =
         Assert.AreEqual(devScheme, frameView.ColorScheme, "dev3にdevSchemeが適用されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``QAペイン用カラースキーム適用テスト``() =
         let frameView = createTestableFrameView "test"
 
@@ -61,6 +65,7 @@ type ColorSchemesTests() =
         Assert.AreEqual(qaScheme, frameView.ColorScheme, "qa2にqaSchemeが適用されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UXペイン用カラースキーム適用テスト``() =
         let frameView = createTestableFrameView "test"
 
@@ -68,6 +73,7 @@ type ColorSchemesTests() =
         Assert.AreEqual(uxScheme, frameView.ColorScheme, "uxにuxSchemeが適用されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``PMペイン用カラースキーム適用テスト``() =
         let frameView = createTestableFrameView "test"
 
@@ -84,6 +90,7 @@ type ColorSchemesTests() =
         Assert.AreEqual(pmScheme, frameView.ColorScheme, "timelineにpmSchemeが適用されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``会話ペイン用カラースキーム適用テスト``() =
         let frameView = createTestableFrameView "test"
 
@@ -96,6 +103,7 @@ type ColorSchemesTests() =
         Assert.AreEqual(chatScheme, frameView.ColorScheme, "会話にchatSchemeが適用されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``大文字小文字を無視したカラースキーム適用テスト``() =
         let frameView = createTestableFrameView "test"
 
@@ -108,6 +116,7 @@ type ColorSchemesTests() =
         Assert.AreEqual(qaScheme, frameView.ColorScheme, "Qa1（混合ケース）にqaSchemeが適用されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``未定義役割のデフォルトカラースキーム適用テスト``() =
         let frameView = createTestableFrameView "test"
 
@@ -120,6 +129,7 @@ type ColorSchemesTests() =
         Assert.AreEqual(devScheme, frameView.ColorScheme, "空文字列にはdevScheme（デフォルト）が適用されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``カラースキーム統一テスト``() =
         // 現在は全カラースキームが統一されたdefaultSchemeを使用していることを確認
         Assert.AreEqual(devScheme, chatScheme, "chatSchemeとdevSchemeは同じこと（統一カラー）")
@@ -128,6 +138,7 @@ type ColorSchemesTests() =
         Assert.AreEqual(pmScheme, uxScheme, "uxSchemeとpmSchemeは同じこと（統一カラー）")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``複数ペインへの同時適用テスト``() =
         let dev1Pane = createTestableFrameView "dev1"
         let dev2Pane = createTestableFrameView "dev2"

@@ -49,6 +49,7 @@ type KeyBindingsTests() =
             () // Not initialized or already shutdown
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``キーアクション型のテスト``() =
         // キーアクションの型安全性テスト
         let exitAction = Exit
@@ -60,6 +61,7 @@ type KeyBindingsTests() =
         Assert.AreEqual(FocusPane 3, focusPaneAction)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``Emacsキーバインド定義のテスト``() =
         // キーバインド定義の存在確認
         let hasExitBinding =
@@ -80,6 +82,7 @@ type KeyBindingsTests() =
         Assert.IsTrue(hasNextPaneBinding, "Ctrl+X O による次ペイン移動バインドが存在すること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``EmacsKeyHandlerの初期化テスト``() =
         let panes = createMockFrameViews ()
         let handler = EmacsKeyHandler(panes, createMockSessionManager ())
@@ -87,6 +90,7 @@ type KeyBindingsTests() =
         Assert.AreEqual(0, handler.CurrentPaneIndex, "初期ペインインデックスは0であること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ペインインデックス設定テスト``() =
         let panes = createMockFrameViews ()
         let handler = EmacsKeyHandler(panes, createMockSessionManager ())
@@ -104,6 +108,7 @@ type KeyBindingsTests() =
         Assert.AreEqual(3, handler.CurrentPaneIndex, "範囲外のインデックスは無視されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``シングルキーバインドテスト``() =
         // CI環境ではスキップ（Terminal.Gui Application.Refresh依存）
         skipIfCI ()
@@ -117,6 +122,7 @@ type KeyBindingsTests() =
         Assert.IsTrue(handled, "Ctrl+L キーが処理されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``マルチキーシーケンステスト``() =
         skipIfCI ()
         let panes = createMockFrameViews ()
@@ -136,6 +142,7 @@ type KeyBindingsTests() =
         Assert.AreEqual(1, handler.CurrentPaneIndex, "次のペインに移動していること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``キーシーケンスタイムアウトテスト``() =
         let panes = createMockFrameViews ()
         let handler = EmacsKeyHandler(panes, createMockSessionManager ())
@@ -152,6 +159,7 @@ type KeyBindingsTests() =
         Assert.IsFalse(invalidHandled, "無効なキーシーケンスは処理されないこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ダイレクトペイン移動テスト``() =
         skipIfCI ()
         let panes = createMockFrameViews ()
@@ -168,6 +176,7 @@ type KeyBindingsTests() =
         Assert.AreEqual(3, handler.CurrentPaneIndex, "指定ペインに移動していること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``前ペイン移動テスト``() =
         skipIfCI ()
         let panes = createMockFrameViews ()
@@ -187,6 +196,7 @@ type KeyBindingsTests() =
         Assert.AreEqual(1, handler.CurrentPaneIndex, "前のペインに移動していること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ペイン移動の循環テスト``() =
         skipIfCI ()
         let panes = createMockFrameViews ()
@@ -214,6 +224,7 @@ type KeyBindingsTests() =
         Assert.AreEqual(7, handler.CurrentPaneIndex, "最初のペインから最後のペインに循環すること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``Ctrl-X Ctrl-C終了コマンドテスト``() =
         // CI環境ではスキップ（Terminal.Gui Application.RequestStop依存）
         skipIfCI ()

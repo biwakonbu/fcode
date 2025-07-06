@@ -19,6 +19,7 @@ open FCode.AgentMessaging
 type ComprehensiveIntegrationTestSuite() =
 
     [<Test>]
+    [<Category("Integration")>]
     member this.``Full system integration with all managers``() =
         let activityManager = new UnifiedActivityManager()
         let progressManager = new ProgressDashboardManager()
@@ -87,6 +88,7 @@ type ComprehensiveIntegrationTestSuite() =
             decisionManager.Dispose()
 
     [<Test>]
+    [<Category("Integration")>]
     member this.``Agent message processing integration``() =
         let activityManager = new UnifiedActivityManager()
         let progressManager = new ProgressDashboardManager()

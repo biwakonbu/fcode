@@ -15,6 +15,7 @@ type UXPromptManagerTests() =
     member _.TearDown() = shutdownTerminalGui ()
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UX役割定義テスト``() =
         // Arrange & Act
         let uxConfig = getUXPromptConfig UX
@@ -24,6 +25,7 @@ type UXPromptManagerTests() =
         Assert.IsNotEmpty(uxConfig.SystemPrompt, "UXシステムプロンプトが設定されていること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UX専用設定内容テスト``() =
         // Arrange & Act
         let uxConfig = getUXPromptConfig UX
@@ -41,6 +43,7 @@ type UXPromptManagerTests() =
         Assert.That(uxConfig.SystemPrompt, Does.Contain("ワイヤーフレーム"), "ワイヤーフレームが含まれること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ペインIDからUX役割特定テスト``() =
         // Arrange & Act & Assert
         Assert.AreEqual(Some UX, getUXRoleFromPaneId "ux", "uxペインがUX役割に特定されること")
@@ -52,6 +55,7 @@ type UXPromptManagerTests() =
         Assert.AreEqual(None, getUXRoleFromPaneId "pm", "pmペインはUX役割でないこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UX専用環境変数設定テスト``() =
         // Arrange & Act
         let uxEnvVars = getUXEnvironmentVariables UX
@@ -70,11 +74,13 @@ type UXPromptManagerTests() =
         Assert.That(uxEnvMap.["UX_OUTPUT_FORMAT"], Does.Contain("wireframe"), "UX出力形式")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UX役割表示名テスト``() =
         // Arrange & Act & Assert
         Assert.AreEqual("UX (UI/UXデザイン)", getUXRoleDisplayName UX, "UX表示名が正しいこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UX設定検証機能テスト``() =
         // Arrange
         let validUXConfig = getUXPromptConfig UX
@@ -92,6 +98,7 @@ type UXPromptManagerTests() =
         Assert.IsFalse(validateUXPromptConfig invalidConfig, "無効な設定は検証に失敗すること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UXプロンプト内容品質テスト``() =
         // Arrange & Act
         let uxConfig = getUXPromptConfig UX
@@ -108,6 +115,7 @@ type UXPromptManagerTests() =
         Assert.Greater(uxConfig.SkillFocus.Length, 3, "UXが十分なスキル重点項目を持つこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UX環境変数統合テスト``() =
         // Arrange
         let uxEnvVars = getUXEnvironmentVariables UX
@@ -136,6 +144,7 @@ type UXPromptManagerTests() =
 type UXPromptIntegrationTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UX設定とClaudeCodeProcess統合テスト``() =
         // Arrange - UX役割の設定取得をシミュレート
         let uxRole = getUXRoleFromPaneId "ux"
@@ -152,6 +161,7 @@ type UXPromptIntegrationTests() =
         | None -> Assert.Fail("uxペインからUX役割が特定できない")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UX設定ログ出力統合テスト``() =
         // Arrange
         let uxRole = UX
@@ -160,6 +170,7 @@ type UXPromptIntegrationTests() =
         Assert.DoesNotThrow(fun () -> logUXPromptApplication "ux" uxRole)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``UX設定の整合性テスト``() =
         // Arrange
         let uxRole = UX
@@ -175,6 +186,7 @@ type UXPromptIntegrationTests() =
         Assert.IsNotEmpty(displayName, $"{displayName}表示名が設定されていること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``dev・qa・uxペインの役割分離統合テスト``() =
         // Arrange & Act - dev1-3/qa1-2ペインはUX設定対象外であることを確認
         let devRoles = [ "dev1"; "dev2"; "dev3" ] |> List.map getUXRoleFromPaneId

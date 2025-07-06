@@ -8,6 +8,7 @@ open FCode.ResourceMonitor
 let Setup () = ()
 
 [<Test>]
+[<Category("Unit")>]
 let ``defaultThresholds should have reasonable values`` () =
     Assert.AreEqual(50.0, defaultThresholds.MaxCpuPerProcess)
     Assert.AreEqual(512.0, defaultThresholds.MaxMemoryPerProcessMB)
@@ -16,17 +17,20 @@ let ``defaultThresholds should have reasonable values`` () =
     Assert.AreEqual(7, defaultThresholds.MaxActiveConnections)
 
 [<Test>]
+[<Category("Unit")>]
 let ``ResourceMonitor should create instance successfully`` () =
     let monitor = ResourceMonitor()
     Assert.IsNotNull(monitor)
 
 [<Test>]
+[<Category("Unit")>]
 let ``GetProcessMetrics should return None for invalid process`` () =
     let monitor = ResourceMonitor()
     let result = monitor.GetProcessMetrics("test-pane", 99999)
     Assert.IsNull(result)
 
 [<Test>]
+[<Category("Unit")>]
 let ``GetProcessMetrics should return Some for current process`` () =
     let monitor = ResourceMonitor()
     let currentProcess = Process.GetCurrentProcess()
@@ -42,6 +46,7 @@ let ``GetProcessMetrics should return Some for current process`` () =
     | None -> Assert.Fail("Expected Some metrics for current process")
 
 [<Test>]
+[<Category("Unit")>]
 let ``GetSystemMetrics should return valid metrics`` () =
     let monitor = ResourceMonitor()
     let result = monitor.GetSystemMetrics()
@@ -55,6 +60,7 @@ let ``GetSystemMetrics should return valid metrics`` () =
     | None -> Assert.Fail("Expected Some system metrics")
 
 [<Test>]
+[<Category("Unit")>]
 let ``CheckResourceThresholds should return empty for normal usage`` () =
     let monitor = ResourceMonitor()
     let violations = monitor.CheckResourceThresholds(defaultThresholds)
@@ -63,6 +69,7 @@ let ``CheckResourceThresholds should return empty for normal usage`` () =
     Assert.AreEqual(0, violations.Length)
 
 [<Test>]
+[<Category("Unit")>]
 let ``UpdateCpuUsage should update existing metrics`` () =
     let monitor = ResourceMonitor()
     let currentProcess = Process.GetCurrentProcess()
@@ -81,6 +88,7 @@ let ``UpdateCpuUsage should update existing metrics`` () =
     | None -> Assert.Fail("Expected test-pane metrics to exist")
 
 [<Test>]
+[<Category("Unit")>]
 let ``RemoveProcessMetrics should remove metrics successfully`` () =
     let monitor = ResourceMonitor()
     let currentProcess = Process.GetCurrentProcess()
@@ -101,6 +109,7 @@ let ``RemoveProcessMetrics should remove metrics successfully`` () =
     Assert.IsNull(testMetrics)
 
 [<Test>]
+[<Category("Unit")>]
 let ``globalResourceMonitor should be accessible`` () =
     Assert.IsNotNull(globalResourceMonitor)
 

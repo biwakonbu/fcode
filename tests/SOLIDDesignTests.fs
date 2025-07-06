@@ -21,6 +21,7 @@ type SOLIDDesignTestSuite() =
     // ===============================================
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``UnifiedActivityManager should have single responsibility for activity management``() =
         // Arrange
         let manager = new UnifiedActivityManager()
@@ -51,6 +52,7 @@ type SOLIDDesignTestSuite() =
         manager.Dispose()
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``EscalationNotificationManager should have single responsibility for escalation handling``() =
         // Arrange
         let manager = new EscalationNotificationManager()
@@ -76,6 +78,7 @@ type SOLIDDesignTestSuite() =
         manager.Dispose()
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``DecisionTimelineManager should have single responsibility for decision tracking``() =
         // Arrange
         let manager = new DecisionTimelineManager()
@@ -92,6 +95,7 @@ type SOLIDDesignTestSuite() =
         manager.Dispose()
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``ProgressDashboardManager should have single responsibility for metrics management``() =
         // Arrange
         let manager = new ProgressDashboardManager()
@@ -117,6 +121,7 @@ type SOLIDDesignTestSuite() =
     // ===============================================
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``ActivityType should be extensible without modifying existing code``() =
         // Arrange & Act
         let activityTypes =
@@ -148,6 +153,7 @@ type SOLIDDesignTestSuite() =
         Assert.AreEqual(CodeGeneration, testActivity.ActivityType)
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``EscalationUrgency should be extensible for new urgency levels``() =
         // Arrange & Act
         let urgencyLevels = [ Immediate; Urgent; EscalationUrgency.Normal; Low ]
@@ -172,6 +178,7 @@ type SOLIDDesignTestSuite() =
     // ===============================================
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``IDisposable implementations should be substitutable``() =
         // Arrange
         let disposableObjects: IDisposable list =
@@ -185,6 +192,7 @@ type SOLIDDesignTestSuite() =
             Assert.DoesNotThrow(fun () -> disposable.Dispose())
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Result type should be consistent across all managers``() =
         // Arrange
         let activityManager = new UnifiedActivityManager()
@@ -218,6 +226,7 @@ type SOLIDDesignTestSuite() =
     // ===============================================
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Managers should not depend on interfaces they don't use``() =
         // Arrange - 各マネージャーは必要な機能のみ公開
         let activityManager = new UnifiedActivityManager()
@@ -243,6 +252,7 @@ type SOLIDDesignTestSuite() =
         escalationManager.Dispose()
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Specialized classes should have focused interfaces``() =
         // Arrange
         let activityManager = new UnifiedActivityManager()
@@ -266,6 +276,7 @@ type SOLIDDesignTestSuite() =
     // ===============================================
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Managers should depend on abstractions, not concrete implementations``() =
         // Arrange - 依存性注入パターンの確認
         let originalManager = new UnifiedActivityManager()
@@ -300,6 +311,7 @@ type SOLIDDesignTestSuite() =
         originalManager.Dispose()
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``High-level modules should not depend on low-level modules``() =
         // Arrange - 高レベルモジュール（UnifiedActivityManager）は
         // 低レベルモジュール（具体的なストレージ実装）に依存しない
@@ -333,6 +345,7 @@ type SOLIDDesignTestSuite() =
 type SOLIDQualityMetricsTestSuite() =
 
     [<Test>]
+    [<Category("Integration")>]
     member this.``SOLID design should demonstrate loose coupling``() =
         // Arrange - 異なるマネージャーが独立して動作
         let activityManager = new UnifiedActivityManager()

@@ -43,6 +43,7 @@ type ConcurrencyTests() =
             printfn $"並行処理テストクリーンアップ警告: {ex.Message}"
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``複数プロセス同時セッション保存競合テスト``() =
         let sessionId = generateSessionId ()
         let processCount = 5
@@ -114,6 +115,7 @@ type ConcurrencyTests() =
         | Error msg -> Assert.Fail($"並行保存後のセッション読み込み失敗: {msg}")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``プロセスロック競合とタイミング競合テスト``() =
         let sessionId = generateSessionId ()
         let processIds = [ 12345; 12346; 12347; 12348; 12349 ]
@@ -151,6 +153,7 @@ type ConcurrencyTests() =
         | None -> Assert.Fail("プロセスロック情報が読み込めませんでした")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``プロセス終了タイミング競合による孤立ロック清理テスト``() =
         let sessionIds = [ 1..10 ] |> List.map (fun _ -> generateSessionId ())
         let fakePids = [ 99991..100000 ] // 存在しない可能性の高いプロセスID
@@ -203,6 +206,7 @@ type ConcurrencyTests() =
         Assert.LessOrEqual(remainingDetachedSessions.Length, successfulLocks, "清理後も期待以上のロックが残存しています")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``複数セッション同時読み書き競合テスト``() =
         let sessionCount = 10
         let sessionIds = [ 1..sessionCount ] |> List.map (fun _ -> generateSessionId ())
@@ -280,6 +284,7 @@ type ConcurrencyTests() =
             | Success _ -> ()
 
     [<Test>]
+    [<Category("Performance")>]
     member this.``大量並行セッション操作パフォーマンステスト``() =
         let sessionCount = 50
         let operationsPerSession = 5
@@ -432,6 +437,7 @@ type ConcurrencyTests() =
             checkActiveSession (if isMacOS then 5 else 3)
 
     [<Test>]
+    [<Category("Performance")>]
     member this.``システムリソース枯渇時の動作テスト``() =
         let mutable createdSessions = []
         let mutable operationCount = 0
@@ -488,6 +494,7 @@ type ConcurrencyTests() =
         printfn $"リソース枯渇テスト完了: {operationCount}操作実行、{createdSessions.Length}セッション作成"
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``デッドロック防止機構テスト``() =
         let sessionId1 = generateSessionId ()
         let sessionId2 = generateSessionId ()

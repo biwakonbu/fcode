@@ -103,7 +103,7 @@ type SecurityTests() =
                 )
 
     [<Test>]
-[<Category("Unit")>]
+    [<Category("Unit")>]
     member this.``機密情報漏洩防止テスト - 環境変数内API_KEY``() =
         let sessionId = generateSessionId ()
 
@@ -174,7 +174,7 @@ type SecurityTests() =
         | Error msg -> Assert.Fail($"機密情報テスト用セッション保存失敗: {msg}")
 
     [<Test>]
-[<Category("Unit")>]
+    [<Category("Unit")>]
     member this.``ファイル名インジェクション攻撃耐性テスト``() =
         let sessionId = generateSessionId ()
 
@@ -231,7 +231,7 @@ type SecurityTests() =
                 ()
 
     [<Test>]
-[<Category("Unit")>]
+    [<Category("Unit")>]
     member this.``シンボリックリンク攻撃耐性テスト``() =
         let sessionId = generateSessionId ()
 
@@ -303,7 +303,7 @@ type SecurityTests() =
                 ()
 
     [<Test>]
-[<Category("Unit")>]
+    [<Category("Unit")>]
     member this.``大量データによるDoS攻撃耐性テスト``() =
         let sessionId = generateSessionId ()
 
@@ -351,7 +351,7 @@ type SecurityTests() =
             Assert.IsTrue(msg.Contains("サイズ") || msg.Contains("制限"), $"期待されるサイズ制限エラーではありません: {msg}")
 
     [<Test>]
-[<Category("Unit")>]
+    [<Category("Unit")>]
     member this.``権限昇格攻撃耐性テスト``() =
         let sessionId = generateSessionId ()
 

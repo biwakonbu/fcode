@@ -11,7 +11,6 @@ open FCode.Logger
 [<TestFixture>]
 type DecisionTimelineViewTests() =
 
-
     [<Test>]
     [<Category("Unit")>]
     member _.``DecisionTimelineManager Basic Creation Test``() =
@@ -227,6 +226,7 @@ type DecisionTimelineViewTests() =
     member _.``Global DecisionTimelineManager Usage Test``() =
         // グローバル意思決定タイムライン管理使用テスト
         let manager = new DecisionTimelineManager()
+        injectTimelineManager manager // テスト用に依存性注入
         let initialCount = manager.GetDecisionCount()
 
         let decisionId =
@@ -245,6 +245,7 @@ type DecisionTimelineViewTests() =
     member _.``Global Functions Integration Test``() =
         // グローバル関数統合テスト
         let manager = new DecisionTimelineManager()
+        injectTimelineManager manager // テスト用に依存性注入
 
         let decisionId =
             startDecision "Integration Test Decision" "Test integration" Normal [ "agent1" ]

@@ -47,13 +47,27 @@ type ClaudeCodeIntegrationManager() =
     /// Claude Codeにコマンドを送信（シミュレーション）
     member this.SendCommand(command: string) =
         try
-            if isRunning then
-                FCode.Logger.logInfo
-                    "ClaudeCodeIntegration"
-                    (sprintf "コマンド送信シミュレーション: %s" (command.Substring(0, min 50 command.Length)))
+            if String.IsNullOrEmpty(command) then
+                let error = "コマンドが空またはnullです"
+                FCode.Logger.logWarning "ClaudeCodeIntegration" error
+                Result.Error error
+            elif isRunning then
+                let safeCommandPreview =
+                    if command.Length > 50 then
+                        command.Substring(0, 50) + "..."
+                    else
+                        command
+
+                let safeCommandShort =
+                    if command.Length > 20 then
+                        command.Substring(0, 20) + "..."
+                    else
+                        command
+
+                FCode.Logger.logInfo "ClaudeCodeIntegration" (sprintf "コマンド送信シミュレーション: %s" safeCommandPreview)
 
                 addToBuffer (sprintf "> %s" command)
-                addToBuffer (sprintf "Claude Code > コマンド '%s' を実行中..." (command.Substring(0, min 20 command.Length)))
+                addToBuffer (sprintf "Claude Code > コマンド '%s' を実行中..." safeCommandShort)
                 addToBuffer "Claude Code > 実行完了"
                 Result.Ok "コマンド送信完了（シミュレーション）"
             else

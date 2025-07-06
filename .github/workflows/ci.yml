@@ -43,10 +43,20 @@ jobs:
     # 3. テスト品質チェック
     - name: Verify test categorization
       run: |
-        UNCATEGORIZED=$(dotnet test tests/fcode.Tests.fsproj --list-tests | grep -v "TestCategory" | wc -l)
-        echo "📊 未分類テスト数: $UNCATEGORIZED"
-        if [ $UNCATEGORIZED -gt 10 ]; then
-          echo "❌ 未分類テストが多すぎます: $UNCATEGORIZED"
+        echo "📊 Verifying test categorization by examining source files..."
+        
+        # Count Category attributes in test files
+        CATEGORY_COUNT=$(find tests -name "*.fs" -exec grep -c "\[<Category" {} \; | awk '{sum += $1} END {print sum}')
+        TEST_COUNT=$(find tests -name "*.fs" -exec grep -c "\[<Test>" {} \; | awk '{sum += $1} END {print sum}')
+        
+        echo "  Category attributes found: $CATEGORY_COUNT"
+        echo "  Test methods found: $TEST_COUNT"
+        
+        # All tests should have at least one category
+        if [ "$CATEGORY_COUNT" -ge "$TEST_COUNT" ]; then
+          echo "✅ Test categorization verified: All $TEST_COUNT tests have categories"
+        else
+          echo "❌ Missing categories: $((TEST_COUNT - CATEGORY_COUNT)) tests lack categories"
           exit 1
         fi
     

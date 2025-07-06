@@ -25,7 +25,7 @@ let ``POApprovalRequirementAnalyzer - PO承認不要ケーステスト`` () =
 
     // Assert
     Assert.False(result.RequiresPOApproval)
-    Assert.AreEqual(result.RecommendedAction, "自動承認")
+    Assert.AreEqual("自動承認", result.RecommendedAction)
 
 [<Test>]
 [<Category("Unit")>]
@@ -47,4 +47,4 @@ let ``POApprovalRequirementAnalyzer - PO承認必要ケーステスト`` () =
 
     // Assert
     Assert.True(result.RequiresPOApproval)
-    Assert.AreEqual(result.RecommendedAction, "PO承認要求")
+    Assert.AreEqual("PO承認要求", result.RecommendedAction)

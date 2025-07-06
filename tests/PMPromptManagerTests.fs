@@ -262,8 +262,7 @@ type PMPromptIntegrationTests() =
 
         // Act & Assert
         pmPaneIds
-        |> List.iter (fun paneId ->
-            Assert.AreEqual(Is.Not.EqualTo(None, getPMRoleFromPaneId paneId), $"{paneId}がPM役割として認識されること"))
+        |> List.iter (fun paneId -> Assert.IsTrue(getPMRoleFromPaneId paneId <> None, $"{paneId}がPM役割として認識されること"))
 
         nonPmPaneIds
         |> List.iter (fun paneId -> Assert.AreEqual(None, getPMRoleFromPaneId paneId, $"{paneId}がPM役割として認識されないこと"))

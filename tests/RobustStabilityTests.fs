@@ -34,7 +34,7 @@ type RobustStabilityTestSuite() =
             let duration = endTime - startTime
 
             // パフォーマンス検証
-            Assert.AreEqual(Is.LessThan(30.0, duration.TotalSeconds)) // 30秒以内
+            Assert.That(duration.TotalSeconds, Is.LessThan(30.0)) // 30秒以内
             Assert.AreEqual(operationCount, activityManager.GetActivityCount())
 
         finally
@@ -64,7 +64,7 @@ type RobustStabilityTestSuite() =
                 Assert.AreEqual(100, manager.GetActivityCount())
 
             // メモリ増加が許容範囲内（100MB未満）
-            Assert.AreEqual(Is.LessThan(100_000_000L, memoryIncrease))
+            Assert.That(memoryIncrease, Is.LessThan(100_000_000L))
 
         finally
             for manager in managers do

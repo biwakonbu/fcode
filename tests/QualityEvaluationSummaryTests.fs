@@ -126,9 +126,14 @@ let ``QualityEvaluationSummaryManager - 品質改善提案生成テスト`` () =
 
     // Assert: 改善提案内容検証
     Assert.True(summary.RecommendedImprovements.Length >= 3) // 複数改善提案
-    Assert.True(summary.RecommendedImprovements |> List.contains "テストカバレッジ向上") // カバレッジ改善
-    Assert.True(summary.RecommendedImprovements |> List.contains "セキュリティ対応") // セキュリティ改善
-    Assert.True(summary.RecommendedImprovements |> List.contains "ドキュメント充実") // ドキュメント改善
+
+    Assert.IsTrue(
+        summary.RecommendedImprovements
+        |> List.exists (fun r -> r.Contains("テストカバレッジ向上"))
+    ) // カバレッジ改善
+
+    Assert.IsTrue(summary.RecommendedImprovements |> List.exists (fun r -> r.Contains("セキュリティ対応"))) // セキュリティ改善
+    Assert.IsTrue(summary.RecommendedImprovements |> List.exists (fun r -> r.Contains("ドキュメント充実"))) // ドキュメント改善
     Assert.AreEqual(summary.IssuesFound.Length, 2) // 適切な課題抽出
 
 // テスト用品質メトリクス型定義

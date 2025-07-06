@@ -8,10 +8,10 @@ open FCode.Logger
 /// Unix権限設定ユーティリティ
 module UnixPermissionHelper =
 
-    [<DllImport("libc", SetLastError = true)>]
+    [<DllImport("libc", SetLastError = true, CharSet = CharSet.Ansi)>]
     extern int chmod(string path, uint32 mode)
 
-    [<DllImport("libc", SetLastError = true)>]
+    [<DllImport("libc", SetLastError = true, CharSet = CharSet.Ansi)>]
     extern int access(string path, int mode)
 
     /// ファイル権限モード定数
@@ -34,7 +34,10 @@ module UnixPermissionHelper =
     /// ディレクトリに安全な権限を設定 (755: owner全権限、group/other読み取り・実行のみ)
     let setSecureDirectoryPermissions (path: string) =
         try
-            if Environment.OSVersion.Platform = PlatformID.Unix then
+            if String.IsNullOrEmpty(path) then
+                logError "UnixPermissions" "pathがnullまたは空です"
+                false
+            elif Environment.OSVersion.Platform = PlatformID.Unix then
                 let mode =
                     S_IRUSR ||| S_IWUSR ||| S_IXUSR ||| S_IRGRP ||| S_IXGRP ||| S_IROTH ||| S_IXOTH
 
@@ -59,7 +62,10 @@ module UnixPermissionHelper =
     /// ファイルに安全な権限を設定 (600: owner読み書きのみ、group/otherアクセス不可)
     let setSecureFilePermissions (path: string) =
         try
-            if Environment.OSVersion.Platform = PlatformID.Unix then
+            if String.IsNullOrEmpty(path) then
+                logError "UnixPermissions" "pathがnullまたは空です"
+                false
+            elif Environment.OSVersion.Platform = PlatformID.Unix then
                 let mode = S_IRUSR ||| S_IWUSR
                 let result = chmod (path, mode)
 
@@ -82,7 +88,10 @@ module UnixPermissionHelper =
     /// パスの読み書き権限をチェック
     let checkReadWriteAccess (path: string) =
         try
-            if Environment.OSVersion.Platform = PlatformID.Unix then
+            if String.IsNullOrEmpty(path) then
+                logError "UnixPermissions" "pathがnullまたは空です"
+                false
+            elif Environment.OSVersion.Platform = PlatformID.Unix then
                 let result = access (path, R_OK ||| W_OK)
                 result = 0
             else

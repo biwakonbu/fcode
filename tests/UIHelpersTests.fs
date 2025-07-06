@@ -112,8 +112,8 @@ type UIHelpersTests() =
         // Assert
         Assert.AreEqual(2, result.Length)
         let texts = result |> List.map (fun tv -> tv.Text.ToString()) |> Array.ofList
-        CollectionAssert.Contains(texts, "first")
-        CollectionAssert.Contains(texts, "second")
+        CollectionAssert.AreEqual("first", texts)
+        CollectionAssert.AreEqual("second", texts)
 
     [<Test>]
     member _.``findTextViews should handle empty View without crash``() =

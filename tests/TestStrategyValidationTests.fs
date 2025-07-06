@@ -25,10 +25,10 @@ type TestStrategyValidationSuite() =
 
         try
             // 単一責任原則確認
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(0))
-            Assert.That(escalationManager.GetNotificationCount(), Is.EqualTo(0))
-            Assert.That(decisionManager.GetDecisionCount(), Is.EqualTo(0))
-            Assert.That(progressManager.GetMetricCount(), Is.EqualTo(0))
+            Assert.AreEqual(0, activityManager.GetActivityCount())
+            Assert.AreEqual(0, escalationManager.GetNotificationCount())
+            Assert.AreEqual(0, decisionManager.GetDecisionCount())
+            Assert.AreEqual(0, progressManager.GetMetricCount())
 
             // 依存性注入パターン確認
             injectActivityManager activityManager
@@ -101,7 +101,7 @@ type TestStrategyValidationSuite() =
                 Is.True
             )
 
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(1))
+            Assert.AreEqual(1, activityManager.GetActivityCount())
 
             activityManager.Dispose()
             Assert.Pass("CI environment compatibility verified")
@@ -137,13 +137,13 @@ type TestStrategyValidationSuite() =
     member this.``Phase 3 test strategy enhancement completion verification``() =
         // Phase 3の完了確認
         // 1. SOLID設計テストの存在
-        Assert.That(typeof<TestStrategyValidationSuite>.Name, Is.EqualTo("TestStrategyValidationSuite"))
+        Assert.AreEqual("TestStrategyValidationSuite", typeof<TestStrategyValidationSuite>.Name)
 
         // 2. CI対応テストカテゴリ分類
         let testAttribute =
             this.GetType().GetCustomAttributes(typeof<TestFixtureAttribute>, false)
 
-        Assert.That(testAttribute.Length, Is.EqualTo(1))
+        Assert.AreEqual(1, testAttribute.Length)
 
         // 3. 統合テスト・堅牢性テスト基盤準備完了
         // テストクラス自体が存在すること（テストインフラの健全性確認）
@@ -151,7 +151,7 @@ type TestStrategyValidationSuite() =
             this.GetType().GetMethods()
             |> Array.filter (fun m -> m.GetCustomAttributes(typeof<TestAttribute>, false).Length > 0)
 
-        Assert.That(testMethods.Length, Is.GreaterThan(0))
+        Assert.Greater(testMethods.Length, 0)
 
         Assert.Pass("Phase 3: Test strategy enhancement completed successfully")
 
@@ -184,8 +184,8 @@ type CIRobustnessTestSuite() =
 
             // すべて正常完了
             for (am, pm) in managers do
-                Assert.That(am.GetActivityCount(), Is.EqualTo(1))
-                Assert.That(pm.GetMetricCount(), Is.EqualTo(1))
+                Assert.AreEqual(1, am.GetActivityCount())
+                Assert.AreEqual(1, pm.GetMetricCount())
                 am.Dispose()
                 pm.Dispose()
 

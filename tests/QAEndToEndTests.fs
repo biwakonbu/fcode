@@ -64,14 +64,14 @@ type QAEndToEndTests() =
                     try
                         // QA1設定が適用されることを検証
                         let qa1Role = getQARoleFromPaneId "qa1"
-                        Assert.That(qa1Role, Is.EqualTo(Some QA1), "qa1ペインがQA1役割に識別されること")
+                        Assert.AreEqual(Some QA1, qa1Role, "qa1ペインがQA1役割に識別されること")
 
                         let qa1Config = getQAPromptConfig QA1
                         Assert.That(qa1Config.SystemPrompt, Does.Contain("テスト戦略"), "QA1システムプロンプトが正しく設定されること")
 
                         // 環境変数設定の検証
                         let qa1EnvVars = getQAEnvironmentVariables QA1 |> Map.ofList
-                        Assert.That(qa1EnvVars.["QA_SPECIALIZATION"], Is.EqualTo("test_strategy"), "QA1専門化設定")
+                        Assert.AreEqual("test_strategy", qa1EnvVars.["QA_SPECIALIZATION"], "QA1専門化設定")
 
                         true
                     with ex ->
@@ -79,7 +79,7 @@ type QAEndToEndTests() =
                         false
 
                 // Assert
-                Assert.That(sessionStartAttempted, Is.True, "QA1ペインでの設定適用が成功すること")
+                Assert.IsTrue(sessionStartAttempted, "QA1ペインでの設定適用が成功すること")
 
             | _ -> Assert.Fail("SessionManagerまたはTextViewの初期化に失敗")
 
@@ -96,7 +96,7 @@ type QAEndToEndTests() =
             | Some mgr, Some textView ->
                 // Act - QA2ペインでの設定検証
                 let qa2Role = getQARoleFromPaneId "qa2"
-                Assert.That(qa2Role, Is.EqualTo(Some QA2), "qa2ペインがQA2役割に識別されること")
+                Assert.AreEqual(Some QA2, qa2Role, "qa2ペインがQA2役割に識別されること")
 
                 let qa2Config = getQAPromptConfig QA2
                 Assert.That(qa2Config.SystemPrompt, Does.Contain("品質分析"), "QA2システムプロンプトが正しく設定されること")
@@ -104,7 +104,7 @@ type QAEndToEndTests() =
 
                 // 環境変数設定の検証
                 let qa2EnvVars = getQAEnvironmentVariables QA2 |> Map.ofList
-                Assert.That(qa2EnvVars.["QA_SPECIALIZATION"], Is.EqualTo("quality_analysis"), "QA2専門化設定")
+                Assert.AreEqual("quality_analysis", qa2EnvVars.["QA_SPECIALIZATION"], "QA2専門化設定")
                 Assert.That(qa2EnvVars.["QA_FOCUS_AREA"], Does.Contain("code_review"), "QA2フォーカス領域")
 
             | _ -> Assert.Fail("SessionManagerまたはTextViewの初期化に失敗")
@@ -118,9 +118,14 @@ type QAEndToEndTests() =
         let qa2EnvVars = getQAEnvironmentVariables QA2 |> Map.ofList
 
         // Assert - QA1とQA2が完全に独立した設定を持つこと
-        Assert.That(qa1Config.SystemPrompt, Is.Not.EqualTo(qa2Config.SystemPrompt), "QA1とQA2のシステムプロンプトが異なること")
-        Assert.That(qa1EnvVars.["QA_SPECIALIZATION"], Is.Not.EqualTo(qa2EnvVars.["QA_SPECIALIZATION"]), "専門化設定が異なること")
-        Assert.That(qa1Config.SkillFocus, Is.Not.EqualTo(qa2Config.SkillFocus), "スキル重点が異なること")
+        Assert.AreEqual(Is.Not.EqualTo(qa2Config.SystemPrompt, qa1Config.SystemPrompt), "QA1とQA2のシステムプロンプトが異なること")
+
+        Assert.AreEqual(
+            Is.Not.EqualTo(qa2EnvVars.["QA_SPECIALIZATION"], qa1EnvVars.["QA_SPECIALIZATION"]),
+            "専門化設定が異なること"
+        )
+
+        Assert.AreEqual(Is.Not.EqualTo(qa2Config.SkillFocus, qa1Config.SkillFocus), "スキル重点が異なること")
 
         // QA1はテスト戦略、QA2は品質分析に特化していること
         Assert.That(qa1Config.SystemPrompt, Does.Contain("テスト戦略"), "QA1がテスト戦略に特化")
@@ -134,11 +139,11 @@ type QAEndToEndTests() =
 
         // Assert - dev1-3はQA役割に設定されないこと
         devRoles
-        |> List.iter (fun role -> Assert.That(role, Is.EqualTo(None), "dev1-3ペインはQA役割に設定されないこと"))
+        |> List.iter (fun role -> Assert.AreEqual(None, role, "dev1-3ペインはQA役割に設定されないこと"))
 
         // Assert - qa1-2はQA役割に正しく設定されること
-        Assert.That(qaRoles.[0], Is.EqualTo(Some QA1), "qa1がQA1役割に設定されること")
-        Assert.That(qaRoles.[1], Is.EqualTo(Some QA2), "qa2がQA2役割に設定されること")
+        Assert.AreEqual(Some QA1, qaRoles.[0], "qa1がQA1役割に設定されること")
+        Assert.AreEqual(Some QA2, qaRoles.[1], "qa2がQA2役割に設定されること")
 
 /// FC-006 統合テスト: 複数ペイン同時動作確認
 [<TestFixture>]
@@ -160,11 +165,11 @@ type QAMultiPaneIntegrationTests() =
         // Assert - 両方のペインで適切な設定が適用されること
         match qa1ConfigResult, qa2ConfigResult with
         | Some qa1Config, Some qa2Config ->
-            Assert.That(validateQAPromptConfig qa1Config, Is.True, "QA1設定が有効であること")
-            Assert.That(validateQAPromptConfig qa2Config, Is.True, "QA2設定が有効であること")
+            Assert.IsTrue(validateQAPromptConfig qa1Config, "QA1設定が有効であること")
+            Assert.IsTrue(validateQAPromptConfig qa2Config, "QA2設定が有効であること")
 
             // 設定の独立性確認
-            Assert.That(qa1Config.TestingApproach, Is.Not.EqualTo(qa2Config.TestingApproach), "テストアプローチが独立していること")
+            Assert.AreEqual(Is.Not.EqualTo(qa2Config.TestingApproach, qa1Config.TestingApproach), "テストアプローチが独立していること")
         | _ -> Assert.Fail("QA設定の取得に失敗")
 
         match qa1EnvResult, qa2EnvResult with
@@ -173,8 +178,8 @@ type QAMultiPaneIntegrationTests() =
             let qa2EnvMap = qa2Env |> Map.ofList
 
             // 共通環境変数の確認
-            Assert.That(qa1EnvMap.["CLAUDE_ROLE"], Is.EqualTo("qa"), "QA1のCLAUDE_ROLE設定")
-            Assert.That(qa2EnvMap.["CLAUDE_ROLE"], Is.EqualTo("qa"), "QA2のCLAUDE_ROLE設定")
+            Assert.AreEqual("qa", qa1EnvMap.["CLAUDE_ROLE"], "QA1のCLAUDE_ROLE設定")
+            Assert.AreEqual("qa", qa2EnvMap.["CLAUDE_ROLE"], "QA2のCLAUDE_ROLE設定")
 
             // 専門化設定の独立性確認
             Assert.That(
@@ -202,14 +207,14 @@ type QAMultiPaneIntegrationTests() =
             |> fun task -> task.Result
 
         // Assert - 並行処理でも正確な設定が取得されること
-        Assert.That(parallelResults.Length, Is.EqualTo(2), "2つのQA設定が取得されること")
+        Assert.AreEqual(2, parallelResults.Length, "2つのQA設定が取得されること")
 
         let (qa1Config, qa1Env, qa1Name) = parallelResults.[0]
         let (qa2Config, qa2Env, qa2Name) = parallelResults.[1]
 
-        Assert.That(validateQAPromptConfig qa1Config, Is.True, "並行処理でQA1設定が有効であること")
-        Assert.That(validateQAPromptConfig qa2Config, Is.True, "並行処理でQA2設定が有効であること")
-        Assert.That(qa1Name, Is.Not.EqualTo(qa2Name), "並行処理でも役割名が正しく区別されること")
+        Assert.IsTrue(validateQAPromptConfig qa1Config, "並行処理でQA1設定が有効であること")
+        Assert.IsTrue(validateQAPromptConfig qa2Config, "並行処理でQA2設定が有効であること")
+        Assert.AreEqual(Is.Not.EqualTo(qa2Name, qa1Name), "並行処理でも役割名が正しく区別されること")
 
     [<Test>]
     member _.``QAログ出力の競合状態テスト``() =
@@ -233,4 +238,4 @@ type QAMultiPaneIntegrationTests() =
             Task.WhenAll(testTasks).Wait()
 
             testTasks
-            |> List.iter (fun task -> Assert.That(task.Result, Is.True, "競合状態でも設定検証が成功すること")))
+            |> List.iter (fun task -> Assert.IsTrue(task.Result, "競合状態でも設定検証が成功すること")))

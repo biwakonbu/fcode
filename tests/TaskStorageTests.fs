@@ -37,7 +37,7 @@ let ``TaskStorageManager database initialization test`` () =
         | Result.Ok _ -> Assert.Pass()
         | Result.Error e -> Assert.Fail($"Database initialization failed: {e}")
 
-        Assert.That(File.Exists(dbPath), Is.True)
+        Assert.IsTrue(File.Exists(dbPath))
 
     finally
         storage.Dispose()
@@ -79,10 +79,10 @@ let ``TaskStorageManager task save and retrieve test`` () =
 
         match executableTasks with
         | Result.Ok tasks ->
-            Assert.That(tasks |> List.exists (fun t -> t.TaskId = "test-task-1"), Is.True)
+            Assert.IsTrue(tasks |> List.exists (fun t -> t.TaskId = "test-task-1"))
             let retrievedTask = tasks |> List.find (fun t -> t.TaskId = "test-task-1")
-            Assert.That(retrievedTask.Title, Is.EqualTo(testTask.Title))
-            Assert.That(retrievedTask.Priority, Is.EqualTo(testTask.Priority))
+            Assert.AreEqual(testTask.Title, retrievedTask.Title)
+            Assert.AreEqual(testTask.Priority, retrievedTask.Priority)
         | Result.Error e -> Assert.Fail($"タスク取得に失敗: {e}")
 
     finally
@@ -199,9 +199,9 @@ let ``TaskStorageManager progress summary test`` () =
 
         match summaryResult with
         | Result.Ok summary ->
-            Assert.That(summary.TotalTasks, Is.EqualTo(3))
-            Assert.That(summary.CompletedTasks, Is.EqualTo(1))
-            Assert.That(summary.InProgressTasks, Is.EqualTo(1))
+            Assert.AreEqual(3, summary.TotalTasks)
+            Assert.AreEqual(1, summary.CompletedTasks)
+            Assert.AreEqual(1, summary.InProgressTasks)
         | Result.Error e -> Assert.Fail($"進捗サマリー取得に失敗: {e}")
 
     finally
@@ -248,8 +248,8 @@ let ``TaskRepository save and retrieve test`` () =
 
         match getResult with
         | Result.Ok(Some retrievedTask) ->
-            Assert.That(retrievedTask.Title, Is.EqualTo(testTask.Title))
-            Assert.That(retrievedTask.Priority, Is.EqualTo(testTask.Priority))
+            Assert.AreEqual(testTask.Title, retrievedTask.Title)
+            Assert.AreEqual(testTask.Priority, retrievedTask.Priority)
         | _ -> Assert.Fail("タスクリポジトリからのタスク取得に失敗")
 
     finally
@@ -292,9 +292,9 @@ let ``AgentRepository state management test`` () =
 
         match getResult with
         | Result.Ok(Some retrievedState) ->
-            Assert.That(retrievedState.AgentId, Is.EqualTo(testAgentState.AgentId))
-            Assert.That(retrievedState.Status, Is.EqualTo(testAgentState.Status))
-            Assert.That(retrievedState.Progress, Is.EqualTo(testAgentState.Progress))
+            Assert.AreEqual(testAgentState.AgentId, retrievedState.AgentId)
+            Assert.AreEqual(testAgentState.Status, retrievedState.Status)
+            Assert.AreEqual(testAgentState.Progress, retrievedState.Progress)
         | _ -> Assert.Fail("エージェントリポジトリからの状態取得に失敗")
 
     finally
@@ -335,10 +335,10 @@ let ``ProgressRepository progress management test`` () =
 
         match eventsResult with
         | Result.Ok events ->
-            Assert.That(events.Length, Is.GreaterThan(0))
+            Assert.Greater(events.Length, 0)
             let (eventType, agentId, _, _, _, _, _) = events.Head
-            Assert.That(eventType, Is.EqualTo("TaskStarted"))
-            Assert.That(agentId, Is.EqualTo("test-agent-1"))
+            Assert.AreEqual("TaskStarted", eventType)
+            Assert.AreEqual("test-agent-1", agentId)
         | _ -> Assert.Fail("進捗リポジトリからのイベント取得に失敗")
 
     finally

@@ -1,14 +1,14 @@
 module FCode.Tests.NextSprintPlannerTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.NextSprintPlannerManager
 
 // t_wada TDD: Red - まずは失敗するテストを書く
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``NextSprintPlannerManager - 基本的な次スプリント計画テスト`` () =
     // Arrange: 現スプリント状況
     let completionAssessment =
@@ -38,15 +38,15 @@ let ``NextSprintPlannerManager - 基本的な次スプリント計画テスト``
 
     // Assert: 計画内容検証
     Assert.NotNull(sprintPlan)
-    Assert.NotEmpty(sprintPlan.SprintId)
-    Assert.Equal(VirtualDay 3, sprintPlan.Duration) // 標準3日スプリント
+    Assert.IsNotEmpty(sprintPlan.SprintId)
+    Assert.AreEqual(VirtualDay 3, sprintPlan.Duration) // 標準3日スプリント
     Assert.True(sprintPlan.PriorityTasks.Length >= 1) // 優先タスクあり
-    Assert.Equal(3, sprintPlan.ResourceAllocation.Length) // リソース配分
+    Assert.AreEqual(3, sprintPlan.ResourceAllocation.Length) // リソース配分
     Assert.True(sprintPlan.Dependencies.Length >= 0) // 依存関係
     Assert.True(sprintPlan.RiskMitigation.Length >= 1) // リスク軽減策
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``NextSprintPlannerManager - 高品質完成時の計画テスト`` () =
     // Arrange: 高品質完成シナリオ
     let completionAssessment =
@@ -75,13 +75,13 @@ let ``NextSprintPlannerManager - 高品質完成時の計画テスト`` () =
         manager.PlanNextSprint(completionAssessment, qualitySummary, availableResources)
 
     // Assert: 新機能重視の計画
-    Assert.Contains("新機能開発", sprintPlan.PriorityTasks)
-    Assert.Contains("品質維持", sprintPlan.PriorityTasks)
-    Assert.Equal(5, sprintPlan.ResourceAllocation.Length) // 全リソース活用
+    Assert.IsTrue(sprintPlan.PriorityTasks |> List.exists (fun t -> t.Contains("新機能開発")))
+    Assert.IsTrue(sprintPlan.PriorityTasks |> List.exists (fun t -> t.Contains("品質維持")))
+    Assert.AreEqual(5, sprintPlan.ResourceAllocation.Length) // 全リソース活用
     Assert.True(sprintPlan.RiskMitigation.Length >= 1)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``NextSprintPlannerManager - 品質課題時の計画テスト`` () =
     // Arrange: 品質課題ありシナリオ
     let completionAssessment =
@@ -110,13 +110,13 @@ let ``NextSprintPlannerManager - 品質課題時の計画テスト`` () =
         manager.PlanNextSprint(completionAssessment, qualitySummary, availableResources)
 
     // Assert: 品質改善重視の計画
-    Assert.Contains("品質改善", sprintPlan.PriorityTasks)
-    Assert.Contains("セキュリティ強化", sprintPlan.PriorityTasks)
-    Assert.Contains("テスト強化", sprintPlan.PriorityTasks)
+    Assert.IsTrue(sprintPlan.PriorityTasks |> List.exists (fun t -> t.Contains("品質改善")))
+    Assert.IsTrue(sprintPlan.PriorityTasks |> List.exists (fun t -> t.Contains("セキュリティ強化")))
+    Assert.IsTrue(sprintPlan.PriorityTasks |> List.exists (fun t -> t.Contains("テスト強化")))
     Assert.True(sprintPlan.RiskMitigation.Length >= 2) // 多くのリスク軽減策
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``NextSprintPlannerManager - リソース制約時の計画テスト`` () =
     // Arrange: リソース制約シナリオ
     let completionAssessment =
@@ -145,7 +145,7 @@ let ``NextSprintPlannerManager - リソース制約時の計画テスト`` () =
         manager.PlanNextSprint(completionAssessment, qualitySummary, limitedResources)
 
     // Assert: 効率重視の計画
-    Assert.Equal(1, sprintPlan.ResourceAllocation.Length) // 限定リソース反映
-    Assert.Contains("効率化", sprintPlan.PriorityTasks)
+    Assert.AreEqual(1, sprintPlan.ResourceAllocation.Length) // 限定リソース反映
+    Assert.IsTrue(sprintPlan.PriorityTasks |> List.exists (fun t -> t.Contains("効率化")))
     Assert.True(sprintPlan.RiskMitigation.Length >= 1)
-    Assert.Contains("リソース制約", sprintPlan.RiskMitigation)
+    Assert.IsTrue(sprintPlan.RiskMitigation |> List.exists (fun r -> r.Contains("リソース制約")))

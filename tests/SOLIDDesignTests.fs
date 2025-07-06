@@ -39,8 +39,13 @@ type SOLIDDesignTestSuite() =
         let result = manager.AddActivityFromMessage(message)
 
         // Assert
-        Assert.That(result, Is.EqualTo(Result.Ok()))
-        Assert.That(manager.GetActivityCount(), Is.EqualTo(1))
+        Assert.IsTrue(
+            match result with
+            | Result.Ok _ -> true
+            | _ -> false
+        )
+
+        Assert.AreEqual(1, manager.GetActivityCount())
 
         // Cleanup
         manager.Dispose()
@@ -64,8 +69,8 @@ type SOLIDDesignTestSuite() =
             )
 
         // Assert
-        Assert.That(String.IsNullOrEmpty(notificationId), Is.False)
-        Assert.That(manager.GetNotificationCount(), Is.EqualTo(1))
+        Assert.IsFalse(String.IsNullOrEmpty(notificationId))
+        Assert.AreEqual(1, manager.GetNotificationCount())
 
         // Cleanup
         manager.Dispose()
@@ -80,8 +85,8 @@ type SOLIDDesignTestSuite() =
             manager.StartDecision("Test Decision", "Test decision description", MessagePriority.High, [ "dev1"; "pm" ])
 
         // Assert
-        Assert.That(String.IsNullOrEmpty(decisionId), Is.False)
-        Assert.That(manager.GetDecisionCount(), Is.EqualTo(1))
+        Assert.IsFalse(String.IsNullOrEmpty(decisionId))
+        Assert.AreEqual(1, manager.GetDecisionCount())
 
         // Cleanup
         manager.Dispose()
@@ -102,7 +107,7 @@ type SOLIDDesignTestSuite() =
                 | _ -> false, Is.True
         )
 
-        Assert.That(manager.GetMetricCount(), Is.EqualTo(1))
+        Assert.AreEqual(1, manager.GetMetricCount())
 
         // Cleanup
         manager.Dispose()
@@ -126,7 +131,7 @@ type SOLIDDesignTestSuite() =
               SystemMessage ]
 
         // Assert - 新しい活動タイプを追加する際は既存コードを変更せずに拡張可能
-        Assert.That(activityTypes.Length, Is.EqualTo(9))
+        Assert.AreEqual(9, activityTypes.Length)
 
         // 判別共用体による型安全性確保
         let testActivity =
@@ -140,7 +145,7 @@ type SOLIDDesignTestSuite() =
               RelatedTaskId = None
               Status = Completed }
 
-        Assert.That(testActivity.ActivityType, Is.EqualTo(CodeGeneration))
+        Assert.AreEqual(CodeGeneration, testActivity.ActivityType)
 
     [<Test>]
     member this.``EscalationUrgency should be extensible for new urgency levels``() =
@@ -148,7 +153,7 @@ type SOLIDDesignTestSuite() =
         let urgencyLevels = [ Immediate; Urgent; EscalationUrgency.Normal; Low ]
 
         // Assert
-        Assert.That(urgencyLevels.Length, Is.EqualTo(4))
+        Assert.AreEqual(4, urgencyLevels.Length)
 
         // 型安全性とパターンマッチング確保
         let testUrgency = Immediate
@@ -160,7 +165,7 @@ type SOLIDDesignTestSuite() =
             | EscalationUrgency.Normal -> DateTime.Now.AddDays(1.0)
             | Low -> DateTime.Now.AddDays(3.0)
 
-        Assert.That(expectedDeadline, Is.GreaterThan(DateTime.Now))
+        Assert.Greater(expectedDeadline, DateTime.Now)
 
     // ===============================================
     // L: リスコフの置換原則 (Liskov Substitution Principle)
@@ -219,8 +224,8 @@ type SOLIDDesignTestSuite() =
         let escalationManager = new EscalationNotificationManager()
 
         // Act & Assert - 活動管理はエスカレーション機能に依存しない
-        Assert.That(activityManager.GetActivityCount, Is.Not.Null)
-        Assert.That(escalationManager.GetNotificationCount, Is.Not.Null)
+        Assert.IsNotNull(activityManager.GetActivityCount)
+        Assert.IsNotNull(escalationManager.GetNotificationCount)
 
         // 各マネージャーは独立して動作可能
         let activityResult = activityManager.ClearActivities()
@@ -247,8 +252,8 @@ type SOLIDDesignTestSuite() =
         let count = activityManager.GetActivityCount()
 
         // Assert - 活動管理に特化したメソッドのみ提供
-        Assert.That(activities, Is.Not.Null)
-        Assert.That(count, Is.EqualTo(0))
+        Assert.IsNotNull(activities)
+        Assert.AreEqual(0, count)
 
         // 他の責務（通知管理等）のメソッドは含まない
         // コンパイル時に型安全性が保証される
@@ -289,7 +294,7 @@ type SOLIDDesignTestSuite() =
                 | _ -> false, Is.True
         )
 
-        Assert.That(originalManager.GetActivityCount(), Is.EqualTo(1))
+        Assert.AreEqual(1, originalManager.GetActivityCount())
 
         // Cleanup
         originalManager.Dispose()
@@ -314,7 +319,7 @@ type SOLIDDesignTestSuite() =
 
         // 内部ストレージの実装変更があっても外部インターフェースは変わらない
         let activities = manager.GetAllActivities()
-        Assert.That(activities.Length, Is.EqualTo(1))
+        Assert.AreEqual(1, activities.Length)
 
         // Cleanup
         manager.Dispose()
@@ -365,8 +370,8 @@ type SOLIDQualityMetricsTestSuite() =
                 | _ -> false, Is.True
         )
 
-        Assert.That(String.IsNullOrEmpty(escalationId), Is.False)
-        Assert.That(String.IsNullOrEmpty(decisionId), Is.False)
+        Assert.IsFalse(String.IsNullOrEmpty(escalationId))
+        Assert.IsFalse(String.IsNullOrEmpty(decisionId))
 
         Assert.That(
             metricResult
@@ -400,8 +405,8 @@ type SOLIDQualityMetricsTestSuite() =
                 | _ -> false, Is.True
         )
 
-        Assert.That(activities, Is.Not.Null)
-        Assert.That(count, Is.EqualTo(1))
+        Assert.IsNotNull(activities)
+        Assert.AreEqual(1, count)
 
         Assert.That(
             clearResult
@@ -410,7 +415,7 @@ type SOLIDQualityMetricsTestSuite() =
                 | _ -> false, Is.True
         )
 
-        Assert.That(manager.GetActivityCount(), Is.EqualTo(0))
+        Assert.AreEqual(0, manager.GetActivityCount())
 
         // Cleanup
         manager.Dispose()
@@ -434,7 +439,7 @@ type SOLIDQualityMetricsTestSuite() =
                 | _ -> false, Is.True
         )
 
-        Assert.That(testManager.GetActivityCount(), Is.EqualTo(1))
+        Assert.AreEqual(1, testManager.GetActivityCount())
 
         // Cleanup
         testManager.Dispose()

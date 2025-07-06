@@ -34,8 +34,8 @@ type RobustStabilityTestSuite() =
             let duration = endTime - startTime
 
             // パフォーマンス検証
-            Assert.That(duration.TotalSeconds, Is.LessThan(30.0)) // 30秒以内
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(operationCount))
+            Assert.AreEqual(Is.LessThan(30.0, duration.TotalSeconds)) // 30秒以内
+            Assert.AreEqual(operationCount, activityManager.GetActivityCount())
 
         finally
             activityManager.Dispose()
@@ -61,10 +61,10 @@ type RobustStabilityTestSuite() =
 
             // 各マネージャーが正常動作
             for manager in managers do
-                Assert.That(manager.GetActivityCount(), Is.EqualTo(100))
+                Assert.AreEqual(100, manager.GetActivityCount())
 
             // メモリ増加が許容範囲内（100MB未満）
-            Assert.That(memoryIncrease, Is.LessThan(100_000_000L))
+            Assert.AreEqual(Is.LessThan(100_000_000L, memoryIncrease))
 
         finally
             for manager in managers do
@@ -86,7 +86,7 @@ type RobustStabilityTestSuite() =
                     |> ignore
                 with ex ->
                     // リソース枯渇時は適切にエラーハンドリング
-                    Assert.That(ex, Is.Not.Null)
+                    Assert.IsNotNull(ex)
 
             // 一部を解放してからの回復確認
             let halfCount = managers.Count / 2
@@ -127,7 +127,7 @@ type RobustStabilityTestSuite() =
             manager.AddSystemActivity($"stress-{i}", SystemMessage, $"Stress test {i}")
             |> ignore
 
-            Assert.That(manager.GetActivityCount(), Is.EqualTo(1))
+            Assert.AreEqual(1, manager.GetActivityCount())
             manager.Dispose()
 
         // メモリリークチェック
@@ -137,7 +137,7 @@ type RobustStabilityTestSuite() =
 
         let finalMemory = GC.GetTotalMemory(true)
         // メモリが適切に解放されていることを確認（具体的な値は環境に依存）
-        Assert.That(finalMemory, Is.GreaterThan(0L))
+        Assert.Greater(finalMemory, 0L)
 
 // ===============================================
 // 長時間稼働安定性テスト
@@ -175,8 +175,8 @@ type LongTermStabilityTestSuite() =
                 Thread.Sleep(10) // 10ms間隔
 
             // 結果検証
-            Assert.That(operationCount, Is.GreaterThan(100)) // 最低100回の操作
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(operationCount))
+            Assert.Greater(operationCount, 100) // 最低100回の操作
+            Assert.AreEqual(operationCount, activityManager.GetActivityCount())
 
         finally
             activityManager.Dispose()
@@ -212,7 +212,7 @@ type ConcurrencyStressTestSuite() =
 
             // 結果検証
             let expectedTotal = threadCount * operationsPerThread
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(expectedTotal))
+            Assert.AreEqual(expectedTotal, activityManager.GetActivityCount())
 
         finally
             activityManager.Dispose()
@@ -238,7 +238,7 @@ type ConcurrencyStressTestSuite() =
 
             // 各マネージャーが正常動作
             for i, manager in Array.indexed managers do
-                Assert.That(manager.GetActivityCount(), Is.EqualTo(100), $"Manager {i} activity count")
+                Assert.AreEqual(100, manager.GetActivityCount(), $"Manager {i} activity count")
 
         finally
             for manager in managers do

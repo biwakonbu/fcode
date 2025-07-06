@@ -1,7 +1,7 @@
 module FCode.Tests.VirtualTimeManagerTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.VirtualTimeCoordinator
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.AgentStateManager
@@ -35,14 +35,14 @@ let createVirtualTimeManager () =
 
     new VirtualTimeCoordinator(timeCalculationManager, meetingScheduler, eventProcessor, config)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``VirtualTimeCoordinator - 基本作成テスト`` () =
     use manager = createVirtualTimeManager ()
     Assert.NotNull(manager)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``VirtualTimeCoordinator - スプリント開始テスト`` () =
     use manager = createVirtualTimeManager ()
 
@@ -60,8 +60,8 @@ let ``VirtualTimeCoordinator - スプリント開始テスト`` () =
         | _ -> false
     )
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``VirtualTimeCoordinator - アクティブスプリント取得テスト`` () =
     use manager = createVirtualTimeManager ()
 
@@ -75,8 +75,8 @@ let ``VirtualTimeCoordinator - アクティブスプリント取得テスト`` (
     | Result.Ok sprints -> Assert.True(sprints.Length >= 0)
     | Result.Error _ -> Assert.True(false, "アクティブスプリント取得失敗")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``VirtualTimeCoordinator - 健全性チェックテスト`` () =
     use manager = createVirtualTimeManager ()
 
@@ -92,8 +92,8 @@ let ``VirtualTimeCoordinator - 健全性チェックテスト`` () =
         Assert.False(String.IsNullOrEmpty(message))
     | Result.Error _ -> Assert.True(false, "健全性チェック失敗")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TimeCalculationManager - 時間計算テスト`` () =
     let config = VirtualTimeConfig.Default
     let timeManager = new TimeCalculationManager(config)
@@ -108,10 +108,10 @@ let ``TimeCalculationManager - 時間計算テスト`` () =
 
     // 仮想時間から実時間計算
     let realDuration = timeManager.CalculateRealDuration(VirtualHour 60)
-    Assert.Equal(TimeSpan.FromMinutes(60.0), realDuration)
+    Assert.AreEqual(realDuration, TimeSpan.FromMinutes(60.0))
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``MeetingScheduler - 基本作成テスト`` () =
     let config = VirtualTimeConfig.Default
     let timeManager = new TimeCalculationManager(config)
@@ -119,8 +119,8 @@ let ``MeetingScheduler - 基本作成テスト`` () =
 
     Assert.NotNull(meetingScheduler)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``EventProcessor - 基本作成テスト`` () =
     let config = VirtualTimeConfig.Default
     let timeManager = new TimeCalculationManager(config)
@@ -133,8 +133,8 @@ let ``EventProcessor - 基本作成テスト`` () =
 // エラーケース・異常系テスト
 // =================
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``VirtualTimeCoordinator - 無効スプリントID停止エラーテスト`` () =
     use manager = createVirtualTimeManager ()
 
@@ -148,8 +148,8 @@ let ``VirtualTimeCoordinator - 無効スプリントID停止エラーテスト``
     | Result.Error(NotFound _) -> Assert.True(true) // 期待されるエラー
     | _ -> Assert.True(false, "無効スプリントID停止でNotFoundエラーが期待される")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``VirtualTimeCoordinator - 無効スプリントID統計取得エラーテスト`` () =
     use manager = createVirtualTimeManager ()
 
@@ -165,8 +165,8 @@ let ``VirtualTimeCoordinator - 無効スプリントID統計取得エラーテ�
     | Result.Ok _ -> Assert.True(false, "無効スプリントIDで統計取得エラーが期待される")
     | _ -> Assert.True(false, "予期しないエラー形式")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TimeCalculationManager - 無効スプリントID仮想時間取得エラーテスト`` () =
     let config = VirtualTimeConfig.Default
     let timeManager = new TimeCalculationManager(config)
@@ -179,8 +179,8 @@ let ``TimeCalculationManager - 無効スプリントID仮想時間取得エラ�
     | Result.Error(NotFound _) -> Assert.True(true) // 期待されるエラー
     | _ -> Assert.True(false, "無効スプリントIDでNotFoundエラーが期待される")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``MeetingScheduler - 無効スプリントIDスタンドアップスケジュールエラーテスト`` () =
     let config = VirtualTimeConfig.Default
     let timeManager = new TimeCalculationManager(config)
@@ -195,8 +195,8 @@ let ``MeetingScheduler - 無効スプリントIDスタンドアップスケジ�
     | Result.Error _ -> Assert.True(true) // エラーハンドリング確認
     | _ -> Assert.True(false, "無効スプリントIDでエラーが期待される")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``EventProcessor - 無効スプリントIDイベント処理エラーテスト`` () =
     let config = VirtualTimeConfig.Default
     let timeManager = new TimeCalculationManager(config)
@@ -212,8 +212,8 @@ let ``EventProcessor - 無効スプリントIDイベント処理エラーテス�
     | Result.Ok [] -> Assert.True(true) // 空リスト返却も許可
     | _ -> Assert.True(false, "予期しない結果")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``VirtualTimeCoordinator - システム健全性異常状態テスト`` () =
     use manager = createVirtualTimeManager ()
 
@@ -242,8 +242,8 @@ let ``VirtualTimeCoordinator - システム健全性異常状態テスト`` () =
             Assert.True(true) // 健全性維持も許可（実装依存）
     | Result.Error _ -> Assert.True(false, "健全性チェック自体の失敗は許可されない")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TimeCalculationManager - 極値時間計算テスト`` () =
     let config = VirtualTimeConfig.Default
     let timeManager = new TimeCalculationManager(config)
@@ -251,7 +251,7 @@ let ``TimeCalculationManager - 極値時間計算テスト`` () =
     // 極小時間
     let extremelySmall = TimeSpan.FromMilliseconds(1.0)
     let virtualTime1 = timeManager.CalculateVirtualTime(extremelySmall)
-    Assert.Equal(VirtualHour 0, virtualTime1)
+    Assert.AreEqual(virtualTime1, VirtualHour 0)
 
     // 極大時間（24時間 = 1440分 = 1440vh）
     let extremelyLarge = TimeSpan.FromHours(24.0)
@@ -261,8 +261,8 @@ let ``TimeCalculationManager - 極値時間計算テスト`` () =
     | VirtualSprint _ -> Assert.True(true) // スプリント単位になることを期待
     | _ -> Assert.True(false, $"極大時間で予期しない結果: {virtualTime2}")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``VirtualTimeCoordinator - エラーメッセージ詳細化確認テスト`` () =
     use manager = createVirtualTimeManager ()
 
@@ -283,8 +283,8 @@ let ``VirtualTimeCoordinator - エラーメッセージ詳細化確認テスト`
 // パフォーマンス・設定テスト
 // =================
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``VirtualTimeConfig - 環境変数設定読み込みテスト`` () =
     // 環境変数設定
     System.Environment.SetEnvironmentVariable("FCODE_VIRTUAL_HOUR_MS", "30000")
@@ -295,10 +295,10 @@ let ``VirtualTimeConfig - 環境変数設定読み込みテスト`` () =
     try
         let config = VirtualTimeConfig.Default
 
-        Assert.Equal(30000, config.VirtualHourDurationMs)
-        Assert.Equal(3, config.StandupIntervalVH)
-        Assert.Equal(2, config.SprintDurationVD)
-        Assert.Equal(10, config.MaxConcurrentSprints)
+        Assert.AreEqual(config.VirtualHourDurationMs, 30000)
+        Assert.AreEqual(config.StandupIntervalVH, 3)
+        Assert.AreEqual(config.SprintDurationVD, 2)
+        Assert.AreEqual(config.MaxConcurrentSprints, 10)
     finally
         // クリーンアップ
         System.Environment.SetEnvironmentVariable("FCODE_VIRTUAL_HOUR_MS", null)
@@ -306,8 +306,8 @@ let ``VirtualTimeConfig - 環境変数設定読み込みテスト`` () =
         System.Environment.SetEnvironmentVariable("FCODE_SPRINT_DURATION_VD", null)
         System.Environment.SetEnvironmentVariable("FCODE_MAX_CONCURRENT_SPRINTS", null)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``VirtualTimeConfig - 無効環境変数でデフォルト値使用テスト`` () =
     // 無効な環境変数設定
     System.Environment.SetEnvironmentVariable("FCODE_VIRTUAL_HOUR_MS", "invalid")
@@ -317,15 +317,15 @@ let ``VirtualTimeConfig - 無効環境変数でデフォルト値使用テスト
         let config = VirtualTimeConfig.Default
 
         // 無効値でデフォルト値が使用されることを確認
-        Assert.Equal(60000, config.VirtualHourDurationMs)
-        Assert.Equal(6, config.StandupIntervalVH)
+        Assert.AreEqual(config.VirtualHourDurationMs, 60000)
+        Assert.AreEqual(config.StandupIntervalVH, 6)
     finally
         // クリーンアップ
         System.Environment.SetEnvironmentVariable("FCODE_VIRTUAL_HOUR_MS", null)
         System.Environment.SetEnvironmentVariable("FCODE_STANDUP_INTERVAL_VH", null)
 
-[<Fact>]
-[<Trait("TestCategory", "Performance")>]
+[<Test>]
+[<Category("Performance")>]
 let ``VirtualTimeCoordinator - 大量スプリント処理パフォーマンステスト`` () =
     use manager = createVirtualTimeManager ()
 

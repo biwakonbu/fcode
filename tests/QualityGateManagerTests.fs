@@ -1,13 +1,13 @@
 module FCode.Tests.QualityGateManagerTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.QualityGateManager
 open FCode.TaskAssignmentManager
 open FCode.Collaboration.CollaborationTypes
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityEvaluationEngine - 品質スコア計算テスト`` () =
     // Arrange
     let engine = QualityEvaluationEngine()
@@ -46,21 +46,21 @@ let ``QualityEvaluationEngine - 品質スコア計算テスト`` () =
     Assert.True(score > 0.7, $"品質スコア {score:F2} が期待値0.7を下回っています")
     Assert.True(score <= 1.0, $"品質スコア {score:F2} が上限1.0を超えています")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityEvaluationEngine - 品質レベル判定テスト`` () =
     // Arrange
     let engine = QualityEvaluationEngine()
 
     // Act & Assert
-    Assert.Equal(QualityLevel.Excellent, engine.DetermineQualityLevel(0.95))
-    Assert.Equal(QualityLevel.Good, engine.DetermineQualityLevel(0.8))
-    Assert.Equal(QualityLevel.Acceptable, engine.DetermineQualityLevel(0.65))
-    Assert.Equal(QualityLevel.Poor, engine.DetermineQualityLevel(0.5))
-    Assert.Equal(QualityLevel.Unacceptable, engine.DetermineQualityLevel(0.3))
+    Assert.AreEqual(QualityLevel.Excellent, engine.DetermineQualityLevel(0.95))
+    Assert.AreEqual(QualityLevel.Good, engine.DetermineQualityLevel(0.8))
+    Assert.AreEqual(QualityLevel.Acceptable, engine.DetermineQualityLevel(0.65))
+    Assert.AreEqual(QualityLevel.Poor, engine.DetermineQualityLevel(0.5))
+    Assert.AreEqual(QualityLevel.Unacceptable, engine.DetermineQualityLevel(0.3))
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityEvaluationEngine - 品質閾値チェックテスト`` () =
     // Arrange
     let engine = QualityEvaluationEngine()
@@ -70,8 +70,8 @@ let ``QualityEvaluationEngine - 品質閾値チェックテスト`` () =
     Assert.True(engine.PassesThreshold(0.6)) // 閾値ちょうど
     Assert.False(engine.PassesThreshold(0.5)) // 閾値未満
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityEvaluationEngine - 改善推奨事項生成テスト`` () =
     // Arrange
     let engine = QualityEvaluationEngine()
@@ -96,8 +96,8 @@ let ``QualityEvaluationEngine - 改善推奨事項生成テスト`` () =
     Assert.True(recommendations |> List.exists (fun r -> r.Contains("コード品質改善")))
     Assert.True(recommendations |> List.exists (fun r -> r.Contains("機能品質向上")))
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityEvaluationEngine - 包括的品質評価テスト`` () =
     // Arrange
     let engine = QualityEvaluationEngine()
@@ -118,14 +118,14 @@ let ``QualityEvaluationEngine - 包括的品質評価テスト`` () =
     let result = engine.EvaluateQuality("task123", metrics, "test_evaluator")
 
     // Assert
-    Assert.Equal("task123", result.TaskId)
-    Assert.Equal("test_evaluator", result.EvaluatedBy)
+    Assert.AreEqual("task123", result.TaskId)
+    Assert.AreEqual("test_evaluator", result.EvaluatedBy)
     Assert.True(result.OverallScore > 0.0)
-    Assert.Equal(2, result.Metrics.Length)
+    Assert.AreEqual(2, result.Metrics.Length)
     Assert.True(result.EvaluatedAt <= DateTime.UtcNow)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``UpstreamDownstreamReviewer - レビュアー選定テスト`` () =
     // Arrange
     let reviewer = UpstreamDownstreamReviewer()
@@ -147,8 +147,8 @@ let ``UpstreamDownstreamReviewer - レビュアー選定テスト`` () =
     Assert.True(reviewers |> List.exists (fun r -> r.ReviewerId = "pdm"))
     Assert.True(reviewers |> List.exists (fun r -> r.ReviewerId = "dev2"))
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``UpstreamDownstreamReviewer - UXタスクレビュアー選定テスト`` () =
     // Arrange
     let reviewer = UpstreamDownstreamReviewer()
@@ -169,8 +169,8 @@ let ``UpstreamDownstreamReviewer - UXタスクレビュアー選定テスト`` (
     Assert.True(reviewers.Length >= 3, $"UXタスクのレビュアー数が {reviewers.Length} 人では不足です")
     Assert.True(reviewers |> List.exists (fun r -> r.ReviewerId = "ux"))
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``UpstreamDownstreamReviewer - 協調レビュー実行テスト`` () =
     // Arrange
     let reviewer = UpstreamDownstreamReviewer()
@@ -198,25 +198,25 @@ let ``UpstreamDownstreamReviewer - 協調レビュー実行テスト`` () =
     let result = reviewer.ConductCollaborativeReview(task, reviewers)
 
     // Assert
-    Assert.Equal("test_task", result.TaskId)
-    Assert.Equal(2, result.Comments.Length)
+    Assert.AreEqual("test_task", result.TaskId)
+    Assert.AreEqual(2, result.Comments.Length)
     Assert.True(result.ConsensusScore >= 0.0 && result.ConsensusScore <= 1.0)
     Assert.True(result.ReviewedAt <= DateTime.UtcNow)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``UpstreamDownstreamReviewer - レビュー次元取得テスト`` () =
     // Arrange
     let reviewer = UpstreamDownstreamReviewer()
 
     // Act & Assert
-    Assert.Equal(CodeQuality, reviewer.GetReviewDimension(Development [ "F#" ]))
-    Assert.Equal(FunctionalQuality, reviewer.GetReviewDimension(Testing [ "unit-testing" ]))
-    Assert.Equal(UserExperience, reviewer.GetReviewDimension(UXDesign [ "UI-design" ]))
-    Assert.Equal(ProcessQuality, reviewer.GetReviewDimension(ProjectManagement [ "planning" ]))
+    Assert.AreEqual(CodeQuality, reviewer.GetReviewDimension(Development [ "F#" ]))
+    Assert.AreEqual(FunctionalQuality, reviewer.GetReviewDimension(Testing [ "unit-testing" ]))
+    Assert.AreEqual(UserExperience, reviewer.GetReviewDimension(UXDesign [ "UI-design" ]))
+    Assert.AreEqual(ProcessQuality, reviewer.GetReviewDimension(ProjectManagement [ "planning" ]))
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``UpstreamDownstreamReviewer - レビュースコア生成テスト`` () =
     // Arrange
     let reviewer = UpstreamDownstreamReviewer()
@@ -242,8 +242,8 @@ let ``UpstreamDownstreamReviewer - レビュースコア生成テスト`` () =
     // Assert
     Assert.True(score >= 0.0 && score <= 1.0, $"レビュースコア {score} が範囲外です")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AlternativeProposalGenerator - 実装困難度分析テスト`` () =
     // Arrange
     let generator = AlternativeProposalGenerator()
@@ -264,8 +264,8 @@ let ``AlternativeProposalGenerator - 実装困難度分析テスト`` () =
     Assert.True(difficulty > 0.5, $"複雑なタスクの困難度 {difficulty} が低すぎます")
     Assert.True(difficulty <= 1.0, $"困難度 {difficulty} が上限を超えています")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AlternativeProposalGenerator - 代替案生成必要性判定テスト`` () =
     // Arrange
     let generator = AlternativeProposalGenerator()
@@ -286,8 +286,8 @@ let ``AlternativeProposalGenerator - 代替案生成必要性判定テスト`` (
     Assert.True(generator.NeedsAlternativeProposals(0.5, Some lowQualityResult))
     Assert.False(generator.NeedsAlternativeProposals(0.5, None))
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AlternativeProposalGenerator - 3案生成テスト`` () =
     // Arrange
     let generator = AlternativeProposalGenerator()
@@ -305,28 +305,28 @@ let ``AlternativeProposalGenerator - 3案生成テスト`` () =
     let proposals = generator.GenerateAlternativeProposals(task)
 
     // Assert
-    Assert.Equal(3, proposals.Length)
+    Assert.AreEqual(3, proposals.Length)
 
     // 簡略化案
     let simple = proposals.[0]
-    Assert.Contains("簡略化", simple.Title)
+    Assert.AreEqual("簡略化", simple.Title)
     Assert.True(simple.EstimatedEffort < task.EstimatedDuration)
     Assert.True(simple.DifficultyScore < 0.5)
     Assert.True(simple.FeasibilityScore > 0.8)
 
     // 標準案
     let standard = proposals.[1]
-    Assert.Contains("標準", standard.Title)
-    Assert.Equal(task.EstimatedDuration, standard.EstimatedEffort)
+    Assert.AreEqual("標準", standard.Title)
+    Assert.AreEqual(task.EstimatedDuration, standard.EstimatedEffort)
 
     // 高機能案
     let advanced = proposals.[2]
-    Assert.Contains("高機能", advanced.Title)
+    Assert.AreEqual("高機能", advanced.Title)
     Assert.True(advanced.EstimatedEffort > task.EstimatedDuration)
     Assert.True(advanced.DifficultyScore > 0.7)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AlternativeProposalGenerator - 最適代替案選択テスト`` () =
     // Arrange
     let generator = AlternativeProposalGenerator()
@@ -360,10 +360,10 @@ let ``AlternativeProposalGenerator - 最適代替案選択テスト`` () =
     let best = generator.SelectBestAlternative(proposals, constraints)
 
     // Assert
-    Assert.Equal("案1", best.Title) // 時間制約が強い場合、簡略案が選択される
+    Assert.AreEqual("案1", best.Title) // 時間制約が強い場合、簡略案が選択される
 
-[<Fact>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Integration")>]
 let ``QualityGateManager - 包括的品質ゲート実行テスト`` () =
     // Arrange
     let evaluationEngine = QualityEvaluationEngine()
@@ -386,19 +386,19 @@ let ``QualityGateManager - 包括的品質ゲート実行テスト`` () =
     // Assert
     match result with
     | Result.Ok(reviewResult, alternatives) ->
-        Assert.Equal("integration_test", reviewResult.TaskId)
+        Assert.AreEqual("integration_test", reviewResult.TaskId)
         Assert.True(reviewResult.Comments.Length >= 2)
         Assert.True(reviewResult.ConsensusScore >= 0.0)
 
         // 高難易度タスクなので代替案が生成される可能性が高い
         match alternatives with
-        | Some alts -> Assert.Equal(3, alts.Length)
+        | Some alts -> Assert.AreEqual(3, alts.Length)
         | None -> () // 代替案が不要と判定された場合
 
     | Result.Error error -> Assert.True(false, $"品質ゲート実行がエラーになりました: {error}")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityGateManager - 品質レポート生成テスト`` () =
     // Arrange
     let evaluationEngine = QualityEvaluationEngine()
@@ -440,13 +440,13 @@ let ``QualityGateManager - 品質レポート生成テスト`` () =
     let report = manager.GenerateQualityReport(task, reviewResult, alternatives)
 
     // Assert
-    Assert.Contains("レポートテスト", report)
-    Assert.Contains("0.75", report)
-    Assert.Contains("承認", report)
-    Assert.Contains("代替案: 1件", report)
+    Assert.IsTrue(report.Contains("レポートテスト"))
+    Assert.IsTrue(report.Contains("0.75"))
+    Assert.IsTrue(report.Contains("承認"))
+    Assert.IsTrue(report.Contains("代替案: 1件"))
 
-[<Fact>]
-[<Trait("TestCategory", "Performance")>]
+[<Test>]
+[<Category("Performance")>]
 let ``QualityGateManager - 大量タスク処理性能テスト`` () =
     // Arrange
     let evaluationEngine = QualityEvaluationEngine()
@@ -474,7 +474,7 @@ let ``QualityGateManager - 大量タスク処理性能テスト`` () =
     stopwatch.Stop()
 
     // Assert
-    Assert.Equal(10, results.Length)
+    Assert.AreEqual(10, results.Length)
 
     Assert.True(
         results
@@ -488,8 +488,8 @@ let ``QualityGateManager - 大量タスク処理性能テスト`` () =
         $"10タスク処理に {stopwatch.ElapsedMilliseconds}ms かかりました（期待値: <5000ms）"
     )
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityMetrics - 品質メトリクス構造検証`` () =
     // Arrange & Act
     let metric =
@@ -500,23 +500,23 @@ let ``QualityMetrics - 品質メトリクス構造検証`` () =
           Timestamp = DateTime.UtcNow }
 
     // Assert
-    Assert.Equal(CodeQuality, metric.Dimension)
-    Assert.Equal(85.0, metric.Score)
-    Assert.Equal(100.0, metric.MaxScore)
-    Assert.Equal("コード品質評価詳細", metric.Details)
+    Assert.AreEqual(CodeQuality, metric.Dimension)
+    Assert.AreEqual(85.0, metric.Score)
+    Assert.AreEqual(100.0, metric.MaxScore)
+    Assert.AreEqual("コード品質評価詳細", metric.Details)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityLevel - 品質レベル列挙型検証`` () =
     // Act & Assert
-    Assert.Equal(5, int QualityLevel.Excellent)
-    Assert.Equal(4, int QualityLevel.Good)
-    Assert.Equal(3, int QualityLevel.Acceptable)
-    Assert.Equal(2, int QualityLevel.Poor)
-    Assert.Equal(1, int QualityLevel.Unacceptable)
+    Assert.AreEqual(5, int QualityLevel.Excellent)
+    Assert.AreEqual(4, int QualityLevel.Good)
+    Assert.AreEqual(3, int QualityLevel.Acceptable)
+    Assert.AreEqual(2, int QualityLevel.Poor)
+    Assert.AreEqual(1, int QualityLevel.Unacceptable)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ReviewComment - レビューコメント構造検証`` () =
     // Arrange & Act
     let comment =
@@ -531,9 +531,9 @@ let ``ReviewComment - レビューコメント構造検証`` () =
           Priority = TaskPriority.Medium }
 
     // Assert
-    Assert.Equal("comment_123", comment.CommentId)
-    Assert.Equal("pdm", comment.ReviewerId)
-    Assert.Equal("task_456", comment.TaskId)
-    Assert.Equal(ProcessQuality, comment.Dimension)
-    Assert.Equal(0.8, comment.Score)
-    Assert.Equal(2, comment.Suggestions.Length)
+    Assert.AreEqual("comment_123", comment.CommentId)
+    Assert.AreEqual("pdm", comment.ReviewerId)
+    Assert.AreEqual("task_456", comment.TaskId)
+    Assert.AreEqual(ProcessQuality, comment.Dimension)
+    Assert.AreEqual(0.8, comment.Score)
+    Assert.AreEqual(2, comment.Suggestions.Length)

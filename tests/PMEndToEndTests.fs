@@ -64,7 +64,7 @@ type PMEndToEndTests() =
             | Some sessionMgr ->
                 // Act - PMペインの設定検証
                 let pmRole = getPMRoleFromPaneId "pm"
-                Assert.That(pmRole, Is.EqualTo(Some ProjectManager), "pmペインがProjectManager役割として認識されること")
+                Assert.AreEqual(Some ProjectManager, pmRole, "pmペインがProjectManager役割として認識されること")
 
                 match pmRole with
                 | Some role ->
@@ -72,17 +72,17 @@ type PMEndToEndTests() =
                     let pmEnvVars = getPMEnvironmentVariables role
 
                     // PM設定の完全性確認
-                    Assert.That(pmConfig.SystemPrompt, Is.Not.Empty, "PMシステムプロンプトが設定されていること")
+                    Assert.IsNotEmpty(pmConfig.SystemPrompt, "PMシステムプロンプトが設定されていること")
                     Assert.That(pmConfig.SystemPrompt, Does.Contain("プロジェクトマネージャー"), "PM役割がプロンプトに含まれること")
                     Assert.That(pmConfig.SystemPrompt, Does.Contain("統合管理"), "統合管理機能がプロンプトに含まれること")
                     Assert.That(pmConfig.SystemPrompt, Does.Contain("dev1-3, qa1-2, ux"), "全ペイン統合監視がプロンプトに含まれること")
 
                     // PM環境変数の完全性確認
                     let pmEnvMap = pmEnvVars |> Map.ofList
-                    Assert.That(pmEnvMap.["CLAUDE_ROLE"], Is.EqualTo("pm"), "CLAUDE_ROLE環境変数が正しく設定されること")
-                    Assert.That(pmEnvMap.["PM_FOCUS"], Is.EqualTo("project_management"), "PM_FOCUS環境変数が正しく設定されること")
-                    Assert.That(pmEnvMap.["PM_PERSPECTIVE"], Is.EqualTo("integration"), "PM_PERSPECTIVE環境変数が正しく設定されること")
-                    Assert.That(pmEnvMap.["PM_TEAM_SIZE"], Is.EqualTo("7_panes"), "PM_TEAM_SIZE環境変数が正しく設定されること")
+                    Assert.AreEqual("pm", pmEnvMap.["CLAUDE_ROLE"], "CLAUDE_ROLE環境変数が正しく設定されること")
+                    Assert.AreEqual("project_management", pmEnvMap.["PM_FOCUS"], "PM_FOCUS環境変数が正しく設定されること")
+                    Assert.AreEqual("integration", pmEnvMap.["PM_PERSPECTIVE"], "PM_PERSPECTIVE環境変数が正しく設定されること")
+                    Assert.AreEqual("7_panes", pmEnvMap.["PM_TEAM_SIZE"], "PM_TEAM_SIZE環境変数が正しく設定されること")
 
                     // ログ機能の動作確認
                     Assert.DoesNotThrow(fun () -> logPMPromptApplication "pm" role)
@@ -90,7 +90,7 @@ type PMEndToEndTests() =
                     // ClaudeCodeProcess統合設定の確認（SessionManager経由）
                     // Note: 実際のClaude起動はテスト環境では行わず、設定の整合性のみ確認
                     let pmDisplayName = getPMRoleDisplayName role
-                    Assert.That(pmDisplayName, Is.EqualTo("プロジェクトマネージャー"), "PM表示名が正しく設定されること")
+                    Assert.AreEqual("プロジェクトマネージャー", pmDisplayName, "PM表示名が正しく設定されること")
 
                 | None -> Assert.Fail("pmペインからPM役割が取得できない")
 
@@ -107,7 +107,7 @@ type PMEndToEndTests() =
 
             // Act - timelineペインの設定検証
             let timelineRole = getPMRoleFromPaneId "timeline"
-            Assert.That(timelineRole, Is.EqualTo(Some ProjectManager), "timelineペインがProjectManager役割として認識されること")
+            Assert.AreEqual(Some ProjectManager, timelineRole, "timelineペインがProjectManager役割として認識されること")
 
             let pmTimelineRole = getPMRoleFromPaneId "PM / PdM タイムライン"
 
@@ -128,7 +128,7 @@ type PMEndToEndTests() =
                 Assert.That(config.SystemPrompt, Does.Contain("意思決定支援"), "意思決定支援機能が設定されていること")
 
                 let envMap = envVars |> Map.ofList
-                Assert.That(envMap.["PM_PERSPECTIVE"], Is.EqualTo("integration"), "timeline用統合視点が設定されていること")
+                Assert.AreEqual("integration", envMap.["PM_PERSPECTIVE"], "timeline用統合視点が設定されていること")
 
             | None -> Assert.Fail("timelineペインからPM役割が取得できない")
         }
@@ -176,10 +176,10 @@ type PMEndToEndTests() =
             let pmEnvMap = projectManagerConfig.EnvironmentVars |> Map.ofList
             let pdmEnvMap = productManagerConfig.EnvironmentVars |> Map.ofList
 
-            Assert.That(pmEnvMap.["PM_FOCUS"], Is.EqualTo("project_management"), "ProjectManagerのフォーカス設定")
-            Assert.That(pdmEnvMap.["PM_FOCUS"], Is.EqualTo("product_management"), "ProductManagerのフォーカス設定")
-            Assert.That(pmEnvMap.["PM_PERSPECTIVE"], Is.EqualTo("integration"), "ProjectManagerの視点設定")
-            Assert.That(pdmEnvMap.["PM_PERSPECTIVE"], Is.EqualTo("business_value"), "ProductManagerの視点設定")
+            Assert.AreEqual("project_management", pmEnvMap.["PM_FOCUS"], "ProjectManagerのフォーカス設定")
+            Assert.AreEqual("product_management", pdmEnvMap.["PM_FOCUS"], "ProductManagerのフォーカス設定")
+            Assert.AreEqual("integration", pmEnvMap.["PM_PERSPECTIVE"], "ProjectManagerの視点設定")
+            Assert.AreEqual("business_value", pdmEnvMap.["PM_PERSPECTIVE"], "ProductManagerの視点設定")
         }
 
     [<Test>]
@@ -203,7 +203,7 @@ type PMEndToEndTests() =
             testCases
             |> List.iter (fun (paneId, expectedRole, description) ->
                 let actualRole = getPMRoleFromPaneId paneId
-                Assert.That(actualRole, Is.EqualTo(expectedRole), $"{description}ペインの役割特定が正しいこと"))
+                Assert.AreEqual(expectedRole, actualRole, $"{description}ペインの役割特定が正しいこと"))
         }
 
     [<Test>]
@@ -220,9 +220,9 @@ type PMEndToEndTests() =
                 let displayName = getPMRoleDisplayName role
 
                 // 設定完全性テスト
-                Assert.That(config.SystemPrompt.Length, Is.GreaterThan(500), $"{displayName}のシステムプロンプトが十分詳細であること")
-                Assert.That(config.EnvironmentVars.Length, Is.EqualTo(5), $"{displayName}の環境変数が完全であること")
-                Assert.That(envVars.Length, Is.EqualTo(5), $"{displayName}の環境変数取得が正常であること")
+                Assert.Greater(config.SystemPrompt.Length, 500, $"{displayName}のシステムプロンプトが十分詳細であること")
+                Assert.AreEqual(5, config.EnvironmentVars.Length, $"{displayName}の環境変数が完全であること")
+                Assert.AreEqual(5, envVars.Length, $"{displayName}の環境変数取得が正常であること")
 
                 // 日本語対応テスト
                 Assert.That(config.SystemPrompt, Does.Contain("日本語"), $"{displayName}が日本語対応していること")
@@ -247,8 +247,8 @@ type PMEndToEndTests() =
 
             // 7ペイン環境での動作前提確認
             let pmEnvMap = pmConfig.EnvironmentVars |> Map.ofList
-            Assert.That(pmEnvMap.["PM_TEAM_SIZE"], Is.EqualTo("7_panes"), "7ペイン環境設定")
-            Assert.That(pmEnvMap.["PM_PERSPECTIVE"], Is.EqualTo("integration"), "統合管理視点設定")
+            Assert.AreEqual("7_panes", pmEnvMap.["PM_TEAM_SIZE"], "7ペイン環境設定")
+            Assert.AreEqual("integration", pmEnvMap.["PM_PERSPECTIVE"], "統合管理視点設定")
         }
 
     [<Test>]

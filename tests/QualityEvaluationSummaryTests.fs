@@ -32,9 +32,9 @@ let ``QualityEvaluationSummaryManager - 基本的な品質評価テスト`` () =
         manager.GenerateQualitySummary(qualityMetrics, testResults, codeReviewFindings)
 
     // Assert: 品質評価結果検証
-    Assert.AreEqual(summary.CodeQuality, 2, 0.97) // コード品質（0.95*0.4 + 0.95*0.3 + 1.0*0.3 = 0.965）
-    Assert.AreEqual(summary.TestCoverage, 2, 0.95) // テストカバレッジ
-    Assert.AreEqual(summary.DocumentationScore, 2, 0.92) // ドキュメント品質
+    Assert.AreEqual(0.965, summary.CodeQuality, 0.01) // コード品質（0.95*0.4 + 0.95*0.3 + 1.0*0.3 = 0.965）
+    Assert.AreEqual(0.95, summary.TestCoverage, 0.01) // テストカバレッジ
+    Assert.AreEqual(0.92, summary.DocumentationScore, 0.01) // ドキュメント品質
     Assert.True(summary.SecurityCompliance) // セキュリティ準拠
     Assert.AreEqual(summary.PerformanceMetrics.Length, 1) // パフォーマンス指標
     Assert.AreEqual(summary.IssuesFound.Length, 1) // 発見課題数
@@ -66,8 +66,8 @@ let ``QualityEvaluationSummaryManager - 低品質ケースの評価テスト`` (
 
     // Assert: 低品質評価結果検証
     Assert.True(summary.CodeQuality < 0.7) // 低コード品質
-    Assert.AreEqual(summary.TestCoverage, 2, 0.65) // 低テストカバレッジ
-    Assert.AreEqual(summary.DocumentationScore, 2, 0.30) // 低ドキュメント品質
+    Assert.AreEqual(0.65, summary.TestCoverage, 0.01) // 低テストカバレッジ
+    Assert.AreEqual(0.30, summary.DocumentationScore, 0.01) // 低ドキュメント品質
     Assert.False(summary.SecurityCompliance) // セキュリティ非準拠
     Assert.AreEqual(summary.PerformanceMetrics.Length, 1) // パフォーマンス指標
     Assert.AreEqual(summary.IssuesFound.Length, 4) // 多数の課題
@@ -126,9 +126,9 @@ let ``QualityEvaluationSummaryManager - 品質改善提案生成テスト`` () =
 
     // Assert: 改善提案内容検証
     Assert.True(summary.RecommendedImprovements.Length >= 3) // 複数改善提案
-    Assert.AreEqual(summary.RecommendedImprovements, "テストカバレッジ向上") // カバレッジ改善
-    Assert.AreEqual(summary.RecommendedImprovements, "セキュリティ対応") // セキュリティ改善
-    Assert.AreEqual(summary.RecommendedImprovements, "ドキュメント充実") // ドキュメント改善
+    Assert.True(summary.RecommendedImprovements |> List.contains "テストカバレッジ向上") // カバレッジ改善
+    Assert.True(summary.RecommendedImprovements |> List.contains "セキュリティ対応") // セキュリティ改善
+    Assert.True(summary.RecommendedImprovements |> List.contains "ドキュメント充実") // ドキュメント改善
     Assert.AreEqual(summary.IssuesFound.Length, 2) // 適切な課題抽出
 
 // テスト用品質メトリクス型定義

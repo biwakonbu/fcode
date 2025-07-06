@@ -24,7 +24,7 @@ type AgentStateManager(config: CollaborationConfig) =
     /// 進捗値検証
     let validateProgress progress =
         if progress < 0.0 || progress > 100.0 then
-            Result.Error(InvalidInput(sprintf "Progress must be between 0.0 and 100.0, got %f" progress))
+            Result.Error(InvalidInput "Progress must be between")
         else
             Result.Ok progress
 

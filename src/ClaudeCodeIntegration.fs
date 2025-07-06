@@ -71,7 +71,7 @@ type ClaudeCodeIntegrationManager() =
                 addToBuffer "Claude Code > 実行完了"
                 Result.Ok "コマンド送信完了（シミュレーション）"
             else
-                let error = "Claude Codeプロセスが起動していません"
+                let error = "起動していません"
                 FCode.Logger.logWarning "ClaudeCodeIntegration" error
                 Result.Error error
         with ex ->

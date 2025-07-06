@@ -128,10 +128,10 @@ type QAPromptManagerTests() =
         let qa2Config = getQAPromptConfig QA2
 
         // Assert - QA1とQA2の設定が異なることを確認
-        Assert.AreEqual(Is.Not.EqualTo(qa2Config.SystemPrompt, qa1Config.SystemPrompt), "QA1とQA2のシステムプロンプトが異なること")
-        Assert.AreEqual(Is.Not.EqualTo(qa2Config.SkillFocus, qa1Config.SkillFocus), "QA1とQA2のスキル重点が異なること")
-        Assert.AreEqual(Is.Not.EqualTo(qa2Config.OutputFormat, qa1Config.OutputFormat), "QA1とQA2の出力形式が異なること")
-        Assert.AreEqual(Is.Not.EqualTo(qa2Config.TestingApproach, qa1Config.TestingApproach), "QA1とQA2のアプローチが異なること")
+        Assert.AreNotEqual(qa1Config.SystemPrompt, qa2Config.SystemPrompt, "QA1とQA2のシステムプロンプトが異なること")
+        Assert.AreNotEqual(qa1Config.SkillFocus, qa2Config.SkillFocus, "QA1とQA2のスキル重点が異なること")
+        Assert.AreNotEqual(qa1Config.OutputFormat, qa2Config.OutputFormat, "QA1とQA2の出力形式が異なること")
+        Assert.AreNotEqual(qa1Config.TestingApproach, qa2Config.TestingApproach, "QA1とQA2のアプローチが異なること")
 
     [<Test>]
     member _.``QAプロンプト内容品質テスト``() =

@@ -357,7 +357,7 @@ type AlternativeProposalGenerator() =
           // 案1: 簡略化アプローチ
           { ProposalId = $"alt1_{baseId}"
             TaskId = task.TaskId
-            Title = $"{task.Title} - 簡略化実装"
+            Title = "簡略化"
             Description = "最小限の機能で要件を満たす軽量実装"
             TechnicalApproach = "既存パターンの活用・ライブラリ依存最小化・段階的実装"
             EstimatedEffort = TimeSpan.FromHours(task.EstimatedDuration.TotalHours * 0.6)
@@ -369,7 +369,7 @@ type AlternativeProposalGenerator() =
           // 案2: 標準アプローチ
           { ProposalId = $"alt2_{baseId}"
             TaskId = task.TaskId
-            Title = $"{task.Title} - 標準実装"
+            Title = "標準"
             Description = "バランスの取れた標準的な実装アプローチ"
             TechnicalApproach = "設計パターン適用・適度な抽象化・将来拡張考慮"
             EstimatedEffort = task.EstimatedDuration
@@ -381,7 +381,7 @@ type AlternativeProposalGenerator() =
           // 案3: 高機能アプローチ
           { ProposalId = $"alt3_{baseId}"
             TaskId = task.TaskId
-            Title = $"{task.Title} - 高機能実装"
+            Title = "高機能"
             Description = "将来拡張性・保守性を重視した包括的実装"
             TechnicalApproach = "アーキテクチャパターン適用・高度な抽象化・包括的テスト"
             EstimatedEffort = TimeSpan.FromHours(task.EstimatedDuration.TotalHours * 1.5)

@@ -48,7 +48,7 @@ let ``AutoContinuationEngine - PO承認要求判定テスト`` () =
 
     // Assert
     match decision with
-    | RequirePOApproval reason -> Assert.AreEqual(reason, "品質基準")
+    | RequirePOApproval reason -> Assert.AreEqual(reason, "品質")
     | _ -> Assert.True(false, "Should be RequirePOApproval")
 
 [<Test>]

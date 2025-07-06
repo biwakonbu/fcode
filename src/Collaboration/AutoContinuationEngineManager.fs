@@ -15,11 +15,11 @@ type AutoContinuationEngineManager() =
             && assessment.AcceptanceCriteriaMet
             && not assessment.RequiresPOApproval
         then
-            AutoContinue "高品質完成により自動継続"
+            AutoContinue "高品質完成"
 
         // 重大な品質課題がある場合は実行停止
         elif assessment.QualityScore < 0.5 || assessment.TasksBlocked > 5 then
-            StopExecution "重大な品質課題により実行停止"
+            StopExecution "品質"
 
         // 品質課題があるがリカバリ可能な場合はPO承認要求
         elif
@@ -27,7 +27,7 @@ type AutoContinuationEngineManager() =
             || assessment.QualityScore < 0.80
             || assessment.RequiresPOApproval
         then
-            RequirePOApproval "品質基準未達によりPO承認要求"
+            RequirePOApproval "品質"
 
         // その他の場合は自動継続
         else

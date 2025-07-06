@@ -128,17 +128,11 @@ type PMPromptManagerTests() =
 
         let pmEnvMap = pmConfig.EnvironmentVars |> Map.ofList
         let pdmEnvMap = pdmConfig.EnvironmentVars |> Map.ofList
-        Assert.AreEqual(Is.Not.EqualTo(pdmEnvMap.["PM_FOCUS"], pmEnvMap.["PM_FOCUS"]), "PM_FOCUSが異なること")
+        Assert.AreNotEqual(pdmEnvMap.["PM_FOCUS"], pmEnvMap.["PM_FOCUS"], "PM_FOCUSが異なること")
 
-        Assert.AreEqual(
-            Is.Not.EqualTo(pdmEnvMap.["PM_PERSPECTIVE"], pmEnvMap.["PM_PERSPECTIVE"]),
-            "PM_PERSPECTIVEが異なること"
-        )
+        Assert.AreNotEqual(pdmEnvMap.["PM_PERSPECTIVE"], pmEnvMap.["PM_PERSPECTIVE"], "PM_PERSPECTIVEが異なること")
 
-        Assert.AreEqual(
-            Is.Not.EqualTo(pdmEnvMap.["PM_METHODOLOGY"], pmEnvMap.["PM_METHODOLOGY"]),
-            "PM_METHODOLOGYが異なること"
-        )
+        Assert.AreNotEqual(pdmEnvMap.["PM_METHODOLOGY"], pmEnvMap.["PM_METHODOLOGY"], "PM_METHODOLOGYが異なること")
 
     [<Test>]
     member _.``PMプロンプト内容品質テスト``() =

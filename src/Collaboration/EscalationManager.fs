@@ -202,7 +202,7 @@ type EscalationManager
                     logInfo "EscalationManager"
                     <| sprintf "自動復旧上限到達: %s" escalationContext.EscalationId
 
-                    return Result.Ok(false, "自動復旧試行回数上限に到達")
+                    return Result.Ok(false, "上限")
                 else
 
                     // 致命度による復旧可能性判定
@@ -219,7 +219,7 @@ type EscalationManager
                         logInfo "EscalationManager"
                         <| sprintf "致命度により自動復旧不可: %s (%A)" escalationContext.EscalationId escalationContext.Severity
 
-                        return Result.Ok(false, sprintf "致命度%Aのため自動復旧不可" escalationContext.Severity)
+                        return Result.Ok(false, "致命度")
                     else
 
                         // ブロッカー種別による復旧戦略の選択

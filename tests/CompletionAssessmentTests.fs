@@ -59,8 +59,8 @@ let ``CompletionAssessmentManager - 基本的なタスク完成度評価テス�
     Assert.AreEqual(assessment.TasksCompleted, 1) // 1完了
     Assert.AreEqual(assessment.TasksInProgress, 1) // 1進行中
     Assert.AreEqual(assessment.TasksBlocked, 1) // 1ブロック
-    Assert.AreEqual(assessment.OverallCompletionRate, 2, 0.33) // 33%完了
-    Assert.AreEqual(assessment.QualityScore, 2, 0.90) // High優先度品質スコア
+    Assert.AreEqual(0.33, assessment.OverallCompletionRate, 0.01) // 33%完了
+    Assert.AreEqual(0.90, assessment.QualityScore, 0.01) // High優先度品質スコア
     Assert.False(assessment.AcceptanceCriteriaMet) // 受け入れ基準未達
     Assert.True(assessment.RequiresPOApproval) // PO承認必要
 
@@ -116,8 +116,8 @@ let ``CompletionAssessmentManager - 高品質完成ケースでの評価テス�
     Assert.AreEqual(assessment.TasksCompleted, 3) // 全完了
     Assert.AreEqual(assessment.TasksInProgress, 0) // 進行中なし
     Assert.AreEqual(assessment.TasksBlocked, 0) // ブロックなし
-    Assert.AreEqual(assessment.OverallCompletionRate, 2, 1.0) // 100%完了
-    Assert.AreEqual(assessment.QualityScore, 2, 0.95) // Critical優先度品質スコア
+    Assert.AreEqual(1.0, assessment.OverallCompletionRate, 0.01) // 100%完了
+    Assert.AreEqual(0.95, assessment.QualityScore, 0.01) // Critical優先度品質スコア
     Assert.True(assessment.AcceptanceCriteriaMet) // 受け入れ基準達成
     Assert.False(assessment.RequiresPOApproval) // PO承認不要
 
@@ -180,7 +180,7 @@ let ``CompletionAssessmentManager - 品質閾値境界値テスト`` () =
     // Assert: 境界値動作検証
     Assert.AreEqual(assessment.TasksCompleted, 2)
     Assert.AreEqual(assessment.OverallCompletionRate, 1.0)
-    Assert.AreEqual(assessment.QualityScore, 3, 0.825) // 平均品質 (0.90+0.75)/2
+    Assert.AreEqual(0.825, assessment.QualityScore, 0.01) // 平均品質 (0.90+0.75)/2
     Assert.True(assessment.AcceptanceCriteriaMet) // 品質基準達成
     Assert.False(assessment.RequiresPOApproval) // PO承認不要（品質基準達成済み）
 

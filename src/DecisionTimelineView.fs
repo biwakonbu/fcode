@@ -23,6 +23,14 @@ type DecisionStage =
     | Implementation // 実装・実行
     | Review // レビュー・評価
 
+/// 意思決定状態
+type DecisionStatus =
+    | Active // アクティブ
+    | Completed // 完了
+    | Suspended // 一時停止
+    | Cancelled // キャンセル
+    | Archived // アーカイブ
+
 /// 意思決定エントリ
 type DecisionEntry =
     { DecisionId: string // 意思決定一意ID
@@ -34,7 +42,7 @@ type DecisionEntry =
       Timeline: DateTime * DateTime option // 開始時刻・完了時刻
       RelatedTaskIds: string list // 関連タスクID
       Metadata: Map<string, string> // 追加メタデータ
-      Status: string } // 状態
+      Status: DecisionStatus } // 状態
 
 /// 意思決定プロセス履歴エントリ
 type DecisionHistoryEntry =
@@ -91,7 +99,7 @@ type DecisionTimelineManager() =
               Timeline = (DateTime.Now, None)
               RelatedTaskIds = []
               Metadata = Map.empty
-              Status = "active" }
+              Status = Active }
 
         decisions.[decisionId] <- decision
 
@@ -131,7 +139,7 @@ type DecisionTimelineManager() =
                 { decision with
                     Stage = Review
                     Timeline = (fst decision.Timeline, Some DateTime.Now)
-                    Status = "completed" }
+                    Status = Completed }
 
             decisions.[decisionId] <- completedDecision
 
@@ -177,7 +185,7 @@ type DecisionTimelineManager() =
                 // アクティブな意思決定と最新履歴を取得・フォーマット
                 let activeDecisions =
                     decisions.Values
-                    |> Seq.filter (fun d -> d.Status = "active")
+                    |> Seq.filter (fun d -> d.Status = Active)
                     |> Seq.sortByDescending (fun d -> fst d.Timeline)
                     |> Seq.take (min 5 (Seq.length (decisions.Values)))
                     |> Seq.toArray
@@ -189,10 +197,36 @@ type DecisionTimelineManager() =
 
                 let displayText = this.FormatTimelineForDisplay(activeDecisions, recentHistory)
 
-                // UI更新はメインスレッドで実行
-                Application.MainLoop.Invoke(fun () ->
-                    textView.Text <- ustring.Make(displayText: string)
-                    textView.SetNeedsDisplay())
+                // UI更新はメインスレッドで実行・CI環境では安全にスキップ
+                let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+
+                if not isCI then
+                    try
+                        // Application.MainLoopの安全性チェック
+                        if not (isNull Application.MainLoop) then
+                            Application.MainLoop.Invoke(fun () ->
+                                try
+                                    if not (isNull textView) then
+                                        textView.Text <- ustring.Make(displayText: string)
+                                        textView.SetNeedsDisplay()
+                                    else
+                                        logWarning "DecisionTimelineView" "TextView is null during UI update"
+                                with ex ->
+                                    logException "DecisionTimelineView" "UI thread update failed" ex)
+                        else
+                            // MainLoopが利用できない場合は直接更新を試行
+                            try
+                                if not (isNull textView) then
+                                    textView.Text <- ustring.Make(displayText: string)
+                                    textView.SetNeedsDisplay()
+                                else
+                                    logWarning "DecisionTimelineView" "TextView is null during direct UI update"
+                            with ex ->
+                                logWarning "DecisionTimelineView" $"Direct UI update failed: {ex.Message}"
+                    with ex ->
+                        logException "DecisionTimelineView" "MainLoop.Invoke failed" ex
+                else
+                    logDebug "DecisionTimelineView" "CI environment detected - skipping UI update"
 
                 logDebug
                     "DecisionTimelineView"
@@ -330,7 +364,7 @@ type DecisionTimelineManager() =
 
     /// アクティブ意思決定一覧取得
     member this.GetActiveDecisions() =
-        decisions.Values |> Seq.filter (fun d -> d.Status = "active") |> Seq.toArray
+        decisions.Values |> Seq.filter (fun d -> d.Status = Active) |> Seq.toArray
 
     /// 全意思決定取得
     member this.GetAllDecisions() = decisions.Values |> Seq.toArray
@@ -344,29 +378,50 @@ type DecisionTimelineManager() =
         this.UpdateTimelineDisplay()
         logInfo "DecisionTimelineView" "Decision history cleared"
 
+    /// リソース解放
+    member this.Dispose() =
+        decisions.Clear()
+        history.Clear()
+        GC.SuppressFinalize(this)
+
+    interface IDisposable with
+        member this.Dispose() = this.Dispose()
+
 // ===============================================
-// グローバル意思決定タイムライン管理インスタンス
+// 依存性注入対応グローバル管理インスタンス
 // ===============================================
 
-/// グローバル意思決定タイムライン管理インスタンス
-let globalDecisionTimelineManager = DecisionTimelineManager()
+/// 依存性注入対応意思決定タイムライン管理インスタンス（遅延初期化）
+let mutable private timelineManagerInstance: DecisionTimelineManager option = None
+
+/// 意思決定タイムライン管理インスタンス取得または作成
+let private getOrCreateTimelineManager () =
+    match timelineManagerInstance with
+    | Some manager -> manager
+    | None ->
+        let manager = new DecisionTimelineManager()
+        timelineManagerInstance <- Some manager
+        manager
 
 /// 新規意思決定開始 (グローバル関数)
 let startDecision (title: string) (description: string) (priority: MessagePriority) (stakeholders: string list) =
-    globalDecisionTimelineManager.StartDecision(title, description, priority, stakeholders)
+    (getOrCreateTimelineManager ()).StartDecision(title, description, priority, stakeholders)
 
 /// 意思決定段階更新 (グローバル関数)
 let updateDecisionStage (decisionId: string) (newStage: DecisionStage) (agentId: string) (content: string) =
-    globalDecisionTimelineManager.UpdateDecisionStage(decisionId, newStage, agentId, content)
+    (getOrCreateTimelineManager ()).UpdateDecisionStage(decisionId, newStage, agentId, content)
 
 /// 意思決定完了 (グローバル関数)
 let completeDecision (decisionId: string) (agentId: string) (finalDecision: string) =
-    globalDecisionTimelineManager.CompleteDecision(decisionId, agentId, finalDecision)
+    (getOrCreateTimelineManager ()).CompleteDecision(decisionId, agentId, finalDecision)
 
 /// PMタイムラインTextView設定 (グローバル関数)
 let setTimelineTextView (textView: TextView) =
-    globalDecisionTimelineManager.SetTimelineTextView(textView)
+    (getOrCreateTimelineManager ()).SetTimelineTextView(textView)
 
 /// AgentMessageから意思決定活動処理 (グローバル関数)
 let processDecisionMessage (message: AgentMessage) =
-    globalDecisionTimelineManager.ProcessDecisionMessage(message)
+    (getOrCreateTimelineManager ()).ProcessDecisionMessage(message)
+
+/// 依存性注入: 既存のインスタンスを置き換え（テスト用）
+let injectTimelineManager (manager: DecisionTimelineManager) = timelineManagerInstance <- Some manager

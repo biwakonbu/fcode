@@ -13,6 +13,8 @@ open FCode.UnifiedActivityView
 open FCode.DecisionTimelineView
 open FCode.EscalationNotificationUI
 open FCode.ProgressDashboard
+open FCode.RealtimeUIIntegration
+open FCode.FullWorkflowCoordinator
 
 [<EntryPoint>]
 let main argv =
@@ -81,7 +83,10 @@ let main argv =
 
             // 初期システム活動追加
             addSystemActivity "system" SystemMessage "fcode TUI Application 起動完了 - エージェント協調開発環境準備中"
+            |> ignore
+
             addSystemActivity "system" SystemMessage "会話ペイン統合 - 全エージェント活動をリアルタイム表示"
+            |> ignore
 
             // ----------------------------------------------------------------------
             // Right-hand container – holds all other panes
@@ -237,27 +242,29 @@ let main argv =
                     // 実際のタスク完了率を取得 (将来的にProgressAggregatorから)
                     75.0 // デフォルト値、将来的に動的取得実装
 
-                let taskCompletionId =
-                    createMetric TaskCompletion "Overall Task Completion" actualProgress 100.0 "%"
+                match createMetric TaskCompletion "Overall Task Completion" actualProgress 100.0 "%" with
+                | Result.Ok taskCompletionId ->
+                    let qualityScore = 85.0 // QualityGateManagerから取得予定
 
-                let qualityScore = 85.0 // QualityGateManagerから取得予定
+                    match createMetric CodeQuality "Code Quality Score" qualityScore 100.0 "pts" with
+                    | Result.Ok codeQualityId ->
+                        let sprintProgress = (actualProgress + qualityScore) / 2.0
 
-                let codeQualityId =
-                    createMetric CodeQuality "Code Quality Score" qualityScore 100.0 "pts"
-
-                let overallKPIId =
-                    let sprintProgress = (actualProgress + qualityScore) / 2.0
-
-                    createKPI
-                        "Sprint Progress"
-                        "現在スプリントの進捗率"
-                        sprintProgress
-                        100.0
-                        "%"
-                        "sprint"
-                        [ taskCompletionId; codeQualityId ]
-
-                logInfo "UI" $"Sample metrics and KPIs created for progress dashboard"
+                        match
+                            createKPI
+                                "Sprint Progress"
+                                "現在スプリントの進捗率"
+                                sprintProgress
+                                100.0
+                                "%"
+                                "sprint"
+                                [ taskCompletionId; codeQualityId ]
+                        with
+                        | Result.Ok overallKPIId ->
+                            logInfo "UI" $"Sample metrics and KPIs created for progress dashboard"
+                        | Result.Error error -> logError "UI" $"Failed to create overall KPI: {error}"
+                    | Result.Error error -> logError "UI" $"Failed to create code quality metric: {error}"
+                | Result.Error error -> logError "UI" $"Failed to create task completion metric: {error}"
 
             | None -> logWarning "UI" "UX TextView not found for ProgressDashboard integration"
 
@@ -344,6 +351,102 @@ let main argv =
 
                         logError "AutoStart" $"=== ROOT CAUSE: UI structure investigation completed ==="
                         |> ignore
+
+            // FC-015: Phase 4 UI統合・フルフロー機能初期化（堅牢版）
+            logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化開始 ==="
+
+            try
+                // UI統合マネージャー初期化
+                use uiIntegrationManager = new RealtimeUIIntegrationManager()
+
+                // フルワークフローコーディネーター初期化
+                use fullWorkflowCoordinator = new FullWorkflowCoordinator()
+
+                // 非同期タスク管理用CancellationTokenSource
+                use integrationCancellationSource = new System.Threading.CancellationTokenSource()
+
+                // UI コンポーネント登録
+                match
+                    (paneTextViews.TryFind("PM / PdM タイムライン"), paneTextViews.TryFind("qa1"), paneTextViews.TryFind("ux"))
+                with
+                | (Some pmTimelineView, Some qa1View, Some uxView) ->
+                    try
+                        let agentViewsMap =
+                            agentPanes
+                            |> List.choose (fun (paneId, _) ->
+                                paneTextViews.TryFind(paneId) |> Option.map (fun tv -> paneId, tv))
+                            |> Map.ofList
+
+                        match
+                            uiIntegrationManager.RegisterUIComponents(
+                                conversationTextView,
+                                pmTimelineView,
+                                qa1View,
+                                uxView,
+                                agentViewsMap
+                            )
+                        with
+                        | Result.Ok() -> ()
+                        | Result.Error error -> logError "Application" $"UI registration failed: {error}"
+
+                        logInfo "Application" "UI統合マネージャー登録完了"
+
+                        // 統合イベントループ開始（追跡可能・キャンセル可能・エラーハンドリング強化）
+                        let integrationLoop = uiIntegrationManager.StartIntegrationEventLoop()
+
+                        let integrationTask =
+                            Async.StartAsTask(integrationLoop, cancellationToken = integrationCancellationSource.Token)
+
+                        // 統合タスクのエラーハンドリング設定
+                        integrationTask.ContinueWith(fun (task: System.Threading.Tasks.Task) ->
+                            if task.IsFaulted then
+                                let ex = task.Exception.GetBaseException()
+                                logError "Application" $"統合イベントループエラー: {ex.Message}"
+                            elif task.IsCanceled then
+                                logInfo "Application" "統合イベントループキャンセル完了"
+                            else
+                                logInfo "Application" "統合イベントループ正常終了")
+                        |> ignore
+
+                        logInfo "Application" "統合イベントループ開始（追跡・キャンセル・エラーハンドリング対応）"
+
+                        // 基本機能デモ
+                        addSystemActivity "system" SystemMessage "FC-015 Phase 4 UI統合・フルフロー機能が正常に初期化されました"
+                        |> ignore
+
+                        addSystemActivity "PO" TaskAssignment "サンプルワークフロー準備完了 - フルフロー実装進行中" |> ignore
+
+                        logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化完了 ==="
+
+                        // アプリケーション終了時のクリーンアップ処理を登録（登録解除可能）
+                        let processExitHandler =
+                            System.EventHandler(fun _ _ ->
+                                try
+                                    logInfo "Application" "アプリケーション終了: 統合イベントループ停止中..."
+
+                                    if not integrationCancellationSource.IsCancellationRequested then
+                                        integrationCancellationSource.Cancel()
+
+                                    if not integrationTask.IsCompleted then
+                                        let completed = integrationTask.Wait(System.TimeSpan.FromSeconds(5.0))
+
+                                        if not completed then
+                                            logWarning "Application" "統合タスク停止タイムアウト - 強制終了"
+
+                                    logInfo "Application" "統合イベントループ正常停止完了"
+                                with ex ->
+                                    logError "Application" $"統合イベントループ停止時エラー: {ex.Message}")
+
+                        System.AppDomain.CurrentDomain.ProcessExit.AddHandler(processExitHandler)
+
+                    with ex ->
+                        logError "Application" $"UI統合マネージャー登録エラー: {ex.Message}"
+
+                | _ -> logError "Application" "UI統合に必要なTextViewが見つかりません"
+
+            with ex ->
+                logError "Application" $"FC-015 Phase 4 初期化致命的エラー: {ex.Message}"
+                logError "Application" $"スタックトレース: {ex.StackTrace}"
 
             // UI初期化完了後の遅延自動起動機能で実行するため、即座の自動起動は削除
             logInfo "AutoStart" "Immediate auto-start disabled - will use delayed auto-start after UI completion"

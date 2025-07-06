@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Logger.fs" />
+    <Compile Include="UIAbstractions.fs" />
     <Compile Include="FCodeError.fs" />
     <Compile Include="ColorSchemes.fs" />
     <Compile Include="ConfigurationManager.fs" />
@@ -25,6 +26,9 @@
     <Compile Include="UXPromptManager.fs" />
     <Compile Include="PMPromptManager.fs" />
     <Compile Include="ClaudeCodeProcess.fs" />
+    <Compile Include="UnixPermissions.fs" />
+    <Compile Include="SessionListManager.fs" />
+    <Compile Include="ClaudeCodeIntegration.fs" />
     <Compile Include="WorkingDirectoryManager.fs" />
     <Compile Include="EnvironmentIsolation.fs" />
     <Compile Include="FileLockManager.fs" />
@@ -69,8 +73,18 @@
     <Compile Include="Collaboration/TaskStorageConfiguration.fs" />
     <Compile Include="TaskAssignmentManager.fs" />
     <Compile Include="QualityGateManager.fs" />
+    <!-- WorkflowCore - Minimal Working Architecture -->
+    <Compile Include="WorkflowCore/WorkflowTypes.fs" />
+    <Compile Include="WorkflowCore/MinimalWorkflowCoordinator.fs" />
+    <Compile Include="WorkflowCore/WorkflowCoreTestSupport.fs" />
+    <!-- FC-015 Phase 4 UI Integration & Full Workflow -->
+    <Compile Include="RealtimeUIIntegration.fs" />
+    <Compile Include="FullWorkflowCoordinator.fs" />
     <Compile Include="KeyBindings.fs" />
     <Compile Include="UIHelpers.fs" />
+    <!-- Phase 4: Security & Performance Enhancement -->
+    <Compile Include="InputValidation.fs" />
+    <Compile Include="PerformanceOptimizer.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

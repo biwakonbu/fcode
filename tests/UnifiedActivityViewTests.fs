@@ -27,7 +27,9 @@ type UnifiedActivityViewTests() =
         // システム活動追加基本テスト
         let manager = new UnifiedActivityManager()
 
-        manager.AddSystemActivity("test-agent", CodeGeneration, "Test code generation activity")
+        match manager.AddSystemActivity("test-agent", CodeGeneration, "Test code generation activity") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed to add system activity: {error}")
 
         Assert.AreEqual(1, manager.GetActivityCount())
 
@@ -36,7 +38,7 @@ type UnifiedActivityViewTests() =
         Assert.AreEqual("test-agent", activities.[0].AgentId)
         Assert.AreEqual(CodeGeneration, activities.[0].ActivityType)
         Assert.AreEqual("Test code generation activity", activities.[0].Message)
-        Assert.AreEqual("system", activities.[0].Status)
+        Assert.AreEqual(System, activities.[0].Status)
 
     [<Test>]
     [<Category("Unit")>]
@@ -54,7 +56,9 @@ type UnifiedActivityViewTests() =
                 .WithMetadata("task_id", "TASK-001")
                 .Build()
 
-        manager.AddActivityFromMessage(testMessage)
+        match manager.AddActivityFromMessage(testMessage) with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed to add activity from message: {error}")
 
         Assert.AreEqual(1, manager.GetActivityCount())
 
@@ -65,7 +69,7 @@ type UnifiedActivityViewTests() =
         Assert.AreEqual("Please review the implementation", activity.Message)
         Assert.AreEqual(High, activity.Priority)
         Assert.AreEqual(Some "TASK-001", activity.RelatedTaskId)
-        Assert.AreEqual("received", activity.Status)
+        Assert.AreEqual(Received, activity.Status)
 
     [<Test>]
     [<Category("Unit")>]
@@ -73,10 +77,21 @@ type UnifiedActivityViewTests() =
         // エージェント別活動フィルタテスト
         let manager = new UnifiedActivityManager()
 
-        manager.AddSystemActivity("agent1", CodeGeneration, "Agent1 activity 1")
-        manager.AddSystemActivity("agent2", Testing, "Agent2 activity 1")
-        manager.AddSystemActivity("agent1", ActivityType.QualityReview, "Agent1 activity 2")
-        manager.AddSystemActivity("agent1", Documentation, "Agent1 activity 3")
+        match manager.AddSystemActivity("agent1", CodeGeneration, "Agent1 activity 1") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed to add system activity: {error}")
+
+        match manager.AddSystemActivity("agent2", Testing, "Agent2 activity 1") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed to add system activity: {error}")
+
+        match manager.AddSystemActivity("agent1", ActivityType.QualityReview, "Agent1 activity 2") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed to add system activity: {error}")
+
+        match manager.AddSystemActivity("agent1", Documentation, "Agent1 activity 3") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed to add system activity: {error}")
 
         let agent1Activities = manager.GetLatestActivitiesByAgent("agent1", 5)
         let agent2Activities = manager.GetLatestActivitiesByAgent("agent2", 5)
@@ -92,10 +107,21 @@ type UnifiedActivityViewTests() =
         // 活動種別フィルタテスト
         let manager = new UnifiedActivityManager()
 
-        manager.AddSystemActivity("agent1", CodeGeneration, "Code generation 1")
-        manager.AddSystemActivity("agent2", Testing, "Testing 1")
-        manager.AddSystemActivity("agent3", CodeGeneration, "Code generation 2")
-        manager.AddSystemActivity("agent1", ActivityType.QualityReview, "QA review 1")
+        match manager.AddSystemActivity("agent1", CodeGeneration, "Code generation 1") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed to add system activity: {error}")
+
+        match manager.AddSystemActivity("agent2", Testing, "Testing 1") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
+
+        match manager.AddSystemActivity("agent3", CodeGeneration, "Code generation 2") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
+
+        match manager.AddSystemActivity("agent1", ActivityType.QualityReview, "QA review 1") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
 
         let codeGenActivities = manager.GetLatestActivitiesByType(CodeGeneration, 5)
         let testActivities = manager.GetLatestActivitiesByType(Testing, 5)
@@ -126,7 +152,11 @@ type UnifiedActivityViewTests() =
             let message =
                 MessageBuilder().From("test-agent").OfType(messageType).WithContent($"Test {messageType}").Build()
 
-            manager.AddActivityFromMessage(message)
+            match manager.AddActivityFromMessage(message) with
+            | Result.Ok _ -> ()
+
+
+            | Result.Error error -> Assert.Fail($"Failed operation: {error}")
 
         let activities = manager.GetAllActivities()
         Assert.AreEqual(testCases.Length, activities.Length)
@@ -140,12 +170,19 @@ type UnifiedActivityViewTests() =
         // 活動クリアテスト
         let manager = new UnifiedActivityManager()
 
-        manager.AddSystemActivity("agent1", CodeGeneration, "Activity 1")
-        manager.AddSystemActivity("agent2", Testing, "Activity 2")
+        match manager.AddSystemActivity("agent1", CodeGeneration, "Activity 1") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
+
+        match manager.AddSystemActivity("agent2", Testing, "Activity 2") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
 
         Assert.AreEqual(2, manager.GetActivityCount())
 
-        manager.ClearActivities()
+        match manager.ClearActivities() with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
 
         Assert.AreEqual(0, manager.GetActivityCount())
         Assert.AreEqual(0, manager.GetAllActivities().Length)
@@ -157,10 +194,23 @@ type UnifiedActivityViewTests() =
         let manager = new UnifiedActivityManager()
 
         // プライベートメソッドのテストのため、実際の表示を確認
-        manager.AddSystemActivity("agent1", CodeGeneration, "Code activity")
-        manager.AddSystemActivity("agent2", Testing, "Test activity")
-        manager.AddSystemActivity("agent3", ActivityType.QualityReview, "QA activity")
-        manager.AddSystemActivity("agent4", ActivityType.Escalation, "Escalation activity")
+        match manager.AddSystemActivity("agent1", CodeGeneration, "Code activity") with
+
+        | Result.Ok _ -> ()
+
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
+
+        match manager.AddSystemActivity("agent2", Testing, "Test activity") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
+
+        match manager.AddSystemActivity("agent3", ActivityType.QualityReview, "QA activity") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
+
+        match manager.AddSystemActivity("agent4", ActivityType.Escalation, "Escalation activity") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
 
         Assert.AreEqual(4, manager.GetActivityCount())
 
@@ -181,10 +231,21 @@ type UnifiedActivityViewTests() =
         // 優先度マッピングテスト
         let manager = new UnifiedActivityManager()
 
-        manager.AddSystemActivity("agent1", CodeGeneration, "Critical activity", Critical)
-        manager.AddSystemActivity("agent2", Testing, "High activity", High)
-        manager.AddSystemActivity("agent3", Documentation, "Normal activity", Normal)
-        manager.AddSystemActivity("agent4", SystemMessage, "Low activity", Low)
+        match manager.AddSystemActivity("agent1", CodeGeneration, "Critical activity", Critical) with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
+
+        match manager.AddSystemActivity("agent2", Testing, "High activity", High) with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
+
+        match manager.AddSystemActivity("agent3", Documentation, "Normal activity", Normal) with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
+
+        match manager.AddSystemActivity("agent4", SystemMessage, "Low activity", Low) with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
 
         let activities = manager.GetAllActivities()
         Assert.AreEqual(4, activities.Length)
@@ -198,14 +259,17 @@ type UnifiedActivityViewTests() =
     [<Category("Integration")>]
     member _.``Global UnifiedActivityManager Usage Test``() =
         // グローバル統合活動管理使用テスト
-        let initialCount = globalUnifiedActivityManager.GetActivityCount()
+        let manager = new UnifiedActivityManager()
+        let initialCount = manager.GetActivityCount()
 
-        addSystemActivity "global-test" CodeGeneration "Global system activity"
+        match manager.AddSystemActivity("global-test", CodeGeneration, "Global system activity") with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
 
-        let newCount = globalUnifiedActivityManager.GetActivityCount()
+        let newCount = manager.GetActivityCount()
         Assert.AreEqual(initialCount + 1, newCount)
 
-        let activities = globalUnifiedActivityManager.GetAllActivities()
+        let activities = manager.GetAllActivities()
         let latestActivity = activities |> Array.maxBy (fun a -> a.Timestamp)
         Assert.AreEqual("global-test", latestActivity.AgentId)
         Assert.AreEqual(CodeGeneration, latestActivity.ActivityType)
@@ -215,7 +279,8 @@ type UnifiedActivityViewTests() =
     [<Category("Integration")>]
     member _.``Global addActivityFromMessage Usage Test``() =
         // グローバル関数によるAgentMessage追加テスト
-        let initialCount = globalUnifiedActivityManager.GetActivityCount()
+        let manager = new UnifiedActivityManager()
+        let initialCount = manager.GetActivityCount()
 
         let testMessage =
             MessageBuilder()
@@ -225,12 +290,14 @@ type UnifiedActivityViewTests() =
                 .WithContent("Global message activity")
                 .Build()
 
-        addActivityFromMessage testMessage
+        match manager.AddActivityFromMessage(testMessage) with
+        | Result.Ok _ -> ()
+        | Result.Error error -> Assert.Fail($"Failed operation: {error}")
 
-        let newCount = globalUnifiedActivityManager.GetActivityCount()
+        let newCount = manager.GetActivityCount()
         Assert.AreEqual(initialCount + 1, newCount)
 
-        let activities = globalUnifiedActivityManager.GetAllActivities()
+        let activities = manager.GetAllActivities()
         let latestActivity = activities |> Array.maxBy (fun a -> a.Timestamp)
         Assert.AreEqual("global-agent", latestActivity.AgentId)
         Assert.AreEqual(ActivityType.Progress, latestActivity.ActivityType)

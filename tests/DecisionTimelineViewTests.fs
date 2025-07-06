@@ -11,7 +11,6 @@ open FCode.Logger
 [<TestFixture>]
 type DecisionTimelineViewTests() =
 
-
     [<Test>]
     [<Category("Unit")>]
     member _.``DecisionTimelineManager Basic Creation Test``() =
@@ -39,7 +38,7 @@ type DecisionTimelineViewTests() =
         Assert.AreEqual(Problem, decisions.[0].Stage)
         Assert.AreEqual(High, decisions.[0].Priority)
         Assert.AreEqual([ "agent1"; "agent2" ], decisions.[0].Stakeholders)
-        Assert.AreEqual("active", decisions.[0].Status)
+        Assert.AreEqual(Active, decisions.[0].Status)
 
     [<Test>]
     [<Category("Unit")>]
@@ -76,7 +75,7 @@ type DecisionTimelineViewTests() =
         let decisions = manager.GetAllDecisions()
         Assert.AreEqual(1, decisions.Length)
         Assert.AreEqual(Review, decisions.[0].Stage)
-        Assert.AreEqual("completed", decisions.[0].Status)
+        Assert.AreEqual(Completed, decisions.[0].Status)
         Assert.IsTrue(snd decisions.[0].Timeline |> Option.isSome)
 
     [<Test>]
@@ -101,7 +100,7 @@ type DecisionTimelineViewTests() =
 
         Assert.AreEqual(3, allDecisions.Length)
         Assert.AreEqual(2, activeDecisions.Length)
-        Assert.IsTrue(activeDecisions |> Array.forall (fun d -> d.Status = "active"))
+        Assert.IsTrue(activeDecisions |> Array.forall (fun d -> d.Status = Active))
 
     [<Test>]
     [<Category("Unit")>]
@@ -226,15 +225,17 @@ type DecisionTimelineViewTests() =
     [<Category("Integration")>]
     member _.``Global DecisionTimelineManager Usage Test``() =
         // グローバル意思決定タイムライン管理使用テスト
-        let initialCount = globalDecisionTimelineManager.GetDecisionCount()
+        let manager = new DecisionTimelineManager()
+        injectTimelineManager manager // テスト用に依存性注入
+        let initialCount = manager.GetDecisionCount()
 
         let decisionId =
             startDecision "Global Decision Test" "Global decision description" High [ "global-agent1"; "global-agent2" ]
 
-        let newCount = globalDecisionTimelineManager.GetDecisionCount()
+        let newCount = manager.GetDecisionCount()
         Assert.AreEqual(initialCount + 1, newCount)
 
-        let decisions = globalDecisionTimelineManager.GetAllDecisions()
+        let decisions = manager.GetAllDecisions()
         let latestDecision = decisions |> Array.maxBy (fun d -> fst d.Timeline)
         Assert.AreEqual("Global Decision Test", latestDecision.Title)
         Assert.AreEqual(High, latestDecision.Priority)
@@ -243,6 +244,9 @@ type DecisionTimelineViewTests() =
     [<Category("Integration")>]
     member _.``Global Functions Integration Test``() =
         // グローバル関数統合テスト
+        let manager = new DecisionTimelineManager()
+        injectTimelineManager manager // テスト用に依存性注入
+
         let decisionId =
             startDecision "Integration Test Decision" "Test integration" Normal [ "agent1" ]
 
@@ -252,7 +256,7 @@ type DecisionTimelineViewTests() =
         let completeResult = completeDecision decisionId "agent1" "Final decision"
         Assert.IsTrue(completeResult)
 
-        let (found, decision) = globalDecisionTimelineManager.GetDecisionDetail(decisionId)
+        let (found, decision) = manager.GetDecisionDetail(decisionId)
         Assert.IsTrue(found)
         Assert.AreEqual(Review, decision.Stage)
-        Assert.AreEqual("completed", decision.Status)
+        Assert.AreEqual(Completed, decision.Status)

@@ -24,6 +24,15 @@ type ActivityType =
     | Decision // 意思決定・判断要求
     | SystemMessage // システムメッセージ・通知
 
+/// アクティビティ状態
+type ActivityStatus =
+    | Received // 受信済み
+    | Processing // 処理中
+    | Completed // 完了
+    | Failed // 失敗
+    | System // システム活動
+    | Cancelled // キャンセル
+
 /// 統合活動データ
 type UnifiedActivity =
     { ActivityId: string // 活動一意ID
@@ -34,137 +43,153 @@ type UnifiedActivity =
       Priority: MessagePriority // 優先度
       Metadata: Map<string, string> // 追加メタデータ
       RelatedTaskId: string option // 関連タスクID
-      Status: string } // 状態 (processing, completed, failed等)
+      Status: ActivityStatus } // 状態
 
 // ===============================================
-// 統合活動表示管理
+// 内部責務分離型 (SOLID準拠設計)
 // ===============================================
 
-/// 統合活動表示管理クラス
-type UnifiedActivityManager() =
-    let activities = ConcurrentQueue<UnifiedActivity>()
-    let maxActivities = 1000 // 最大保持活動数
-    let mutable conversationTextView: TextView option = None
+/// 活動データ変換責務 (Single Responsibility)
+type private ActivityTransformer() =
+    /// AgentMessageからUnifiedActivity変換 - 入力検証強化
+    member this.TransformMessage(message: AgentMessage) : Result<UnifiedActivity, string> =
+        try
+            // 基本的な入力検証
+            if String.IsNullOrWhiteSpace(message.FromAgent) then
+                Result.Error "エージェントIDが無効です"
+            elif String.IsNullOrWhiteSpace(message.Content) then
+                Result.Error "メッセージ内容が無効です"
+            else
+                let activityType =
+                    match message.MessageType with
+                    | MessageType.TaskAssignment -> ActivityType.TaskAssignment
+                    | MessageType.Progress -> ActivityType.Progress
+                    | MessageType.QualityReview -> ActivityType.QualityReview
+                    | MessageType.Escalation -> ActivityType.Escalation
+                    | MessageType.StateUpdate -> ActivityType.SystemMessage
+                    | MessageType.ResourceRequest -> ActivityType.SystemMessage
+                    | MessageType.Collaboration -> ActivityType.Decision
+                    | MessageType.Notification -> ActivityType.SystemMessage
 
-    /// 活動一意ID生成
-    let generateActivityId () =
+                let activity =
+                    { ActivityId = this.GenerateActivityId()
+                      AgentId = message.FromAgent
+                      ActivityType = activityType
+                      Message = message.Content
+                      Timestamp = message.Timestamp
+                      Priority = message.Priority
+                      Metadata = message.Metadata
+                      RelatedTaskId = message.Metadata.TryFind("task_id")
+                      Status = Received }
+
+                Result.Ok activity
+        with ex ->
+            Result.Error $"Activity transformation failed: {ex.Message}"
+
+    /// 活動ID生成
+    member this.GenerateActivityId() =
         let timestamp = DateTime.Now.ToString("HHmmss")
         let guidPart = Guid.NewGuid().ToString("N")[..3]
         $"act-{timestamp}-{guidPart}"
 
-    /// 会話ペインTextView設定
-    member this.SetConversationTextView(textView: TextView) =
-        conversationTextView <- Some textView
-        logInfo "UnifiedActivityView" "Conversation TextView set for unified activity display"
+/// 活動ストレージ責務 (Single Responsibility) - スレッドセーフ実装
+type private ActivityStorage() =
+    let activities = ConcurrentQueue<UnifiedActivity>()
+    let maxActivities = 1000
+    let storageSpinLock = ref 0
+    let mutable disposed = false
 
-    /// AgentMessageから統合活動データ作成
-    member private this.CreateActivityFromMessage(message: AgentMessage) =
-        let activityType =
-            match message.MessageType with
-            | MessageType.TaskAssignment -> ActivityType.TaskAssignment
-            | MessageType.Progress -> ActivityType.Progress
-            | MessageType.QualityReview -> ActivityType.QualityReview
-            | MessageType.Escalation -> ActivityType.Escalation
-            | MessageType.StateUpdate -> ActivityType.SystemMessage
-            | MessageType.ResourceRequest -> ActivityType.SystemMessage
-            | MessageType.Collaboration -> ActivityType.Decision
-            | MessageType.Notification -> ActivityType.SystemMessage
+    /// オブジェクトロックを使ったスレッドセーフ操作
+    let lockObj = obj ()
+    let withLock f = lock lockObj f
 
-        { ActivityId = generateActivityId ()
-          AgentId = message.FromAgent
-          ActivityType = activityType
-          Message = message.Content
-          Timestamp = message.Timestamp
-          Priority = message.Priority
-          Metadata = message.Metadata
-          RelatedTaskId = message.Metadata.TryFind("task_id")
-          Status = "received" }
+    member this.AddActivity(activity: UnifiedActivity) : Result<unit, string> =
+        try
+            withLock (fun () ->
+                activities.Enqueue(activity)
+                // 最大数超過時の古い活動削除（スレッドセーフ）
+                while activities.Count > maxActivities do
+                    activities.TryDequeue() |> ignore)
 
-    /// エージェント活動追加 (AgentMessage経由)
-    member this.AddActivityFromMessage(message: AgentMessage) =
-        let activity = this.CreateActivityFromMessage(message)
-        this.AddActivity(activity)
+            Result.Ok()
+        with ex ->
+            Result.Error $"Failed to add activity: {ex.Message}"
 
-    /// エージェント活動追加 (直接)
-    member this.AddActivity(activity: UnifiedActivity) =
-        activities.Enqueue(activity)
+    member this.GetActivities() =
+        withLock (fun () -> activities.ToArray())
 
-        // 最大数超過時の古い活動削除
-        while activities.Count > maxActivities do
-            activities.TryDequeue() |> ignore
+    member this.GetActivityCount() = activities.Count
 
-        // 会話ペイン更新
-        this.UpdateConversationDisplay()
+    member this.Clear() =
+        withLock (fun () ->
+            while activities.TryDequeue() |> fst do
+                ())
 
-        let messagePreview =
-            if activity.Message.Length > 50 then
-                activity.Message.[..50] + "..."
-            else
-                activity.Message
+    /// リソース解放
+    member this.Dispose() =
+        if not disposed then
+            disposed <- true
+            this.Clear()
+            GC.SuppressFinalize(this)
 
-        logDebug
-            "UnifiedActivityView"
-            $"Activity added: {activity.AgentId} - {activity.ActivityType} - {messagePreview}"
+    interface IDisposable with
+        member this.Dispose() = this.Dispose()
 
-    /// カスタム活動追加 (システムメッセージ等)
-    member this.AddSystemActivity
-        (
-            agentId: string,
-            activityType: ActivityType,
-            message: string,
-            ?priority: MessagePriority,
-            ?metadata: Map<string, string>
-        ) =
-        let priority = defaultArg priority Normal
-        let metadata = defaultArg metadata Map.empty
+/// UI更新責務 (Single Responsibility) - スレッドセーフ実装
+type private ActivityUIUpdater() =
+    let mutable conversationTextView: TextView option = None
+    let uiLockObj = obj ()
 
-        let activity =
-            { ActivityId = generateActivityId ()
-              AgentId = agentId
-              ActivityType = activityType
-              Message = message
-              Timestamp = DateTime.Now
-              Priority = priority
-              Metadata = metadata
-              RelatedTaskId = None
-              Status = "system" }
+    /// UI操作用オブジェクトロック
+    let withUILock f = lock uiLockObj f
 
-        this.AddActivity(activity)
+    member this.SetTextView(textView: TextView) =
+        withUILock (fun () -> conversationTextView <- Some textView)
 
-    /// 会話ペイン表示更新
-    member private this.UpdateConversationDisplay() =
-        match conversationTextView with
-        | Some textView ->
+    member this.UpdateDisplay(activities: UnifiedActivity[]) : Result<unit, string> =
+        let currentTextView = withUILock (fun () -> conversationTextView)
+
+        match currentTextView with
+        | Some textView when not (isNull textView) ->
             try
-                // 最新10件の活動を取得・フォーマット
-                let allActivities = activities.ToArray()
+                let displayText = this.FormatActivitiesForDisplay(activities)
+                let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
-                let recentActivities =
-                    allActivities
-                    |> Array.sortByDescending (fun a -> a.Timestamp)
-                    |> Array.take (min 10 allActivities.Length)
+                if not isCI then
+                    this.SafeUIUpdate(textView, displayText)
 
-                let displayText = this.FormatActivitiesForDisplay(recentActivities)
-
-                // UI更新はメインスレッドで実行
-                Application.MainLoop.Invoke(fun () ->
-                    textView.Text <- ustring.Make(displayText: string)
-                    textView.SetNeedsDisplay())
-
-                logDebug
-                    "UnifiedActivityView"
-                    $"Conversation display updated with {recentActivities.Length} recent activities"
-
+                Result.Ok()
             with ex ->
-                logException "UnifiedActivityView" "Failed to update conversation display" ex
-        | None -> logWarning "UnifiedActivityView" "Conversation TextView not set - cannot update display"
+                Result.Error $"UI update failed: {ex.Message}"
+        | _ -> Result.Error "TextView not set or is null"
+
+    /// 安全なUI更新
+    member private this.SafeUIUpdate(textView: TextView, content: string) =
+        try
+            if not (isNull Application.MainLoop) then
+                Application.MainLoop.Invoke(fun () ->
+                    try
+                        textView.Text <- ustring.Make(content)
+                        textView.SetNeedsDisplay()
+                    with ex ->
+                        logException "UnifiedActivityView" "UI thread update failed" ex)
+            else
+                textView.Text <- ustring.Make(content)
+                textView.SetNeedsDisplay()
+        with ex ->
+            logException "UnifiedActivityView" "Safe UI update failed" ex
 
     /// 活動表示フォーマット
     member private this.FormatActivitiesForDisplay(activities: UnifiedActivity[]) =
         let header = "=== 統合エージェント活動ログ ===\n\n"
 
-        let activityLines =
+        let recentActivities =
             activities
+            |> Array.sortByDescending (fun a -> a.Timestamp)
+            |> Array.take (min 10 activities.Length)
+
+        let activityLines =
+            recentActivities
             |> Array.map (fun activity ->
                 let timeStr = activity.Timestamp.ToString("HH:mm:ss")
                 let agentStr = activity.AgentId.PadRight(6)
@@ -180,14 +205,12 @@ type UnifiedActivityManager() =
                 $"[{timeStr}] {agentStr} {typeStr} {priorityStr} {messagePreview}")
             |> String.concat "\n"
 
-        let totalCount = this.GetActivityCount()
-
         let footer =
-            $"\n\n--- 最新{activities.Length}件 / 総活動数: {totalCount} ---\nキーバインド: ESC(終了) Ctrl+X(コマンド) Ctrl+Tab(ペイン切替)"
+            $"\n\n--- 最新{recentActivities.Length}件 / 総活動数: {activities.Length} ---\nキーバインド: ESC(終了) Ctrl+X(コマンド) Ctrl+Tab(ペイン切替)"
 
         header + activityLines + footer
 
-    /// 活動種別表示文字列取得
+    /// 活動種別表示
     member private this.GetActivityTypeDisplay(activityType: ActivityType) =
         match activityType with
         | CodeGeneration -> "🔧 CODE"
@@ -200,7 +223,7 @@ type UnifiedActivityManager() =
         | Decision -> "💭 DEC "
         | SystemMessage -> "⚙️ SYS "
 
-    /// 優先度表示文字列取得
+    /// 優先度表示
     member private this.GetPriorityDisplay(priority: MessagePriority) =
         match priority with
         | Critical -> "[🔴]"
@@ -208,10 +231,117 @@ type UnifiedActivityManager() =
         | Normal -> "[🟢]"
         | Low -> "[⚪]"
 
+// ===============================================
+// 統合活動表示管理 (依存性注入によるSOLID設計)
+// ===============================================
+
+/// 統合活動表示管理クラス (リファクタリング版)
+type UnifiedActivityManager() =
+    // 依存性注入による責務分離
+    let transformer = ActivityTransformer()
+    let storage = new ActivityStorage()
+    let uiUpdater = ActivityUIUpdater()
+    let mutable disposed = false
+
+    /// 会話ペインTextView設定
+    member this.SetConversationTextView(textView: TextView) =
+        this.ThrowIfDisposed()
+
+        if not (isNull textView) then
+            uiUpdater.SetTextView(textView)
+            logInfo "UnifiedActivityView" "Conversation TextView set for unified activity display"
+        else
+            logWarning "UnifiedActivityView" "Attempted to set null TextView for conversation display"
+
+    /// リソース解放
+    member this.Dispose() =
+        if not disposed then
+            disposed <- true
+            (storage :> IDisposable).Dispose()
+            GC.SuppressFinalize(this)
+
+    interface IDisposable with
+        member this.Dispose() = this.Dispose()
+
+    /// ファイナライザ
+    override this.Finalize() = this.Dispose()
+
+    /// リソース解放状態確認
+    member private this.ThrowIfDisposed() =
+        if disposed then
+            raise (ObjectDisposedException("UnifiedActivityManager"))
+
+    /// エージェント活動追加 (AgentMessage経由) - Result型対応
+    member this.AddActivityFromMessage(message: AgentMessage) : Result<unit, string> =
+        this.ThrowIfDisposed()
+
+        match transformer.TransformMessage(message) with
+        | Result.Ok activity -> this.AddActivity(activity)
+        | Result.Error error ->
+            logWarning "UnifiedActivityView" $"Message transformation failed: {error}"
+            Result.Error error
+
+    /// エージェント活動追加 (直接) - Result型対応
+    member this.AddActivity(activity: UnifiedActivity) : Result<unit, string> =
+        this.ThrowIfDisposed()
+
+        match storage.AddActivity(activity) with
+        | Result.Ok() ->
+            // UI更新
+            let activities = storage.GetActivities()
+
+            match uiUpdater.UpdateDisplay(activities) with
+            | Result.Ok() ->
+                let messagePreview =
+                    if activity.Message.Length > 50 then
+                        activity.Message.[..50] + "..."
+                    else
+                        activity.Message
+
+                logDebug
+                    "UnifiedActivityView"
+                    $"Activity added: {activity.AgentId} - {activity.ActivityType} - {messagePreview}"
+
+                Result.Ok()
+            | Result.Error uiError ->
+                logWarning "UnifiedActivityView" $"UI update failed: {uiError}"
+                Result.Ok() // データ追加は成功したので、UIエラーは警告のみ
+        | Result.Error storageError ->
+            logError "UnifiedActivityView" $"Storage error: {storageError}"
+            Result.Error storageError
+
+    /// カスタム活動追加 (システムメッセージ等) - Result型対応
+    member this.AddSystemActivity
+        (
+            agentId: string,
+            activityType: ActivityType,
+            message: string,
+            ?priority: MessagePriority,
+            ?metadata: Map<string, string>
+        ) : Result<unit, string> =
+        let priority = defaultArg priority Normal
+        let metadata = defaultArg metadata Map.empty
+
+        let activity =
+            { ActivityId = transformer.GenerateActivityId() // プライベートメンバーは外部クラス追加
+              AgentId = agentId
+              ActivityType = activityType
+              Message = message
+              Timestamp = DateTime.Now
+              Priority = priority
+              Metadata = metadata
+              RelatedTaskId = None
+              Status = System }
+
+        this.AddActivity(activity)
+
+
     /// 指定エージェントの最新活動取得
     member this.GetLatestActivitiesByAgent(agentId: string, count: int) =
+        let allActivities = storage.GetActivities()
+
         let filteredActivities =
-            activities.ToArray()
+            allActivities
             |> Array.filter (fun a -> a.AgentId = agentId)
             |> Array.sortByDescending (fun a -> a.Timestamp)
 
@@ -219,40 +349,66 @@ type UnifiedActivityManager() =
 
     /// 指定活動種別の最新活動取得
     member this.GetLatestActivitiesByType(activityType: ActivityType, count: int) =
+        let allActivities = storage.GetActivities()
+
         let filteredActivities =
-            activities.ToArray()
+            allActivities
             |> Array.filter (fun a -> a.ActivityType = activityType)
             |> Array.sortByDescending (fun a -> a.Timestamp)
 
         filteredActivities |> Array.take (min count filteredActivities.Length)
 
     /// 全活動取得
-    member this.GetAllActivities() = activities.ToArray()
+    member this.GetAllActivities() = storage.GetActivities()
 
     /// 活動数取得
-    member this.GetActivityCount() = activities.Count
+    member this.GetActivityCount() = storage.GetActivityCount()
 
-    /// 活動クリア
-    member this.ClearActivities() =
-        activities.Clear()
-        this.UpdateConversationDisplay()
-        logInfo "UnifiedActivityView" "All activities cleared"
+    /// 活動クリア - Result型対応
+    member this.ClearActivities() : Result<unit, string> =
+        try
+            storage.Clear()
+            let activities = storage.GetActivities()
+
+            match uiUpdater.UpdateDisplay(activities) with
+            | Result.Ok() ->
+                logInfo "UnifiedActivityView" "All activities cleared"
+                Result.Ok()
+            | Result.Error uiError ->
+                logWarning "UnifiedActivityView" $"UI update after clear failed: {uiError}"
+                Result.Ok() // データクリアは成功
+        with ex ->
+            let errorMsg = $"Failed to clear activities: {ex.Message}"
+            logError "UnifiedActivityView" errorMsg
+            Result.Error errorMsg
 
 // ===============================================
-// グローバル統合活動管理インスタンス
+// 依存性注入対応グローバル管理インスタンス
 // ===============================================
 
-/// グローバル統合活動管理インスタンス
-let globalUnifiedActivityManager = UnifiedActivityManager()
+/// 依存性注入対応統合活動管理インスタンス（遅延初期化）
+let mutable private activityManagerInstance: UnifiedActivityManager option = None
 
-/// AgentMessageから統合活動追加 (グローバル関数)
-let addActivityFromMessage (message: AgentMessage) =
-    globalUnifiedActivityManager.AddActivityFromMessage(message)
+/// 統合活動管理インスタンス取得または作成
+let private getOrCreateActivityManager () =
+    match activityManagerInstance with
+    | Some manager -> manager
+    | None ->
+        let manager = new UnifiedActivityManager()
+        activityManagerInstance <- Some manager
+        manager
 
-/// システム活動追加 (グローバル関数)
-let addSystemActivity (agentId: string) (activityType: ActivityType) (message: string) =
-    globalUnifiedActivityManager.AddSystemActivity(agentId, activityType, message)
+/// AgentMessageから統合活動追加 (グローバル関数) - Result型対応
+let addActivityFromMessage (message: AgentMessage) : Result<unit, string> =
+    (getOrCreateActivityManager ()).AddActivityFromMessage(message)
+
+/// システム活動追加 (グローバル関数) - Result型対応
+let addSystemActivity (agentId: string) (activityType: ActivityType) (message: string) : Result<unit, string> =
+    (getOrCreateActivityManager ()).AddSystemActivity(agentId, activityType, message)
 
 /// 会話ペインTextView設定 (グローバル関数)
 let setConversationTextView (textView: TextView) =
-    globalUnifiedActivityManager.SetConversationTextView(textView)
+    (getOrCreateActivityManager ()).SetConversationTextView(textView)
+
+/// 依存性注入: 既存のインスタンスを置き換え（テスト用）
+let injectActivityManager (manager: UnifiedActivityManager) = activityManagerInstance <- Some manager

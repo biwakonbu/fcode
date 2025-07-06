@@ -54,7 +54,7 @@ type EscalationNotificationUITests() =
         Assert.AreEqual("dev1", notifications.[0].RequestingAgent)
         Assert.AreEqual("PO", notifications.[0].TargetRole)
         Assert.AreEqual([ "task1"; "task2" ], notifications.[0].RelatedTaskIds)
-        Assert.AreEqual("pending", notifications.[0].Status)
+        Assert.AreEqual(Pending, notifications.[0].Status)
 
     [<Test>]
     [<Category("Unit")>]
@@ -106,7 +106,7 @@ type EscalationNotificationUITests() =
 
         let (found, notification) = manager.GetNotificationDetail(notificationId)
         Assert.IsTrue(found)
-        Assert.AreEqual("resolved", notification.Status)
+        Assert.AreEqual(Resolved, notification.Status)
         Assert.IsTrue(notification.ResponseContent.IsSome)
         Assert.IsTrue(notification.ResponseContent.Value.Contains("Approved for implementation"))
         Assert.IsTrue(notification.ResponseAt.IsSome)
@@ -136,7 +136,7 @@ type EscalationNotificationUITests() =
 
         let (found, notification) = manager.GetNotificationDetail(notificationId)
         Assert.IsTrue(found)
-        Assert.AreEqual("rejected", notification.Status)
+        Assert.AreEqual(Rejected, notification.Status)
         Assert.IsTrue(notification.ResponseContent.IsSome)
         Assert.IsTrue(notification.ResponseContent.Value.Contains("Not enough justification"))
 
@@ -312,7 +312,7 @@ type EscalationNotificationUITests() =
 
         Assert.AreEqual(3, allNotifications.Length)
         Assert.AreEqual(2, activeNotifications.Length)
-        Assert.IsTrue(activeNotifications |> Array.forall (fun n -> n.Status = "pending"))
+        Assert.IsTrue(activeNotifications |> Array.forall (fun n -> n.Status = Pending))
 
     [<Test>]
     [<Category("Unit")>]
@@ -350,11 +350,11 @@ type EscalationNotificationUITests() =
         let manager = new EscalationNotificationManager()
 
         let testActions =
-            [ (Acknowledge, "acknowledged")
-              (ApproveWithComment "Test approval", "resolved")
-              (RequestMoreInfo "Need more details", "more_info_requested")
-              (EscalateToHigher "Escalate to CEO", "escalated_higher")
-              (Reject "Invalid request", "rejected") ]
+            [ (Acknowledge, Acknowledged)
+              (ApproveWithComment "Test approval", Resolved)
+              (RequestMoreInfo "Need more details", MoreInfoRequested)
+              (EscalateToHigher "Escalate to CEO", EscalatedHigher)
+              (Reject "Invalid request", Rejected) ]
 
         testActions
         |> List.iteri (fun i (action, expectedStatus) ->
@@ -381,7 +381,8 @@ type EscalationNotificationUITests() =
     [<Category("Integration")>]
     member _.``Global EscalationNotificationManager Usage Test``() =
         // グローバルエスカレーション通知管理使用テスト
-        let initialCount = globalEscalationNotificationManager.GetNotificationCount()
+        let manager = new EscalationNotificationManager()
+        let initialCount = manager.GetNotificationCount()
 
         let notificationId =
             createEscalationNotification
@@ -394,10 +395,10 @@ type EscalationNotificationUITests() =
                 [ "global-task" ]
                 None
 
-        let newCount = globalEscalationNotificationManager.GetNotificationCount()
+        let newCount = manager.GetNotificationCount()
         Assert.AreEqual(initialCount + 1, newCount)
 
-        let notifications = globalEscalationNotificationManager.GetAllNotifications()
+        let notifications = manager.GetAllNotifications()
         let latestNotification = notifications |> Array.maxBy (fun n -> n.CreatedAt)
         Assert.AreEqual("Global Test Notification", latestNotification.Title)
         Assert.AreEqual(EscalationNotificationType.ResourceRequest, latestNotification.NotificationType)
@@ -407,6 +408,8 @@ type EscalationNotificationUITests() =
     [<Category("Integration")>]
     member _.``Global Functions Integration Test``() =
         // グローバル関数統合テスト
+        let manager = new EscalationNotificationManager()
+
         let notificationId =
             createEscalationNotification
                 "Integration Test"
@@ -423,11 +426,10 @@ type EscalationNotificationUITests() =
 
         Assert.IsTrue(responseResult)
 
-        let (found, notification) =
-            globalEscalationNotificationManager.GetNotificationDetail(notificationId)
+        let (found, notification) = manager.GetNotificationDetail(notificationId)
 
         Assert.IsTrue(found)
-        Assert.AreEqual("resolved", notification.Status)
+        Assert.AreEqual(Resolved, notification.Status)
         Assert.IsTrue(notification.ResponseContent.IsSome)
 
     [<TearDown>]

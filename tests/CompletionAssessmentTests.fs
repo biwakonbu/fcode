@@ -1,14 +1,14 @@
 module FCode.Tests.CompletionAssessmentTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.CompletionAssessmentManager
 
 // t_wada TDD: Red - まずは失敗するテストを書く
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``CompletionAssessmentManager - 基本的なタスク完成度評価テスト`` () =
     // Arrange: テストデータ準備
     let now = DateTime.UtcNow
@@ -56,16 +56,16 @@ let ``CompletionAssessmentManager - 基本的なタスク完成度評価テス�
     let assessment = manager.EvaluateCompletion(tasks, acceptanceCriteria)
 
     // Assert: 期待値検証
-    Assert.Equal(1, assessment.TasksCompleted) // 1完了
-    Assert.Equal(1, assessment.TasksInProgress) // 1進行中
-    Assert.Equal(1, assessment.TasksBlocked) // 1ブロック
-    Assert.Equal(0.33, assessment.OverallCompletionRate, 2) // 33%完了
-    Assert.Equal(0.90, assessment.QualityScore, 2) // High優先度品質スコア
+    Assert.AreEqual(assessment.TasksCompleted, 1) // 1完了
+    Assert.AreEqual(assessment.TasksInProgress, 1) // 1進行中
+    Assert.AreEqual(assessment.TasksBlocked, 1) // 1ブロック
+    Assert.AreEqual(0.33, assessment.OverallCompletionRate, 0.01) // 33%完了
+    Assert.AreEqual(0.90, assessment.QualityScore, 0.01) // High優先度品質スコア
     Assert.False(assessment.AcceptanceCriteriaMet) // 受け入れ基準未達
     Assert.True(assessment.RequiresPOApproval) // PO承認必要
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``CompletionAssessmentManager - 高品質完成ケースでの評価テスト`` () =
     // Arrange: 高品質完成シナリオ
     let now = DateTime.UtcNow
@@ -113,16 +113,16 @@ let ``CompletionAssessmentManager - 高品質完成ケースでの評価テス�
     let assessment = manager.EvaluateCompletion(tasks, acceptanceCriteria)
 
     // Assert: 高品質完成の検証
-    Assert.Equal(3, assessment.TasksCompleted) // 全完了
-    Assert.Equal(0, assessment.TasksInProgress) // 進行中なし
-    Assert.Equal(0, assessment.TasksBlocked) // ブロックなし
-    Assert.Equal(1.0, assessment.OverallCompletionRate, 2) // 100%完了
-    Assert.Equal(0.95, assessment.QualityScore, 2) // Critical優先度品質スコア
+    Assert.AreEqual(assessment.TasksCompleted, 3) // 全完了
+    Assert.AreEqual(assessment.TasksInProgress, 0) // 進行中なし
+    Assert.AreEqual(assessment.TasksBlocked, 0) // ブロックなし
+    Assert.AreEqual(1.0, assessment.OverallCompletionRate, 0.01) // 100%完了
+    Assert.AreEqual(0.95, assessment.QualityScore, 0.01) // Critical優先度品質スコア
     Assert.True(assessment.AcceptanceCriteriaMet) // 受け入れ基準達成
     Assert.False(assessment.RequiresPOApproval) // PO承認不要
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``CompletionAssessmentManager - エッジケース処理テスト`` () =
     // Arrange: エッジケース（タスクなし）
     let emptyTasks = []
@@ -133,16 +133,16 @@ let ``CompletionAssessmentManager - エッジケース処理テスト`` () =
     let assessment = manager.EvaluateCompletion(emptyTasks, acceptanceCriteria)
 
     // Assert: エッジケース動作検証
-    Assert.Equal(0, assessment.TasksCompleted)
-    Assert.Equal(0, assessment.TasksInProgress)
-    Assert.Equal(0, assessment.TasksBlocked)
-    Assert.Equal(0.0, assessment.OverallCompletionRate)
-    Assert.Equal(0.0, assessment.QualityScore)
+    Assert.AreEqual(assessment.TasksCompleted, 0)
+    Assert.AreEqual(assessment.TasksInProgress, 0)
+    Assert.AreEqual(assessment.TasksBlocked, 0)
+    Assert.AreEqual(assessment.OverallCompletionRate, 0.0)
+    Assert.AreEqual(assessment.QualityScore, 0.0)
     Assert.False(assessment.AcceptanceCriteriaMet)
     Assert.True(assessment.RequiresPOApproval) // 空でもPO確認必要
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``CompletionAssessmentManager - 品質閾値境界値テスト`` () =
     // Arrange: 境界値テスト（品質閾値0.8）
     let now = DateTime.UtcNow
@@ -178,14 +178,14 @@ let ``CompletionAssessmentManager - 品質閾値境界値テスト`` () =
     let assessment = manager.EvaluateCompletion(tasks, acceptanceCriteria)
 
     // Assert: 境界値動作検証
-    Assert.Equal(2, assessment.TasksCompleted)
-    Assert.Equal(1.0, assessment.OverallCompletionRate)
-    Assert.Equal(0.825, assessment.QualityScore, 3) // 平均品質 (0.90+0.75)/2
+    Assert.AreEqual(assessment.TasksCompleted, 2)
+    Assert.AreEqual(assessment.OverallCompletionRate, 1.0)
+    Assert.AreEqual(0.825, assessment.QualityScore, 0.01) // 平均品質 (0.90+0.75)/2
     Assert.True(assessment.AcceptanceCriteriaMet) // 品質基準達成
     Assert.False(assessment.RequiresPOApproval) // PO承認不要（品質基準達成済み）
 
-// [<Fact>]
-// [<Trait("TestCategory", "Integration")>]
+// [<Test>]
+// [<Category("Integration")>]
 // let ``CompletionAssessmentManager - リアルタイム評価統合テスト`` () =
 //     // 統合テストは後で実装
 

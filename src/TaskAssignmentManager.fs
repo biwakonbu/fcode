@@ -288,9 +288,9 @@ type DynamicReassignmentSystem() =
     /// 再配分理由を取得
     member this.GetReassignmentReason(task: TaskInfo, agent: AgentState) : string =
         match (task.Status, agent.Status) with
-        | (InProgress, Blocked) -> $"エージェント {agent.AgentId} がブロック状態"
-        | (InProgress, Error) -> $"エージェント {agent.AgentId} でエラー発生"
-        | (InProgress, _) when agent.Progress < 0.1 -> $"エージェント {agent.AgentId} の進捗停滞"
+        | (InProgress, Blocked) -> "ブロック状態"
+        | (InProgress, Error) -> "エラー発生"
+        | (InProgress, _) when agent.Progress < 0.1 -> "進捗停滞"
         | _ -> "不明な理由"
 
 /// TaskAssignmentManagerメインクラス

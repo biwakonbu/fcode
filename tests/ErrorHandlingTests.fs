@@ -59,6 +59,7 @@ type ErrorHandlingTests() =
             printfn $"エラーハンドリングテストクリーンアップ警告: {ex.Message}"
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``ディスク容量不足シミュレーションテスト``() =
         let sessionId = generateSessionId ()
 
@@ -100,6 +101,7 @@ type ErrorHandlingTests() =
             )
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``読み込み専用ディレクトリへの書き込みエラーテスト``() =
         if Environment.OSVersion.Platform <> PlatformID.Win32NT then
             let sessionId = generateSessionId ()
@@ -159,6 +161,7 @@ type ErrorHandlingTests() =
             Assert.Inconclusive("Windows権限テストは未実装")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``破損JSONファイル読み込み耐性テスト``() =
         let sessionId = generateSessionId ()
 
@@ -231,6 +234,7 @@ type ErrorHandlingTests() =
         | Error msg -> Assert.Fail($"正常セッション保存失敗: {msg}")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``破損圧縮データ読み込み耐性テスト``() =
         let sessionId = generateSessionId ()
 
@@ -259,6 +263,7 @@ type ErrorHandlingTests() =
             Assert.IsNotNull(decompressedHistory, $"破損圧縮データ({i})でnullが返されました")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``存在しないディレクトリへのアクセスエラーテスト``() =
         let nonExistentConfig =
             { testConfig with
@@ -279,6 +284,7 @@ type ErrorHandlingTests() =
             )
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``プロセスロックファイル破損処理テスト``() =
         let sessionId = generateSessionId ()
 
@@ -306,6 +312,7 @@ type ErrorHandlingTests() =
                 ()
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``メモリ不足シミュレーションテスト``() =
         // 非常に大きな会話履歴でメモリ使用量をテスト
         try
@@ -327,6 +334,7 @@ type ErrorHandlingTests() =
         | ex -> Assert.Fail($"予期しないメモリ관련 에러: {ex.Message}")
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``同時ファイルアクセス競合エラーテスト``() =
         let sessionId = generateSessionId ()
 
@@ -383,6 +391,7 @@ type ErrorHandlingTests() =
     // Windowsネットワークドライブテストは削除（対象プラットフォーム外のため）
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``特殊文字ファイル名処理エラーテスト``() =
         let sessionId = generateSessionId ()
 

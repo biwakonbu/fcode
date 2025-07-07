@@ -378,22 +378,23 @@ type EscalationNotificationUITests() =
             Assert.AreEqual(expectedStatus, notification.Status))
 
     [<Test>]
-    [<Category("Integration")>]
+    [<Category("Unit")>]
     member _.``Global EscalationNotificationManager Usage Test``() =
         // グローバルエスカレーション通知管理使用テスト
         let manager = new EscalationNotificationManager()
         let initialCount = manager.GetNotificationCount()
 
         let notificationId =
-            createEscalationNotification
-                "Global Test Notification"
-                "Global notification description"
-                EscalationNotificationType.ResourceRequest
-                EscalationUrgency.Urgent
-                "global-agent"
-                "PO"
-                [ "global-task" ]
+            manager.CreateEscalationNotification(
+                "Global Test Notification",
+                "Global notification description",
+                EscalationNotificationType.ResourceRequest,
+                EscalationUrgency.Urgent,
+                "global-agent",
+                "PO",
+                [ "global-task" ],
                 None
+            )
 
         let newCount = manager.GetNotificationCount()
         Assert.AreEqual(initialCount + 1, newCount)
@@ -405,24 +406,25 @@ type EscalationNotificationUITests() =
         Assert.AreEqual(EscalationUrgency.Urgent, latestNotification.Urgency)
 
     [<Test>]
-    [<Category("Integration")>]
+    [<Category("Unit")>]
     member _.``Global Functions Integration Test``() =
         // グローバル関数統合テスト
         let manager = new EscalationNotificationManager()
 
         let notificationId =
-            createEscalationNotification
-                "Integration Test"
-                "Test integration"
-                EscalationNotificationType.TechnicalDecision
-                EscalationUrgency.Normal
-                "test-agent"
-                "PO"
-                []
+            manager.CreateEscalationNotification(
+                "Integration Test",
+                "Test integration",
+                EscalationNotificationType.TechnicalDecision,
+                EscalationUrgency.Normal,
+                "test-agent",
+                "PO",
+                [],
                 None
+            )
 
         let responseResult =
-            respondToNotification notificationId (ApproveWithComment "Integration approved") "PO"
+            manager.RespondToNotification(notificationId, ApproveWithComment "Integration approved", "PO")
 
         Assert.IsTrue(responseResult)
 

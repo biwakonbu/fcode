@@ -1,14 +1,14 @@
 module FCode.Tests.QualityEvaluationSummaryTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.QualityEvaluationSummaryManager
 
 // t_wada TDD: Red - まずは失敗するテストを書く
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityEvaluationSummaryManager - 基本的な品質評価テスト`` () =
     // Arrange: 品質データ準備
     let qualityMetrics =
@@ -32,16 +32,16 @@ let ``QualityEvaluationSummaryManager - 基本的な品質評価テスト`` () =
         manager.GenerateQualitySummary(qualityMetrics, testResults, codeReviewFindings)
 
     // Assert: 品質評価結果検証
-    Assert.Equal(0.97, summary.CodeQuality, 2) // コード品質（0.95*0.4 + 0.95*0.3 + 1.0*0.3 = 0.965）
-    Assert.Equal(0.95, summary.TestCoverage, 2) // テストカバレッジ
-    Assert.Equal(0.92, summary.DocumentationScore, 2) // ドキュメント品質
+    Assert.AreEqual(0.965, summary.CodeQuality, 0.01) // コード品質（0.95*0.4 + 0.95*0.3 + 1.0*0.3 = 0.965）
+    Assert.AreEqual(0.95, summary.TestCoverage, 0.01) // テストカバレッジ
+    Assert.AreEqual(0.92, summary.DocumentationScore, 0.01) // ドキュメント品質
     Assert.True(summary.SecurityCompliance) // セキュリティ準拠
-    Assert.Equal(1, summary.PerformanceMetrics.Length) // パフォーマンス指標
-    Assert.Equal(1, summary.IssuesFound.Length) // 発見課題数
-    Assert.Equal(1, summary.RecommendedImprovements.Length) // 改善提案数（高品質なので最低限のみ）
+    Assert.AreEqual(summary.PerformanceMetrics.Length, 1) // パフォーマンス指標
+    Assert.AreEqual(summary.IssuesFound.Length, 1) // 発見課題数
+    Assert.AreEqual(summary.RecommendedImprovements.Length, 1) // 改善提案数（高品質なので最低限のみ）
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityEvaluationSummaryManager - 低品質ケースの評価テスト`` () =
     // Arrange: 低品質シナリオ
     let qualityMetrics =
@@ -66,15 +66,15 @@ let ``QualityEvaluationSummaryManager - 低品質ケースの評価テスト`` (
 
     // Assert: 低品質評価結果検証
     Assert.True(summary.CodeQuality < 0.7) // 低コード品質
-    Assert.Equal(0.65, summary.TestCoverage, 2) // 低テストカバレッジ
-    Assert.Equal(0.30, summary.DocumentationScore, 2) // 低ドキュメント品質
+    Assert.AreEqual(0.65, summary.TestCoverage, 0.01) // 低テストカバレッジ
+    Assert.AreEqual(0.30, summary.DocumentationScore, 0.01) // 低ドキュメント品質
     Assert.False(summary.SecurityCompliance) // セキュリティ非準拠
-    Assert.Equal(1, summary.PerformanceMetrics.Length) // パフォーマンス指標
-    Assert.Equal(4, summary.IssuesFound.Length) // 多数の課題
+    Assert.AreEqual(summary.PerformanceMetrics.Length, 1) // パフォーマンス指標
+    Assert.AreEqual(summary.IssuesFound.Length, 4) // 多数の課題
     Assert.True(summary.RecommendedImprovements.Length >= 3) // 多数の改善提案
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityEvaluationSummaryManager - 空データでのエラーハンドリングテスト`` () =
     // Arrange: 空データシナリオ
     let emptyQualityMetrics =
@@ -93,16 +93,16 @@ let ``QualityEvaluationSummaryManager - 空データでのエラーハンドリ�
         manager.GenerateQualitySummary(emptyQualityMetrics, emptyTestResults, emptyCodeReviewFindings)
 
     // Assert: 適切なデフォルト値
-    Assert.Equal(0.0, summary.CodeQuality)
-    Assert.Equal(0.0, summary.TestCoverage)
-    Assert.Equal(0.0, summary.DocumentationScore)
+    Assert.AreEqual(summary.CodeQuality, 0.0)
+    Assert.AreEqual(summary.TestCoverage, 0.0)
+    Assert.AreEqual(summary.DocumentationScore, 0.0)
     Assert.False(summary.SecurityCompliance) // データ不足時は非準拠
-    Assert.Empty(summary.PerformanceMetrics)
-    Assert.Empty(summary.IssuesFound)
+    Assert.IsEmpty(summary.PerformanceMetrics)
+    Assert.IsEmpty(summary.IssuesFound)
     Assert.True(summary.RecommendedImprovements.Length >= 1) // 最低限の改善提案
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``QualityEvaluationSummaryManager - 品質改善提案生成テスト`` () =
     // Arrange: 改善余地ありシナリオ
     let qualityMetrics =
@@ -126,10 +126,15 @@ let ``QualityEvaluationSummaryManager - 品質改善提案生成テスト`` () =
 
     // Assert: 改善提案内容検証
     Assert.True(summary.RecommendedImprovements.Length >= 3) // 複数改善提案
-    Assert.Contains("テストカバレッジ向上", summary.RecommendedImprovements) // カバレッジ改善
-    Assert.Contains("セキュリティ対応", summary.RecommendedImprovements) // セキュリティ改善
-    Assert.Contains("ドキュメント充実", summary.RecommendedImprovements) // ドキュメント改善
-    Assert.Equal(2, summary.IssuesFound.Length) // 適切な課題抽出
+
+    Assert.IsTrue(
+        summary.RecommendedImprovements
+        |> List.exists (fun r -> r.Contains("テストカバレッジ向上"))
+    ) // カバレッジ改善
+
+    Assert.IsTrue(summary.RecommendedImprovements |> List.exists (fun r -> r.Contains("セキュリティ対応"))) // セキュリティ改善
+    Assert.IsTrue(summary.RecommendedImprovements |> List.exists (fun r -> r.Contains("ドキュメント充実"))) // ドキュメント改善
+    Assert.AreEqual(summary.IssuesFound.Length, 2) // 適切な課題抽出
 
 // テスト用品質メトリクス型定義
 type QualityMetrics =

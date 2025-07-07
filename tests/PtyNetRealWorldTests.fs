@@ -27,6 +27,7 @@ type PtyNetRealWorldTests() =
 
     /// 基本コマンドテスト - ls, echo, date
     [<Test>]
+    [<Category("Unit")>]
     member _.BasicCommands_Success() =
         async {
             match ptyManager with
@@ -57,7 +58,7 @@ type PtyNetRealWorldTests() =
                         do! Task.Delay(1000) |> Async.AwaitTask
                         let output = manager.GetOutput()
 
-                        Assert.That(output, Is.Not.Empty, cmd + "コマンドの出力が空です")
+                        Assert.IsNotEmpty(output, cmd + "コマンドの出力が空です")
 
                         Assert.That(
                             output.Contains(expectedContent),
@@ -76,6 +77,7 @@ type PtyNetRealWorldTests() =
 
     /// 存在しないコマンドのエラーハンドリングテスト
     [<Test>]
+    [<Category("Unit")>]
     member _.NonExistentCommand_ErrorHandling() =
         async {
             match ptyManager with
@@ -91,7 +93,7 @@ type PtyNetRealWorldTests() =
                     let output = manager.GetOutput()
 
                     // 何らかのエラー出力があることを確認
-                    Assert.That(output, Is.Not.Empty, "存在しないコマンドでも何らかの出力があるべきです")
+                    Assert.IsNotEmpty(output, "存在しないコマンドでも何らかの出力があるべきです")
 
                     manager.CloseSession()
 
@@ -106,6 +108,7 @@ type PtyNetRealWorldTests() =
 
     /// 複数セッション同時実行テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.MultipleSessionsConcurrent_Isolation() =
         async {
             match ptyManager with
@@ -147,9 +150,9 @@ type PtyNetRealWorldTests() =
                 let output2 = manager2.GetOutput()
                 let output3 = manager3.GetOutput()
 
-                Assert.That(output1.Contains("Session-1"), Is.True, "セッション1の出力が正しくありません")
-                Assert.That(output2.Contains("Session-2"), Is.True, "セッション2の出力が正しくありません")
-                Assert.That(output3.Contains("Session-3"), Is.True, "セッション3の出力が正しくありません")
+                Assert.IsTrue(output1.Contains("Session-1"), "セッション1の出力が正しくありません")
+                Assert.IsTrue(output2.Contains("Session-2"), "セッション2の出力が正しくありません")
+                Assert.IsTrue(output3.Contains("Session-3"), "セッション3の出力が正しくありません")
 
                 // クロス汚染がないことを確認
                 Assert.That(
@@ -185,6 +188,7 @@ type PtyNetRealWorldTests() =
 
     /// 長時間実行コマンドと中断テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.LongRunningCommand_EarlyTermination() =
         async {
             match ptyManager with
@@ -217,7 +221,7 @@ type PtyNetRealWorldTests() =
                         // sleepコマンドは出力なしが正常
                         Assert.Pass("macOS sleepコマンドは正常に実行されました")
                     else
-                        Assert.That(partialOutput, Is.Not.Empty, "長時間実行コマンドの部分出力が空です")
+                        Assert.IsNotEmpty(partialOutput, "長時間実行コマンドの部分出力が空です")
 
                     // セッションを早期終了
                     manager.CloseSession()
@@ -241,6 +245,7 @@ type PtyNetRealWorldTests() =
 
     /// セキュリティテスト - コマンドインジェクション耐性
     [<Test>]
+    [<Category("Unit")>]
     member _.SecurityTest_CommandInjectionResistance() =
         async {
             match ptyManager with
@@ -287,7 +292,7 @@ type PtyNetRealWorldTests() =
                             )
 
                         // 権限エラーなどの実行痕跡をチェック
-                        Assert.That(output.Contains("Permission denied"), Is.False, "権限昇格の試行が検出されました")
+                        Assert.IsFalse(output.Contains("Permission denied"), "権限昇格の試行が検出されました")
 
                         manager.CloseSession()
                         manager.ClearOutput()

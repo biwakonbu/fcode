@@ -1,12 +1,12 @@
 module FCode.Tests.POApprovalRequirementAnalyzerTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.POApprovalRequirementAnalyzerManager
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``POApprovalRequirementAnalyzer - PO承認不要ケーステスト`` () =
     // Arrange
     let assessment =
@@ -25,10 +25,10 @@ let ``POApprovalRequirementAnalyzer - PO承認不要ケーステスト`` () =
 
     // Assert
     Assert.False(result.RequiresPOApproval)
-    Assert.Equal("自動承認", result.RecommendedAction)
+    Assert.AreEqual("自動承認", result.RecommendedAction)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``POApprovalRequirementAnalyzer - PO承認必要ケーステスト`` () =
     // Arrange
     let assessment =
@@ -47,4 +47,4 @@ let ``POApprovalRequirementAnalyzer - PO承認必要ケーステスト`` () =
 
     // Assert
     Assert.True(result.RequiresPOApproval)
-    Assert.Equal("PO承認要求", result.RecommendedAction)
+    Assert.AreEqual("PO承認要求", result.RecommendedAction)

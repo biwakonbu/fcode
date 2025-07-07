@@ -10,6 +10,7 @@ open FCode.AgentCLI
 type AgentCLIInterfaceTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``AgentCapability列挙型は全ての専門能力を定義している``() =
         let capabilities =
             [ CodeGeneration
@@ -31,6 +32,7 @@ type AgentCLIInterfaceTests() =
         Assert.AreEqual("Documentation", Documentation.ToString())
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``AgentOutput構造体は必要な全フィールドを含む``() =
         let testOutput =
             { Status = Success
@@ -47,6 +49,7 @@ type AgentCLIInterfaceTests() =
         Assert.IsTrue(testOutput.Metadata.ContainsKey("test"))
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``AgentIntegrationConfig全フィールドが適切に設定される``() =
         let config =
             { Name = "TestAgent"
@@ -82,6 +85,7 @@ type ClaudeCodeCLITests() =
           EnvironmentVariables = Map.empty }
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ClaudeCodeCLI基本プロパティが正しく設定される``() =
         let config = createTestConfig ()
         let claudeCLI = ClaudeCodeCLI(config) :> IAgentCLI
@@ -93,6 +97,7 @@ type ClaudeCodeCLITests() =
         Assert.IsTrue(claudeCLI.SupportedCapabilities |> List.contains Testing)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``StartCommand適切なProcessStartInfoを生成する``() =
         let config = createTestConfig ()
         let claudeCLI = ClaudeCodeCLI(config) :> IAgentCLI
@@ -108,6 +113,7 @@ type ClaudeCodeCLITests() =
         Assert.IsTrue(startInfo.RedirectStandardInput)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ParseOutput正常出力を適切に解析する``() =
         let config = createTestConfig ()
         let claudeCLI = ClaudeCodeCLI(config) :> IAgentCLI
@@ -122,6 +128,7 @@ type ClaudeCodeCLITests() =
         Assert.IsTrue(parsedOutput.Metadata.ContainsKey("line_count"))
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ParseOutputエラー出力を適切に検出する``() =
         let config = createTestConfig ()
         let claudeCLI = ClaudeCodeCLI(config) :> IAgentCLI
@@ -147,6 +154,7 @@ type CustomScriptCLITests() =
           EnvironmentVariables = Map.empty.Add("PYTHON_PATH", "/usr/bin/python3") }
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``CustomScriptCLIPythonスクリプト用ProcessStartInfo生成``() =
         let config = createPythonConfig ()
         let scriptCLI = CustomScriptCLI(config) :> IAgentCLI
@@ -160,6 +168,7 @@ type CustomScriptCLITests() =
         Assert.IsTrue(startInfo.Environment.ContainsKey("PYTHON_PATH"))
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ParseOutputJSON形式出力を解析する``() =
         let config = createPythonConfig ()
         let scriptCLI = CustomScriptCLI(config) :> IAgentCLI
@@ -174,6 +183,7 @@ type CustomScriptCLITests() =
         Assert.AreEqual("json", parsedOutput.Metadata.["format"])
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ParseOutputプレーンテキスト出力を解析する``() =
         let config =
             { createPythonConfig () with
@@ -193,6 +203,7 @@ type CustomScriptCLITests() =
 type AgentFactoryTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``CreateClaudeCodeCLI指定パスでClaude CLIを生成``() =
         let claudeCLI = AgentFactory.CreateClaudeCodeCLI(Some "/custom/path/claude")
 
@@ -201,6 +212,7 @@ type AgentFactoryTests() =
         Assert.AreEqual(7, claudeCLI.SupportedCapabilities.Length)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``CreateCustomScriptCLI指定設定でカスタムCLIを生成``() =
         let capabilities = [ Testing; Documentation ]
 
@@ -241,6 +253,7 @@ type UtilityFunctionTests() =
         [ ClaudeCodeCLI(config1) :> IAgentCLI; CustomScriptCLI(config2) :> IAgentCLI ]
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``selectAgentByCapability指定能力を持つエージェントを選択``() =
         let agents = createMockAgents ()
 
@@ -264,6 +277,7 @@ type UtilityFunctionTests() =
         Assert.AreEqual("Agent2", testingAgent.Value.Config.Name)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``selectAgentByCapability対応エージェントが無い場合Noneを返す``() =
         let agents = createMockAgents ()
 
@@ -272,6 +286,7 @@ type UtilityFunctionTests() =
         Assert.IsTrue(noAgent.IsNone)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``formatAgentOutput統一フォーマットで出力を整形``() =
         let testOutput =
             { Status = Success
@@ -295,6 +310,7 @@ type UtilityFunctionTests() =
 type AgentCLIIntegrationTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``複数エージェント協調動作シミュレーション``() =
         // Claude Code CLI
         let claudeConfig =
@@ -344,6 +360,7 @@ type AgentCLIIntegrationTests() =
 type AgentCLIErrorHandlingTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ClaudeCodeCLI空文字列入力を適切に処理する``() =
         let config =
             { Name = "Claude Code"
@@ -362,6 +379,7 @@ type AgentCLIErrorHandlingTests() =
         Assert.AreEqual("echo", startInfo.FileName)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ParseOutput異常に長い文字列を処理する``() =
         let config =
             { Name = "Test"
@@ -382,6 +400,7 @@ type AgentCLIErrorHandlingTests() =
         Assert.IsTrue(parsedOutput.Content.Length > 0)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``CustomScriptCLI不正JSON解析でエラーハンドリング``() =
         let config =
             { Name = "JSON Script"
@@ -403,6 +422,7 @@ type AgentCLIErrorHandlingTests() =
         Assert.IsTrue(parsedOutput.Metadata.ContainsKey("error_type"))
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``AgentFactory存在しないパス指定でClaude CLI生成``() =
         // 存在しないパスを指定しても例外が発生しないことを確認
         let claudeCLI = AgentFactory.CreateClaudeCodeCLI(Some "/nonexistent/path/claude")
@@ -415,6 +435,7 @@ type AgentCLIErrorHandlingTests() =
 type AgentCLIBoundaryValueTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``AgentIntegrationConfig境界値設定テスト``() =
         let config =
             { Name = ""
@@ -432,6 +453,7 @@ type AgentCLIBoundaryValueTests() =
         Assert.AreEqual(0, customCLI.SupportedCapabilities.Length)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``selectAgentByCapability空リストで検索``() =
         let emptyAgents: IAgentCLI list = []
         let result = selectAgentByCapability emptyAgents CodeGeneration
@@ -439,6 +461,7 @@ type AgentCLIBoundaryValueTests() =
         Assert.IsTrue(result.IsNone)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``formatAgentOutput空データでフォーマット``() =
         let emptyOutput =
             { Status = Success
@@ -457,6 +480,7 @@ type AgentCLIBoundaryValueTests() =
 type AgentCLISecurityTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``StartCommand危険な文字列入力の処理``() =
         let config =
             { Name = "Security Test"
@@ -485,6 +509,7 @@ type AgentCLISecurityTests() =
             Assert.IsTrue(startInfo.Arguments.Contains(input))
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``CustomScriptCLI環境変数セキュリティテスト``() =
         let maliciousEnvVars =
             Map.empty
@@ -515,6 +540,7 @@ type AgentCLISecurityTests() =
 type AgentCLIRealWorldTests() =
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``実際のechoコマンド実行テスト``() =
         let config =
             { Name = "Real Echo"
@@ -536,6 +562,7 @@ type AgentCLIRealWorldTests() =
         Assert.IsTrue(startInfo.RedirectStandardOutput)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``スクリプト拡張子判定テスト``() =
         let testCases =
             [ ("test.py", "python3")

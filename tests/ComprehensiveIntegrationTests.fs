@@ -19,6 +19,7 @@ open FCode.AgentMessaging
 type ComprehensiveIntegrationTestSuite() =
 
     [<Test>]
+    [<Category("Integration")>]
     member this.``Full system integration with all managers``() =
         let activityManager = new UnifiedActivityManager()
         let progressManager = new ProgressDashboardManager()
@@ -61,7 +62,7 @@ type ComprehensiveIntegrationTestSuite() =
                     None
                 )
 
-            Assert.That(String.IsNullOrEmpty(escalationId), Is.False)
+            Assert.IsFalse(String.IsNullOrEmpty(escalationId))
 
             // 4. 意思決定開始
             let decisionId =
@@ -72,13 +73,13 @@ type ComprehensiveIntegrationTestSuite() =
                     [ "dev1"; "pm" ]
                 )
 
-            Assert.That(String.IsNullOrEmpty(decisionId), Is.False)
+            Assert.IsFalse(String.IsNullOrEmpty(decisionId))
 
             // 5. 全体状態検証
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(1))
-            Assert.That(progressManager.GetMetricCount(), Is.EqualTo(1))
-            Assert.That(escalationManager.GetNotificationCount(), Is.EqualTo(1))
-            Assert.That(decisionManager.GetDecisionCount(), Is.EqualTo(1))
+            Assert.AreEqual(1, activityManager.GetActivityCount())
+            Assert.AreEqual(1, progressManager.GetMetricCount())
+            Assert.AreEqual(1, escalationManager.GetNotificationCount())
+            Assert.AreEqual(1, decisionManager.GetDecisionCount())
 
         finally
             activityManager.Dispose()
@@ -87,6 +88,7 @@ type ComprehensiveIntegrationTestSuite() =
             decisionManager.Dispose()
 
     [<Test>]
+    [<Category("Integration")>]
     member this.``Agent message processing integration``() =
         let activityManager = new UnifiedActivityManager()
         let progressManager = new ProgressDashboardManager()
@@ -124,8 +126,8 @@ type ComprehensiveIntegrationTestSuite() =
             )
 
             // 結果検証
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(1))
-            Assert.That(progressManager.GetMetricCount(), Is.EqualTo(1))
+            Assert.AreEqual(1, activityManager.GetActivityCount())
+            Assert.AreEqual(1, progressManager.GetMetricCount())
 
         finally
             activityManager.Dispose()
@@ -171,8 +173,8 @@ type ComprehensiveIntegrationTestSuite() =
             )
 
             // 結果検証
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(1))
-            Assert.That(progressManager.GetMetricCount(), Is.EqualTo(1)) // 正常なメトリクスのみ
+            Assert.AreEqual(1, activityManager.GetActivityCount())
+            Assert.AreEqual(1, progressManager.GetMetricCount()) // 正常なメトリクスのみ
 
         finally
             activityManager.Dispose()
@@ -204,8 +206,8 @@ type LongRunningIntegrationTestSuite() =
                     |> ignore
 
             // 結果検証
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(operationCount))
-            Assert.That(progressManager.GetMetricCount(), Is.EqualTo(operationCount / 10))
+            Assert.AreEqual(operationCount, activityManager.GetActivityCount())
+            Assert.AreEqual(operationCount / 10, progressManager.GetMetricCount())
 
         finally
             activityManager.Dispose()
@@ -249,8 +251,8 @@ type ConcurrentIntegrationTestSuite() =
             Task.WaitAll(tasks)
 
             // 結果検証
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(taskCount))
-            Assert.That(progressManager.GetMetricCount(), Is.EqualTo(taskCount))
+            Assert.AreEqual(taskCount, activityManager.GetActivityCount())
+            Assert.AreEqual(taskCount, progressManager.GetMetricCount())
 
         finally
             activityManager.Dispose()

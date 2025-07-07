@@ -7,6 +7,7 @@ open System.IO
 
 /// FC-010: セッション間独立性基本テストスイート
 [<TestFixture>]
+[<Category("Unit")>]
 type SessionIsolationTests() =
 
     let mutable testBaseDir = ""
@@ -22,6 +23,7 @@ type SessionIsolationTests() =
 
     /// 基本的な作業ディレクトリ作成テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.BasicWorkspaceCreationTest() =
         let config =
             { WorkingDirectoryManager.defaultConfig with
@@ -38,6 +40,7 @@ type SessionIsolationTests() =
 
     /// 基本的な環境変数分離テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.BasicEnvironmentIsolationTest() =
         let config = EnvironmentIsolation.defaultConfig
 
@@ -51,6 +54,7 @@ type SessionIsolationTests() =
 
     /// 基本的なファイルロックテスト
     [<Test>]
+    [<Category("Unit")>]
     member _.BasicFileLockTest() =
         let config =
             { FileLockManager.defaultConfig with
@@ -73,6 +77,7 @@ type SessionIsolationTests() =
 
     /// 基本的なセッション状態管理テスト
     [<Test>]
+    [<Category("Unit")>]
     member _.BasicSessionStateTest() =
         let config =
             { SessionStateManager.defaultConfig with

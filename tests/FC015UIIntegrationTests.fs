@@ -1,7 +1,7 @@
 module FCode.Tests.FC015UIIntegrationTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.Logger
 
 // FC-015テストは一時的に無効化し、基本的なダミーテストに置き換える
@@ -11,8 +11,8 @@ open FCode.Logger
 // リアルタイムUI統合・フルワークフロー実装
 // ========================================
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``FC-015 UIアブストラクションテスト`` () =
     // UIアブストラクションの基本的な動作確認
     let testView = FCode.UIAbstractions.UIFactory.createTextView ()
@@ -23,13 +23,13 @@ let ``FC-015 UIアブストラクションテスト`` () =
 
     logInfo "FC015UI" $"UIアブストラクションテスト: {testText}"
 
-    Assert.Equal(testText, retrievedText)
+    Assert.AreEqual(retrievedText, testText)
     Assert.True(retrievedText.Contains("FC-015"), "UIテキストが正しく設定されている")
 
     testView.Dispose()
 
-[<Fact>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Integration")>]
 let ``FC-015 UI: RealtimeUIIntegrationManager基本テスト`` () =
     use manager = new FCode.RealtimeUIIntegration.RealtimeUIIntegrationManager()
 
@@ -51,8 +51,8 @@ let ``FC-015 UI: RealtimeUIIntegrationManager基本テスト`` () =
     qa1View.Dispose()
     uxView.Dispose()
 
-[<Fact>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Integration")>]
 let ``FC-015 UI: FullWorkflowCoordinator統合テスト`` () =
     async {
         use coordinator = new FCode.FullWorkflowCoordinator.FullWorkflowCoordinator()
@@ -64,7 +64,9 @@ let ``FC-015 UI: FullWorkflowCoordinator統合テスト`` () =
         // コーディネーターが正常に作成されているか確認
         Assert.NotNull(coordinator)
         Assert.True(testInstructions.Length = 2, "テストタスク数が正しい")
-        Assert.All(testInstructions, fun task -> Assert.True(task.Length > 0, $"タスクが有効: {task}"))
+
+        testInstructions
+        |> List.iter (fun task -> Assert.True(task.Length > 0, $"タスクが有効: {task}"))
 
         // 実際のワークフロー実行テスト
         let! result = coordinator.StartWorkflow(testInstructions)
@@ -77,8 +79,8 @@ let ``FC-015 UI: FullWorkflowCoordinator統合テスト`` () =
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Performance")>]
+[<Test>]
+[<Category("Performance")>]
 let ``FC-015 UI: UIオブジェクト作成性能テスト`` () =
     let startTime = System.DateTime.Now
     let objectCount = 100
@@ -98,8 +100,8 @@ let ``FC-015 UI: UIオブジェクト作成性能テスト`` () =
     // リソースのクリーンアップ
     views |> List.iter (fun v -> v.Dispose())
 
-[<Fact>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Integration")>]
 let ``FC-015 UI: リアルタイムUI統合マネージャーイベントループテスト`` () =
     async {
         use manager = new FCode.RealtimeUIIntegration.RealtimeUIIntegrationManager()
@@ -145,8 +147,8 @@ let ``FC-015 UI: リアルタイムUI統合マネージャーイベントルー�
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``FC-015 UI: UIAbstractions分離アーキテクチャテスト`` () =
     // UI依存関係セッター作成テスト
     let uiComponentSetter = FCode.UIAbstractions.UIFactory.createUIComponentSetter ()

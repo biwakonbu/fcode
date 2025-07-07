@@ -2,7 +2,7 @@ module FCode.Tests.RealtimeCollaborationTests
 
 open System
 open System.Threading
-open Xunit
+open NUnit.Framework
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.AgentStateManager
 open FCode.Collaboration.TaskDependencyGraph
@@ -55,8 +55,8 @@ let createTestAgentState agentId status progress =
       WorkingDirectory = "/test"
       ProcessId = None }
 
-[<Trait("TestCategory", "Unit")>]
-[<Fact>]
+[<Category("Unit")>]
+[<Test>]
 let ``AgentStateManager - エージェント状態の基本操作テスト`` () =
     use manager = new AgentStateManager(testConfig)
 
@@ -75,14 +75,14 @@ let ``AgentStateManager - エージェント状態の基本操作テスト`` () 
 
     match result2 with
     | Result.Ok(Some state) ->
-        Assert.Equal("agent1", state.AgentId)
-        Assert.Equal(Working, state.Status)
-        Assert.Equal(50.0, state.Progress)
-        Assert.Equal(Some "task1", state.CurrentTask)
+        Assert.AreEqual(state.AgentId, "agent1")
+        Assert.AreEqual(state.Status, Working)
+        Assert.AreEqual(state.Progress, 50.0)
+        Assert.AreEqual(state.CurrentTask, Some "task1")
     | _ -> Assert.True(false, "エージェント状態取得に失敗")
 
-[<Trait("TestCategory", "Unit")>]
-[<Fact>]
+[<Category("Unit")>]
+[<Test>]
 let ``AgentStateManager - 無効な進捗値の検証テスト`` () =
     use manager = new AgentStateManager(testConfig)
 
@@ -90,18 +90,18 @@ let ``AgentStateManager - 無効な進捗値の検証テスト`` () =
     let result1 = manager.UpdateAgentState("agent1", Working, progress = -10.0)
 
     match result1 with
-    | Result.Error(InvalidInput msg) -> Assert.Contains("Progress must be between", msg)
+    | Result.Error(InvalidInput msg) -> Assert.AreEqual(msg, "Progress must be between")
     | _ -> Assert.True(false, "無効な進捗値が受け入れられました")
 
     // 無効な進捗値（150.0）
     let result2 = manager.UpdateAgentState("agent1", Working, progress = 150.0)
 
     match result2 with
-    | Result.Error(InvalidInput msg) -> Assert.Contains("Progress must be between", msg)
+    | Result.Error(InvalidInput msg) -> Assert.AreEqual(msg, "Progress must be between")
     | _ -> Assert.True(false, "無効な進捗値が受け入れられました")
 
-[<Trait("TestCategory", "Unit")>]
-[<Fact>]
+[<Category("Unit")>]
+[<Test>]
 let ``TaskDependencyGraph - タスクの基本操作テスト`` () =
     use graph = new TaskDependencyGraph(testConfig)
 
@@ -133,13 +133,13 @@ let ``TaskDependencyGraph - タスクの基本操作テスト`` () =
 
     match result3 with
     | Result.Ok(Some retrievedTask) ->
-        Assert.Equal("task1", retrievedTask.TaskId)
-        Assert.Equal("Task 1", retrievedTask.Title)
-        Assert.Equal(TaskPriority.High, retrievedTask.Priority)
+        Assert.AreEqual(retrievedTask.TaskId, "task1")
+        Assert.AreEqual(retrievedTask.Title, "Task 1")
+        Assert.AreEqual(retrievedTask.Priority, TaskPriority.High)
     | _ -> Assert.True(false, "タスク取得に失敗")
 
-[<Trait("TestCategory", "Unit")>]
-[<Fact>]
+[<Category("Unit")>]
+[<Test>]
 let ``TaskDependencyGraph - 循環依存検出テスト`` () =
     use graph = new TaskDependencyGraph(testConfig)
 
@@ -191,8 +191,8 @@ let ``TaskDependencyGraph - 循環依存検出テスト`` () =
     | Result.Error(CircularDependency cycle) -> Assert.True(cycle.Length > 0, "循環依存が検出されませんでした")
     | _ -> Assert.True(false, "循環依存が検出されませんでした")
 
-[<Trait("TestCategory", "Unit")>]
-[<Fact>]
+[<Category("Unit")>]
+[<Test>]
 let ``TaskDependencyGraph - 実行可能タスク取得テスト`` () =
     use graph = new TaskDependencyGraph(testConfig)
 
@@ -240,12 +240,12 @@ let ``TaskDependencyGraph - 実行可能タスク取得テスト`` () =
     // 実行可能タスク取得（task1のみが実行可能）
     match graph.GetExecutableTasks() with
     | Result.Ok executableTasks ->
-        Assert.Equal(1, executableTasks.Length)
-        Assert.Equal("task1", executableTasks.[0].TaskId)
+        Assert.AreEqual(executableTasks.Length, 1)
+        Assert.AreEqual(executableTasks.[0].TaskId, "task1")
     | Result.Error _ -> Assert.True(false, "実行可能タスクの取得に失敗")
 
-[<Trait("TestCategory", "Unit")>]
-[<Fact>]
+[<Category("Unit")>]
+[<Test>]
 let ``TaskDependencyGraph - クリティカルパス計算テスト`` () =
     use graph = new TaskDependencyGraph(testConfig)
 
@@ -293,12 +293,12 @@ let ``TaskDependencyGraph - クリティカルパス計算テスト`` () =
     // クリティカルパス計算
     match graph.GetCriticalPath() with
     | Result.Ok(duration, path) ->
-        Assert.Equal(TimeSpan.FromHours(6.0), duration) // 2 + 3 + 1 = 6時間
+        Assert.AreEqual(duration, TimeSpan.FromHours(6.0)) // 2 + 3 + 1 = 6時間
         Assert.True(path.Length > 0, "クリティカルパスが空です")
     | Result.Error _ -> Assert.True(false, "クリティカルパス計算に失敗")
 
-[<Trait("TestCategory", "Unit")>]
-[<Fact>]
+[<Category("Unit")>]
+[<Test>]
 let ``ProgressAggregator - 進捗サマリー計算テスト`` () =
     use agentManager = new AgentStateManager(testConfig)
     use taskGraph = new TaskDependencyGraph(testConfig)
@@ -339,15 +339,15 @@ let ``ProgressAggregator - 進捗サマリー計算テスト`` () =
     // 進捗サマリー取得
     match progressAggregator.GetCurrentSummary() with
     | Result.Ok summary ->
-        Assert.Equal(2, summary.TotalTasks)
-        Assert.Equal(1, summary.CompletedTasks)
-        Assert.Equal(1, summary.InProgressTasks)
-        Assert.Equal(1, summary.ActiveAgents)
+        Assert.AreEqual(summary.TotalTasks, 2)
+        Assert.AreEqual(summary.CompletedTasks, 1)
+        Assert.AreEqual(summary.InProgressTasks, 1)
+        Assert.AreEqual(summary.ActiveAgents, 1)
         Assert.True(summary.OverallProgress > 0.0, "全体進捗が0%です")
     | Result.Error _ -> Assert.True(false, "進捗サマリー取得に失敗")
 
-[<Trait("TestCategory", "Unit")>]
-[<Fact>]
+[<Category("Unit")>]
+[<Test>]
 let ``ProgressAggregator - 進捗トレンド分析テスト`` () =
     use agentManager = new AgentStateManager(testConfig)
     use taskGraph = new TaskDependencyGraph(testConfig)
@@ -394,8 +394,8 @@ let ``ProgressAggregator - 進捗トレンド分析テスト`` () =
         Assert.True(not analysis.RecommendedActions.IsEmpty, "推奨アクションが空です")
     | Result.Error _ -> Assert.True(false, "進捗トレンド分析に失敗")
 
-[<Trait("TestCategory", "Unit")>]
-[<Fact>]
+[<Category("Unit")>]
+[<Test>]
 let ``CollaborationCoordinator - リソース競合制御テスト`` () =
     use agentManager = new AgentStateManager(testConfig)
     use taskGraph = new TaskDependencyGraph(testConfig)
@@ -418,8 +418,8 @@ let ``CollaborationCoordinator - リソース競合制御テスト`` () =
     | Result.Error(ConflictDetected conflicts) -> Assert.True(not conflicts.IsEmpty, "競合が検出されませんでした")
     | _ -> Assert.True(false, "リソース競合が検出されませんでした")
 
-[<Trait("TestCategory", "Unit")>]
-[<Fact>]
+[<Category("Unit")>]
+[<Test>]
 let ``CollaborationCoordinator - 協調作業効率分析テスト`` () =
     use agentManager = new AgentStateManager(testConfig)
     use taskGraph = new TaskDependencyGraph(testConfig)
@@ -441,13 +441,13 @@ let ``CollaborationCoordinator - 協調作業効率分析テスト`` () =
     // 協調作業効率分析
     match coordinator.AnalyzeCollaborationEfficiency() with
     | Result.Ok analysis ->
-        Assert.Equal(2, analysis.TotalAgents)
+        Assert.AreEqual(analysis.TotalAgents, 2)
         Assert.True(analysis.ParallelEfficiency >= 0.0, "並列効率が負の値です")
         Assert.True(analysis.ResourceUtilization >= 0.0, "リソース使用率が負の値です")
     | Result.Error _ -> Assert.True(false, "協調作業効率分析に失敗")
 
-[<Trait("TestCategory", "Integration")>]
-[<Fact>]
+[<Category("Integration")>]
+[<Test>]
 let ``RealtimeCollaborationFacade - 統合動作テスト`` () =
     use facade = new RealtimeCollaborationFacade(testConfig)
 
@@ -476,7 +476,7 @@ let ``RealtimeCollaborationFacade - 統合動作テスト`` () =
     let assignResult = facade.AutoAssignTask("task1")
 
     match assignResult with
-    | Result.Ok assignedAgentId -> Assert.Equal("agent1", assignedAgentId)
+    | Result.Ok assignedAgentId -> Assert.AreEqual(assignedAgentId, "agent1")
     | Result.Error _ -> Assert.True(false, "タスク自動割り当てに失敗")
 
     // 進捗サマリー取得
@@ -488,8 +488,8 @@ let ``RealtimeCollaborationFacade - 統合動作テスト`` () =
         | Result.Error _ -> false
     )
 
-[<Trait("TestCategory", "Integration")>]
-[<Fact>]
+[<Category("Integration")>]
+[<Test>]
 let ``RealtimeCollaborationFacade - ワークフロー実行テスト`` () =
     async {
         use facade = new RealtimeCollaborationFacade(testConfig)
@@ -531,7 +531,7 @@ let ``RealtimeCollaborationFacade - ワークフロー実行テスト`` () =
 
         match workflowResult with
         | Result.Ok results ->
-            Assert.Equal(2, results.Length)
+            Assert.AreEqual(results.Length, 2)
 
             results
             |> List.iter (fun (taskId, result) ->
@@ -542,8 +542,8 @@ let ``RealtimeCollaborationFacade - ワークフロー実行テスト`` () =
     }
     |> Async.RunSynchronously
 
-[<Trait("TestCategory", "Integration")>]
-[<Fact>]
+[<Category("Integration")>]
+[<Test>]
 let ``RealtimeCollaborationFacade - システム健全性チェックテスト`` () =
     use facade = new RealtimeCollaborationFacade(testConfig)
 
@@ -554,8 +554,8 @@ let ``RealtimeCollaborationFacade - システム健全性チェックテスト``
         Assert.True(not healthReport.ComponentHealth.IsEmpty, "コンポーネント健全性が空です")
     | Result.Error _ -> Assert.True(false, "システム健全性チェックに失敗")
 
-[<Trait("TestCategory", "Stability")>]
-[<Fact>]
+[<Category("Stability")>]
+[<Test>]
 let ``リソース管理 - メモリリーク検出テスト`` () =
     let initialMemory = GC.GetTotalMemory(true)
 
@@ -580,8 +580,8 @@ let ``リソース管理 - メモリリーク検出テスト`` () =
     // メモリ増加が合理的な範囲内かチェック（100MB以下）
     Assert.True(memoryIncrease < 100L * 1024L * 1024L, $"メモリリーク検出: {memoryIncrease} bytes 増加")
 
-[<Trait("TestCategory", "Performance")>]
-[<Fact>]
+[<Category("Performance")>]
+[<Test>]
 let ``パフォーマンス - 大量タスク処理テスト`` () =
     use facade = new RealtimeCollaborationFacade(testConfig)
 
@@ -607,8 +607,8 @@ let ``パフォーマンス - 大量タスク処理テスト`` () =
     | Result.Ok tasks -> Assert.True(tasks.Length >= taskCount, "タスク数が期待値より少ない")
     | Result.Error _ -> Assert.True(false, "全タスク取得に失敗")
 
-[<Trait("TestCategory", "Performance")>]
-[<Fact>]
+[<Category("Performance")>]
+[<Test>]
 let ``パフォーマンス - 並行エージェント処理テスト`` () =
     use facade = new RealtimeCollaborationFacade(testConfig)
 
@@ -636,4 +636,4 @@ let ``パフォーマンス - 並行エージェント処理テスト`` () =
 
     // 全エージェント更新成功確認
     let successCount = results |> Array.filter id |> Array.length
-    Assert.Equal(agentCount, successCount)
+    Assert.AreEqual(successCount, agentCount)

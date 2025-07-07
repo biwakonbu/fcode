@@ -10,6 +10,7 @@ open FCode.MessagePersistence
 open FCode.Logger
 
 [<TestFixture>]
+[<Category("Unit")>]
 type AgentMessagingTests() =
 
     [<SetUp>]

@@ -11,6 +11,7 @@ open FCode.Logger
 
 /// PTY Net SIGWINCH検証テスト（ウィンドウリサイズ動作確認）
 [<TestFixture>]
+[<Category("Integration")>]
 type PtyNetSigwinchTests() =
 
     let mutable ptyManager: PtyNetManager option = None
@@ -45,6 +46,7 @@ type PtyNetSigwinchTests() =
 
     /// htopリサイズテスト - 画面サイズ変更時の正しい追従確認
     [<Test>]
+    [<Category("Integration")>]
     member this.SigwinchTest_Htop_Resize() =
         async {
             // htopコマンドの存在確認
@@ -64,7 +66,7 @@ type PtyNetSigwinchTests() =
 
                     // 初期サイズ設定（80x24）
                     let initialResize = manager.ResizeWindow(24, 80)
-                    Assert.That(initialResize, Is.True, "初期ウィンドウリサイズに失敗")
+                    Assert.IsTrue(initialResize, "初期ウィンドウリサイズに失敗")
 
                     // htopが起動するまで待機
                     do! Task.Delay(2000) |> Async.AwaitTask
@@ -82,7 +84,7 @@ type PtyNetSigwinchTests() =
 
                     // ウィンドウサイズを変更（120x40）
                     let resizeResult = manager.ResizeWindow(40, 120)
-                    Assert.That(resizeResult, Is.True, "ウィンドウリサイズ操作に失敗")
+                    Assert.IsTrue(resizeResult, "ウィンドウリサイズ操作に失敗")
 
                     // リサイズ後の出力を待機
                     do! Task.Delay(1000) |> Async.AwaitTask
@@ -93,7 +95,7 @@ type PtyNetSigwinchTests() =
                     // もう一度リサイズ（60x20）
                     manager.ClearOutput()
                     let secondResizeResult = manager.ResizeWindow(20, 60)
-                    Assert.That(secondResizeResult, Is.True, "2回目のウィンドウリサイズに失敗")
+                    Assert.IsTrue(secondResizeResult, "2回目のウィンドウリサイズに失敗")
 
                     do! Task.Delay(1000) |> Async.AwaitTask
                     let secondResizedOutput = manager.GetOutput()
@@ -102,7 +104,7 @@ type PtyNetSigwinchTests() =
 
                     // SIGWINCHが正しく伝搬されていることを確認
                     // （出力が変化することで間接的に確認）
-                    Assert.That(initialOutput.Length, Is.GreaterThan(0), "初期htop出力が空です")
+                    Assert.Greater(initialOutput.Length, 0, "初期htop出力が空です")
 
                     // htopが実際に動作している証拠として、プロセス情報が含まれているかチェック
                     let containsProcessInfo =
@@ -111,7 +113,7 @@ type PtyNetSigwinchTests() =
                         || resizedOutput.Contains("PID")
                         || secondResizedOutput.Contains("PID")
 
-                    Assert.That(containsProcessInfo, Is.True, "htopプロセス情報が出力に含まれていません")
+                    Assert.IsTrue(containsProcessInfo, "htopプロセス情報が出力に含まれていません")
 
                 | Result.Error error -> Assert.Fail("htopセッション作成に失敗: " + error)
 
@@ -121,6 +123,7 @@ type PtyNetSigwinchTests() =
 
     /// vimリサイズテスト - エディタでのウィンドウサイズ変更対応確認
     [<Test>]
+    [<Category("Integration")>]
     member this.SigwinchTest_Vim_Resize() =
         async {
             // vimコマンドの存在確認
@@ -144,17 +147,17 @@ type PtyNetSigwinchTests() =
 
                     // 初期サイズ設定（80x24）
                     let initialResize = manager.ResizeWindow(24, 80)
-                    Assert.That(initialResize, Is.True, "vim初期ウィンドウリサイズに失敗")
+                    Assert.IsTrue(initialResize, "vim初期ウィンドウリサイズに失敗")
 
                     // insertモードに入る
                     let insertMode = manager.SendInput("i")
-                    Assert.That(insertMode, Is.True, "vim insertモード移行に失敗")
+                    Assert.IsTrue(insertMode, "vim insertモード移行に失敗")
 
                     do! Task.Delay(500) |> Async.AwaitTask
 
                     // テキスト入力
                     let textInput = manager.SendInput("Hello, SIGWINCH test!\n")
-                    Assert.That(textInput, Is.True, "vimテキスト入力に失敗")
+                    Assert.IsTrue(textInput, "vimテキスト入力に失敗")
 
                     do! Task.Delay(500) |> Async.AwaitTask
                     let beforeResizeOutput = manager.GetOutput()
@@ -162,12 +165,12 @@ type PtyNetSigwinchTests() =
                     // ウィンドウサイズ変更（100x30）
                     manager.ClearOutput()
                     let resizeResult = manager.ResizeWindow(30, 100)
-                    Assert.That(resizeResult, Is.True, "vimウィンドウリサイズに失敗")
+                    Assert.IsTrue(resizeResult, "vimウィンドウリサイズに失敗")
 
                     // リサイズ後に追加テキスト入力
                     do! Task.Delay(500) |> Async.AwaitTask
                     let additionalInput = manager.SendInput("Resized window test!")
-                    Assert.That(additionalInput, Is.True, "リサイズ後テキスト入力に失敗")
+                    Assert.IsTrue(additionalInput, "リサイズ後テキスト入力に失敗")
 
                     do! Task.Delay(500) |> Async.AwaitTask
                     let afterResizeOutput = manager.GetOutput()
@@ -195,7 +198,7 @@ type PtyNetSigwinchTests() =
                     )
 
                     // 何らかの出力変化があることを確認（SIGWINCHの間接的確認）
-                    Assert.That(beforeResizeOutput + afterResizeOutput, Is.Not.Empty, "リサイズ前後でvim出力に変化がありません")
+                    Assert.IsNotEmpty(beforeResizeOutput + afterResizeOutput, "リサイズ前後でvim出力に変化がありません")
 
                 | Result.Error error -> Assert.Fail("vimセッション作成に失敗: " + error)
 

@@ -18,6 +18,7 @@ open FCode.AgentMessaging
 type CICompatibilityTestSuite() =
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``CI environment should handle UI-less operations``() =
         // CI環境シミュレート
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
@@ -37,7 +38,7 @@ type CICompatibilityTestSuite() =
                     | _ -> false, Is.True
             )
 
-            Assert.That(activityManager.GetActivityCount(), Is.EqualTo(1))
+            Assert.AreEqual(1, activityManager.GetActivityCount())
 
             activityManager.Dispose()
 
@@ -45,6 +46,7 @@ type CICompatibilityTestSuite() =
             Environment.SetEnvironmentVariable("CI", originalCIValue)
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Progress dashboard should work without UI in CI``() =
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
         Environment.SetEnvironmentVariable("CI", "true")
@@ -62,7 +64,7 @@ type CICompatibilityTestSuite() =
                     | _ -> false, Is.True
             )
 
-            Assert.That(progressManager.GetMetricCount(), Is.EqualTo(1))
+            Assert.AreEqual(1, progressManager.GetMetricCount())
 
             progressManager.Dispose()
 
@@ -70,6 +72,7 @@ type CICompatibilityTestSuite() =
             Environment.SetEnvironmentVariable("CI", originalCIValue)
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Escalation manager should work without UI in CI``() =
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
         Environment.SetEnvironmentVariable("CI", "true")
@@ -89,8 +92,8 @@ type CICompatibilityTestSuite() =
                     None
                 )
 
-            Assert.That(String.IsNullOrEmpty(notificationId), Is.False)
-            Assert.That(escalationManager.GetNotificationCount(), Is.EqualTo(1))
+            Assert.IsFalse(String.IsNullOrEmpty(notificationId))
+            Assert.AreEqual(1, escalationManager.GetNotificationCount())
 
             escalationManager.Dispose()
 
@@ -98,6 +101,7 @@ type CICompatibilityTestSuite() =
             Environment.SetEnvironmentVariable("CI", originalCIValue)
 
     [<Test>]
+    [<Category("Unit")>]
     member this.``Decision timeline should work without UI in CI``() =
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
         Environment.SetEnvironmentVariable("CI", "true")
@@ -113,8 +117,8 @@ type CICompatibilityTestSuite() =
                     [ "ci-agent"; "pm" ]
                 )
 
-            Assert.That(String.IsNullOrEmpty(decisionId), Is.False)
-            Assert.That(decisionManager.GetDecisionCount(), Is.EqualTo(1))
+            Assert.IsFalse(String.IsNullOrEmpty(decisionId))
+            Assert.AreEqual(1, decisionManager.GetDecisionCount())
 
             decisionManager.Dispose()
 
@@ -130,6 +134,7 @@ type CICompatibilityTestSuite() =
 type CIConcurrencyTestSuite() =
 
     [<Test>]
+    [<Category("Integration")>]
     member this.``Multiple managers should work concurrently in CI``() =
         let originalCIValue = Environment.GetEnvironmentVariable("CI")
         Environment.SetEnvironmentVariable("CI", "true")
@@ -153,8 +158,8 @@ type CIConcurrencyTestSuite() =
             // 結果検証
             managers
             |> List.iter (fun (activityManager, progressManager) ->
-                Assert.That(activityManager.GetActivityCount(), Is.EqualTo(1))
-                Assert.That(progressManager.GetMetricCount(), Is.EqualTo(1))
+                Assert.AreEqual(1, activityManager.GetActivityCount())
+                Assert.AreEqual(1, progressManager.GetMetricCount())
                 activityManager.Dispose()
                 progressManager.Dispose())
 
@@ -186,7 +191,7 @@ type CIConcurrencyTestSuite() =
             let memoryIncrease = finalMemory - initialMemory
 
             // メモリリークが許容範囲内
-            Assert.That(memoryIncrease, Is.LessThan(10_000_000L)) // 10MB未満
+            Assert.AreEqual(Is.LessThan(10_000_000L, memoryIncrease)) // 10MB未満
 
         finally
             Environment.SetEnvironmentVariable("CI", originalCIValue)

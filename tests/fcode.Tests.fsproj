@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="TestHelpers.fs"/>
+    <Compile Include="MockFrameViewTests.fs"/>
     <Compile Include="ConfigurationManagerTests.fs"/>
     <Compile Include="AgentCLITests.fs"/>
     <Compile Include="AgentMessagingTests.fs"/>
@@ -75,8 +76,6 @@
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
     <PackageReference Include="NUnit.Analyzers" Version="3.6.1" />
-    <PackageReference Include="xunit" Version="2.4.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Terminal.Gui" Version="1.15.0" />
   </ItemGroup>

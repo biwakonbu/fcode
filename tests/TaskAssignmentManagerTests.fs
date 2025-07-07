@@ -1,12 +1,12 @@
 module FCode.Tests.TaskAssignmentManagerTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.TaskAssignmentManager
 open FCode.Collaboration.CollaborationTypes
 
-[<Fact(Skip = "Integration test requiring manual execution")>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Integration")>]
 let ``NaturalLanguageProcessor - 基本的な指示解析テスト`` () =
     // Arrange
     let nlp = NaturalLanguageProcessor()
@@ -16,13 +16,13 @@ let ``NaturalLanguageProcessor - 基本的な指示解析テスト`` () =
     let breakdown = nlp.ParseInstruction(instruction)
 
     // Assert
-    Assert.Equal(instruction, breakdown.OriginalInstruction)
+    Assert.AreEqual(instruction, breakdown.OriginalInstruction)
     Assert.True(breakdown.ParsedTasks.Length >= 2)
     Assert.True(breakdown.EstimatedComplexity > 0.0)
     Assert.True(breakdown.EstimatedComplexity <= 1.0)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AgentCapabilityProfile - 開発エージェントプロファイル作成テスト`` () =
     // Arrange & Act
     let profile =
@@ -35,14 +35,14 @@ let ``AgentCapabilityProfile - 開発エージェントプロファイル作成�
           LastAssignedTask = None }
 
     // Assert
-    Assert.Equal("dev1", profile.AgentId)
-    Assert.Equal(8.0, profile.LoadCapacity)
-    Assert.Equal(2.0, profile.CurrentLoad)
-    Assert.Equal(0.85, profile.SuccessRate)
-    Assert.Equal(None, profile.LastAssignedTask)
+    Assert.AreEqual("dev1", profile.AgentId)
+    Assert.AreEqual(8.0, profile.LoadCapacity)
+    Assert.AreEqual(2.0, profile.CurrentLoad)
+    Assert.AreEqual(0.85, profile.SuccessRate)
+    Assert.AreEqual(None, profile.LastAssignedTask)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AgentSpecializationMatcher - 専門分野マッチングテスト`` () =
     // Arrange
     let matcher = AgentSpecializationMatcher()
@@ -72,8 +72,8 @@ let ``AgentSpecializationMatcher - 専門分野マッチングテスト`` () =
     Assert.True(score > 0.5, $"マッチスコア {score} が期待値0.5を下回っています")
     Assert.True(score <= 1.0, $"マッチスコア {score} が上限1.0を超えています")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AgentSpecializationMatcher - 不適合専門分野テスト`` () =
     // Arrange
     let matcher = AgentSpecializationMatcher()
@@ -102,8 +102,8 @@ let ``AgentSpecializationMatcher - 不適合専門分野テスト`` () =
     // Assert
     Assert.True(score < 0.7, $"不適合なのにマッチスコア {score} が高すぎます（期待値: <0.7）")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``DynamicReassignmentSystem - ブロック状態再配分判定テスト`` () =
     // Arrange
     let system = DynamicReassignmentSystem()
@@ -136,10 +136,10 @@ let ``DynamicReassignmentSystem - ブロック状態再配分判定テスト`` (
 
     // Assert
     Assert.True(needsReassignment)
-    Assert.Contains("ブロック状態", reason)
+    Assert.AreEqual("ブロック状態", reason)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``DynamicReassignmentSystem - エラー状態再配分判定テスト`` () =
     // Arrange
     let system = DynamicReassignmentSystem()
@@ -172,10 +172,10 @@ let ``DynamicReassignmentSystem - エラー状態再配分判定テスト`` () =
 
     // Assert
     Assert.True(needsReassignment)
-    Assert.Contains("エラー発生", reason)
+    Assert.AreEqual("エラー発生", reason)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TaskAssignmentManager - エージェント登録テスト`` () =
     // Arrange
     let nlp = NaturalLanguageProcessor()
@@ -196,12 +196,12 @@ let ``TaskAssignmentManager - エージェント登録テスト`` () =
     manager.RegisterAgent(profile)
     let statusReport = manager.GetAgentStatusReport()
 
-    Assert.Contains("dev1", statusReport)
-    Assert.Contains("0.0/8.0", statusReport)
-    Assert.Contains("90.00", statusReport)
+    Assert.IsTrue(statusReport.Contains("dev1"))
+    Assert.IsTrue(statusReport.Contains("0.0/8.0"))
+    Assert.IsTrue(statusReport.Contains("90.00"))
 
-[<Fact(Skip = "Integration test requiring complex NLP processing")>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Integration")>]
 let ``TaskAssignmentManager - 指示処理・配分統合テスト`` () =
     // Arrange
     let nlp = NaturalLanguageProcessor()
@@ -247,8 +247,8 @@ let ``TaskAssignmentManager - 指示処理・配分統合テスト`` () =
         Assert.True(devAssignments.Length > 0 || qaAssignments.Length > 0)
     | Result.Error error -> Assert.True(false, $"予期しないエラー: {error}")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TaskAssignmentManager - 再配分チェック機能テスト`` () =
     // Arrange
     let nlp = NaturalLanguageProcessor()
@@ -296,8 +296,8 @@ let ``TaskAssignmentManager - 再配分チェック機能テスト`` () =
     // Assert
     Assert.True(reassignments.Length >= 0) // 再配分候補が見つかるかは代替エージェントの状況による
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ParsedTask - タスク作成の基本検証`` () =
     // Arrange & Act
     let task =
@@ -310,14 +310,14 @@ let ``ParsedTask - タスク作成の基本検証`` () =
           Dependencies = [ "dep1"; "dep2" ] }
 
     // Assert
-    Assert.Equal("test-task-001", task.TaskId)
-    Assert.Equal("テスト用タスク", task.Title)
-    Assert.Equal(TimeSpan.FromHours(2.0), task.EstimatedDuration)
-    Assert.Equal(TaskPriority.Medium, task.Priority)
-    Assert.Equal(2, task.Dependencies.Length)
+    Assert.AreEqual("test-task-001", task.TaskId)
+    Assert.AreEqual("テスト用タスク", task.Title)
+    Assert.AreEqual(TimeSpan.FromHours(2.0), task.EstimatedDuration)
+    Assert.AreEqual(TaskPriority.Medium, task.Priority)
+    Assert.AreEqual(2, task.Dependencies.Length)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AgentSpecialization - 専門分野タイプ検証`` () =
     // Arrange & Act
     let devSpec = Development [ "F#"; "C#" ]
@@ -327,23 +327,23 @@ let ``AgentSpecialization - 専門分野タイプ検証`` () =
 
     // Assert（パターンマッチング動作確認）
     match devSpec with
-    | Development langs -> Assert.Contains("F#", langs)
+    | Development langs -> Assert.IsTrue(langs |> List.contains "F#")
     | _ -> Assert.True(false, "開発専門分野のパターンマッチに失敗")
 
     match testSpec with
-    | Testing types -> Assert.Contains("unit-testing", types)
+    | Testing types -> Assert.IsTrue(types |> List.contains "unit-testing")
     | _ -> Assert.True(false, "テスト専門分野のパターンマッチに失敗")
 
     match uxSpec with
-    | UXDesign areas -> Assert.Contains("UI-design", areas)
+    | UXDesign areas -> Assert.IsTrue(areas |> List.contains "UI-design")
     | _ -> Assert.True(false, "UX専門分野のパターンマッチに失敗")
 
     match pmSpec with
-    | ProjectManagement skills -> Assert.Contains("planning", skills)
+    | ProjectManagement skills -> Assert.IsTrue(skills |> List.contains "planning")
     | _ -> Assert.True(false, "PM専門分野のパターンマッチに失敗")
 
-[<Fact>]
-[<Trait("TestCategory", "Performance")>]
+[<Test>]
+[<Category("Performance")>]
 let ``TaskAssignmentManager - 大量エージェント登録性能テスト`` () =
     // Arrange
     let nlp = NaturalLanguageProcessor()
@@ -374,8 +374,8 @@ let ``TaskAssignmentManager - 大量エージェント登録性能テスト`` ()
         $"100エージェント登録が {stopwatch.ElapsedMilliseconds}ms かかりました（期待値: <1000ms）"
     )
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TaskBreakdown - タスク分解結果構造検証`` () =
     // Arrange & Act
     let breakdown =
@@ -392,7 +392,7 @@ let ``TaskBreakdown - タスク分解結果構造検証`` () =
           RequiredSpecializations = [ Development [ "F#" ]; Testing [ "unit-testing" ] ] }
 
     // Assert
-    Assert.Equal("複数の機能を実装してください", breakdown.OriginalInstruction)
-    Assert.Equal(1, breakdown.ParsedTasks.Length)
-    Assert.Equal(0.7, breakdown.EstimatedComplexity)
-    Assert.Equal(2, breakdown.RequiredSpecializations.Length)
+    Assert.AreEqual("複数の機能を実装してください", breakdown.OriginalInstruction)
+    Assert.AreEqual(1, breakdown.ParsedTasks.Length)
+    Assert.AreEqual(0.7, breakdown.EstimatedComplexity)
+    Assert.AreEqual(2, breakdown.RequiredSpecializations.Length)

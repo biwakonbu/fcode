@@ -2,28 +2,28 @@ module FCode.Tests.ClaudeCodeIntegrationTests
 
 open System
 open System.Threading
-open Xunit
+open NUnit.Framework
 open FCode.ClaudeCodeIntegration
 
 /// CI環境判定
 let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ClaudeCodeIntegrationManager - 基本作成テスト`` () =
     use manager = new ClaudeCodeIntegrationManager()
     Assert.NotNull(manager)
-    Assert.Equal("停止中", manager.GetStatus())
+    Assert.AreEqual("停止中", manager.GetStatus())
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ClaudeCodeIntegrationManager - 出力バッファテスト`` () =
     use manager = new ClaudeCodeIntegrationManager()
     let buffer = manager.GetOutputBuffer()
-    Assert.Empty(buffer)
+    Assert.IsEmpty(buffer)
 
-[<Fact>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Integration")>]
 let ``ClaudeCodeIntegrationManager - プロセス起動テスト`` () =
     if isCI then
         // CI環境ではスキップ
@@ -40,13 +40,13 @@ let ``ClaudeCodeIntegrationManager - プロセス起動テスト`` () =
         | Result.Ok message -> Assert.True(message.Contains("シミュレーション"), "模擬環境での成功メッセージ")
         | Result.Error errorMsg -> Assert.True(errorMsg.Length > 0, "エラーメッセージが有効")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ClaudeCodeIntegrationManager - コマンド送信テスト（未起動状態）`` () =
     use manager = new ClaudeCodeIntegrationManager()
 
     let result = manager.SendCommand("test command")
 
     match result with
-    | Result.Error message -> Assert.Contains("起動していません", message)
+    | Result.Error message -> Assert.AreEqual(message, "起動していません")
     | Result.Ok _ -> Assert.True(false, "未起動状態でコマンド送信が成功するべきではない")

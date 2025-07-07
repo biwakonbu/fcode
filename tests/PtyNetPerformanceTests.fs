@@ -45,6 +45,7 @@ type PtyNetPerformanceTests() =
 
     /// スループット計測テスト - yesコマンドで60fps相当の大量出力
     [<Test>]
+    [<Category("Performance")>]
     member this.ThroughputTest_YesCommand_60FPS() =
         // CI環境ではパフォーマンステストをスキップ
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
@@ -110,7 +111,7 @@ type PtyNetPerformanceTests() =
                              + " bytes/s")
                         )
 
-                        Assert.That(totalBytes, Is.GreaterThan(0), "出力データが取得されませんでした")
+                        Assert.Greater(totalBytes, 0, "出力データが取得されませんでした")
 
                     | Result.Error error -> Assert.Fail("PTYセッション作成に失敗: " + error)
 
@@ -120,6 +121,7 @@ type PtyNetPerformanceTests() =
 
     /// レイテンシ計測テスト - 99パーセンタイル16ms未満
     [<Test>]
+    [<Category("Performance")>]
     member this.LatencyTest_99Percentile_Under16ms() =
         // CI環境ではパフォーマンステストをスキップ
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
@@ -149,7 +151,7 @@ type PtyNetPerformanceTests() =
 
                             // 入力送信
                             let inputSent = manager.SendInput(testInput)
-                            Assert.That(inputSent, Is.True, ("入力送信失敗: iteration " + i.ToString()))
+                            Assert.IsTrue(inputSent, ("入力送信失敗: iteration " + i.ToString()))
 
                             // 出力が返ってくるまで待機（最大100ms）
                             let mutable outputReceived = false
@@ -199,7 +201,7 @@ type PtyNetPerformanceTests() =
                                 ("99パーセンタイルレイテンシが閾値を超過: " + percentile99.ToString("F2") + "ms >= 16ms")
                             )
 
-                            Assert.That(latencies.Count, Is.GreaterThan(testCount / 2), "有効なレイテンシサンプルが不足しています")
+                            Assert.Greater(latencies.Count, testCount / 2, "有効なレイテンシサンプルが不足しています")
                         else
                             Assert.Fail("レイテンシデータが取得できませんでした")
 

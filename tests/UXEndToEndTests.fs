@@ -43,6 +43,7 @@ type UXEndToEndTests() =
         shutdownTerminalGui ()
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``UXペイン専用プロンプト適用E2Eテスト``() =
         // CI環境ではスキップ
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
@@ -61,7 +62,7 @@ type UXEndToEndTests() =
                     try
                         // UX設定が適用されることを検証
                         let uxRole = getUXRoleFromPaneId "ux"
-                        Assert.That(uxRole, Is.EqualTo(Some UX), "uxペインがUX役割に識別されること")
+                        Assert.AreEqual(Some UX, uxRole, "uxペインがUX役割に識別されること")
 
                         let uxConfig = getUXPromptConfig UX
                         Assert.That(uxConfig.SystemPrompt, Does.Contain("ユーザビリティ"), "UXシステムプロンプトが正しく設定されること")
@@ -69,7 +70,7 @@ type UXEndToEndTests() =
 
                         // 環境変数設定の検証
                         let uxEnvVars = getUXEnvironmentVariables UX |> Map.ofList
-                        Assert.That(uxEnvVars.["UX_SPECIALIZATION"], Is.EqualTo("ui_ux_design"), "UX専門化設定")
+                        Assert.AreEqual("ui_ux_design", uxEnvVars.["UX_SPECIALIZATION"], "UX専門化設定")
 
                         true
                     with ex ->
@@ -77,11 +78,12 @@ type UXEndToEndTests() =
                         false
 
                 // Assert
-                Assert.That(sessionStartAttempted, Is.True, "UXペインでの設定適用が成功すること")
+                Assert.IsTrue(sessionStartAttempted, "UXペインでの設定適用が成功すること")
 
             | _ -> Assert.Fail("SessionManagerまたはTextViewの初期化に失敗")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``UX設定の独立性確認テスト``() =
         // Arrange & Act
         let uxConfig = getUXPromptConfig UX
@@ -94,11 +96,12 @@ type UXEndToEndTests() =
         Assert.That(uxConfig.DesignApproach, Does.Contain("ユーザー中心"), "ユーザー中心設計アプローチ")
 
         // 環境変数の独自性確認
-        Assert.That(uxEnvVars.["UX_SPECIALIZATION"], Is.EqualTo("ui_ux_design"), "UX専門化設定")
+        Assert.AreEqual("ui_ux_design", uxEnvVars.["UX_SPECIALIZATION"], "UX専門化設定")
         Assert.That(uxEnvVars.["UX_FOCUS_AREA"], Does.Contain("usability"), "ユーザビリティフォーカス")
         Assert.That(uxEnvVars.["UX_FOCUS_AREA"], Does.Contain("accessibility"), "アクセシビリティフォーカス")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``dev・qa・uxの役割分離E2Eテスト``() =
         // Arrange & Act - dev1-3, qa1-2ペインはUX設定対象外であることを確認
         let devRoles = [ "dev1"; "dev2"; "dev3" ] |> List.map getUXRoleFromPaneId
@@ -107,13 +110,13 @@ type UXEndToEndTests() =
 
         // Assert - dev1-3, qa1-2はUX役割に設定されないこと
         devRoles
-        |> List.iter (fun role -> Assert.That(role, Is.EqualTo(None), "dev1-3ペインはUX役割に設定されないこと"))
+        |> List.iter (fun role -> Assert.AreEqual(None, role, "dev1-3ペインはUX役割に設定されないこと"))
 
         qaRoles
-        |> List.iter (fun role -> Assert.That(role, Is.EqualTo(None), "qa1-2ペインはUX役割に設定されないこと"))
+        |> List.iter (fun role -> Assert.AreEqual(None, role, "qa1-2ペインはUX役割に設定されないこと"))
 
         // Assert - uxはUX役割に正しく設定されること
-        Assert.That(uxRole, Is.EqualTo(Some UX), "uxがUX役割に設定されること")
+        Assert.AreEqual(Some UX, uxRole, "uxがUX役割に設定されること")
 
 /// FC-007 統合テスト: マルチペイン（dev/qa/ux）同時動作確認
 [<TestFixture>]
@@ -121,6 +124,7 @@ type UXEndToEndTests() =
 type UXMultiPaneIntegrationTests() =
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``全ペイン役割分離統合テスト``() =
         // Arrange - 全ペインの役割設定確認
         let devRole = "dev1"
@@ -134,7 +138,7 @@ type UXMultiPaneIntegrationTests() =
         match uxRoleResult with
         | Some role ->
             let uxConfig = getUXPromptConfig role
-            Assert.That(validateUXPromptConfig uxConfig, Is.True, "UX設定が有効であること")
+            Assert.IsTrue(validateUXPromptConfig uxConfig, "UX設定が有効であること")
 
             // 他ペインとの差別化確認
             Assert.That(uxConfig.SystemPrompt, Does.Contain("UX/UIデザイン"), "UXが明確にデザイン専門であること")
@@ -142,6 +146,7 @@ type UXMultiPaneIntegrationTests() =
         | None -> Assert.Fail("UX役割の特定に失敗")
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``UX設定の並行処理安全性テスト``() =
         // Arrange - 並行処理でのUX設定取得テスト
         let uxRole = UX
@@ -159,14 +164,15 @@ type UXMultiPaneIntegrationTests() =
             |> fun task -> task.Result
 
         // Assert - 並行処理でも正確な設定が取得されること
-        Assert.That(parallelResults.Length, Is.EqualTo(5), "5つのUX設定が取得されること")
+        Assert.AreEqual(5, parallelResults.Length, "5つのUX設定が取得されること")
 
         parallelResults
         |> Array.iter (fun (config, envVars, displayName) ->
-            Assert.That(validateUXPromptConfig config, Is.True, "並行処理でUX設定が有効であること")
-            Assert.That(displayName, Is.EqualTo("UX (UI/UXデザイン)"), "並行処理でも役割名が正しいこと"))
+            Assert.IsTrue(validateUXPromptConfig config, "並行処理でUX設定が有効であること")
+            Assert.AreEqual("UX (UI/UXデザイン)", displayName, "並行処理でも役割名が正しいこと"))
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``UXログ出力の競合状態テスト``() =
         // Arrange - 同時ログ出力でのスレッドセーフティテスト
         let testTasks =
@@ -188,9 +194,10 @@ type UXMultiPaneIntegrationTests() =
             Task.WhenAll(testTasks).Wait()
 
             testTasks
-            |> List.iter (fun task -> Assert.That(task.Result, Is.True, "競合状態でも設定検証が成功すること")))
+            |> List.iter (fun task -> Assert.IsTrue(task.Result, "競合状態でも設定検証が成功すること")))
 
     [<Test>]
+    [<Category("Integration")>]
     member _.``6ペイン同時設定適用シミュレーションテスト``() =
         // Arrange - dev1-3, qa1-2, ux の6ペイン同時設定
         let allPanes = [ "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux" ]
@@ -206,10 +213,10 @@ type UXMultiPaneIntegrationTests() =
         let uxPaneResults = paneResults |> List.filter (fun (_, role) -> role.IsSome)
         let nonUxPaneResults = paneResults |> List.filter (fun (_, role) -> role.IsNone)
 
-        Assert.That(uxPaneResults.Length, Is.EqualTo(1), "UX役割は1ペインのみ")
-        Assert.That(nonUxPaneResults.Length, Is.EqualTo(5), "非UX役割は5ペイン")
+        Assert.AreEqual(1, uxPaneResults.Length, "UX役割は1ペインのみ")
+        Assert.AreEqual(5, nonUxPaneResults.Length, "非UX役割は5ペイン")
 
         // UXペインの詳細確認
         let (uxPaneId, uxRoleOpt) = uxPaneResults.Head
-        Assert.That(uxPaneId, Is.EqualTo("ux"), "UXペインが正しく識別されること")
-        Assert.That(uxRoleOpt, Is.EqualTo(Some UX), "UX役割が正しく設定されること")
+        Assert.AreEqual("ux", uxPaneId, "UXペインが正しく識別されること")
+        Assert.AreEqual(Some UX, uxRoleOpt, "UX役割が正しく設定されること")

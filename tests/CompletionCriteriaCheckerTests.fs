@@ -1,12 +1,12 @@
 module FCode.Tests.CompletionCriteriaCheckerTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.CompletionCriteriaCheckerManager
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``CompletionCriteriaCheckerManager - 基本的な受け入れ基準チェックテスト`` () =
     // Arrange
     let criteria = [ "ユニットテスト95%カバレッジ"; "性能要件満たす"; "セキュリティチェック完了" ]
@@ -24,11 +24,11 @@ let ``CompletionCriteriaCheckerManager - 基本的な受け入れ基準チェッ
 
     // Assert
     Assert.True(result.AllCriteriaMet)
-    Assert.Equal(3, result.MetCriteria.Length)
-    Assert.Empty(result.UnmetCriteria)
+    Assert.AreEqual(result.MetCriteria.Length, 3)
+    Assert.IsEmpty(result.UnmetCriteria)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``CompletionCriteriaCheckerManager - 基準未達成時のテスト`` () =
     // Arrange
     let criteria = [ "ユニットテスト95%カバレッジ"; "性能要件満たす"; "セキュリティチェック完了" ]
@@ -46,8 +46,8 @@ let ``CompletionCriteriaCheckerManager - 基準未達成時のテスト`` () =
 
     // Assert
     Assert.False(result.AllCriteriaMet)
-    Assert.Empty(result.MetCriteria)
-    Assert.Equal(3, result.UnmetCriteria.Length)
+    Assert.IsEmpty(result.MetCriteria)
+    Assert.AreEqual(result.UnmetCriteria.Length, 3)
 
 // テスト用完成データ型
 type CompletionData =

@@ -1,12 +1,12 @@
 module FCode.Tests.IterationManagerTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.IterationManagerCore
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``IterationManager - 反復開発管理テスト`` () =
     // Arrange
     let iterationPlan =
@@ -21,11 +21,11 @@ let ``IterationManager - 反復開発管理テスト`` () =
     let nextPhase = manager.AdvanceToNextPhase(iterationPlan)
 
     // Assert
-    Assert.Equal("テスト", nextPhase.CurrentPhase)
+    Assert.AreEqual(nextPhase.CurrentPhase, "テスト")
     Assert.True(nextPhase.CompletionRate > iterationPlan.CompletionRate)
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``IterationManager - 段階的完成管理テスト`` () =
     // Arrange
     let iterationPlan =
@@ -41,7 +41,7 @@ let ``IterationManager - 段階的完成管理テスト`` () =
 
     // Assert
     Assert.True(result.IsComplete)
-    Assert.Equal(1.0, result.FinalCompletionRate)
+    Assert.AreEqual(result.FinalCompletionRate, 1.0)
 
 // テスト用反復計画型
 type IterationPlan =

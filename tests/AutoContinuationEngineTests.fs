@@ -1,12 +1,12 @@
 module FCode.Tests.AutoContinuationEngineTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.AutoContinuationEngineManager
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AutoContinuationEngine - 自動継続判定テスト`` () =
     // Arrange
     let assessment =
@@ -25,11 +25,11 @@ let ``AutoContinuationEngine - 自動継続判定テスト`` () =
 
     // Assert
     match decision with
-    | AutoContinue reason -> Assert.Contains("高品質完成", reason)
+    | AutoContinue reason -> Assert.AreEqual(reason, "高品質完成")
     | _ -> Assert.True(false, "Should be AutoContinue")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AutoContinuationEngine - PO承認要求判定テスト`` () =
     // Arrange
     let assessment =
@@ -48,11 +48,11 @@ let ``AutoContinuationEngine - PO承認要求判定テスト`` () =
 
     // Assert
     match decision with
-    | RequirePOApproval reason -> Assert.Contains("品質基準", reason)
+    | RequirePOApproval reason -> Assert.AreEqual(reason, "品質")
     | _ -> Assert.True(false, "Should be RequirePOApproval")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AutoContinuationEngine - 低品質シナリオテスト`` () =
     // Arrange
     let lowQualityAssessment =
@@ -71,12 +71,12 @@ let ``AutoContinuationEngine - 低品質シナリオテスト`` () =
 
     // Assert
     match decision with
-    | RequirePOApproval reason -> Assert.Contains("品質", reason)
-    | StopExecution reason -> Assert.Contains("品質", reason)
+    | RequirePOApproval reason -> Assert.AreEqual(reason, "品質")
+    | StopExecution reason -> Assert.AreEqual(reason, "品質")
     | _ -> Assert.True(false, "Should be RequirePOApproval or StopExecution for low quality")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AutoContinuationEngine - ブロックタスク多数シナリオテスト`` () =
     // Arrange
     let blockedTasksAssessment =
@@ -95,11 +95,11 @@ let ``AutoContinuationEngine - ブロックタスク多数シナリオテスト`
 
     // Assert
     match decision with
-    | RequirePOApproval reason -> Assert.Contains("品質", reason)
+    | RequirePOApproval reason -> Assert.AreEqual(reason, "品質")
     | _ -> Assert.True(false, "Should be RequirePOApproval for blocked tasks scenario")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AutoContinuationEngine - 重大遅延シナリオテスト`` () =
     // Arrange
     let severeDelayAssessment =
@@ -118,5 +118,5 @@ let ``AutoContinuationEngine - 重大遅延シナリオテスト`` () =
 
     // Assert
     match decision with
-    | RequirePOApproval reason -> Assert.Contains("品質", reason)
+    | RequirePOApproval reason -> Assert.AreEqual(reason, "品質")
     | _ -> Assert.True(false, "Should be RequirePOApproval for severe delay scenario")

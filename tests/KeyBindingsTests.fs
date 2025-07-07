@@ -49,17 +49,19 @@ type KeyBindingsTests() =
             () // Not initialized or already shutdown
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``キーアクション型のテスト``() =
         // キーアクションの型安全性テスト
         let exitAction = Exit
         let nextPaneAction = NextPane
         let focusPaneAction = FocusPane 3
 
-        Assert.That(exitAction, Is.EqualTo(Exit))
-        Assert.That(nextPaneAction, Is.EqualTo(NextPane))
-        Assert.That(focusPaneAction, Is.EqualTo(FocusPane 3))
+        Assert.AreEqual(Exit, exitAction)
+        Assert.AreEqual(NextPane, nextPaneAction)
+        Assert.AreEqual(FocusPane 3, focusPaneAction)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``Emacsキーバインド定義のテスト``() =
         // キーバインド定義の存在確認
         let hasExitBinding =
@@ -76,34 +78,37 @@ type KeyBindingsTests() =
                 | [ k1; k2 ], NextPane when k1 = (Key.CtrlMask ||| Key.X) && k2 = Key.O -> true
                 | _ -> false)
 
-        Assert.That(hasExitBinding, Is.True, "Ctrl+X Ctrl+C による終了バインドが存在すること")
-        Assert.That(hasNextPaneBinding, Is.True, "Ctrl+X O による次ペイン移動バインドが存在すること")
+        Assert.IsTrue(hasExitBinding, "Ctrl+X Ctrl+C による終了バインドが存在すること")
+        Assert.IsTrue(hasNextPaneBinding, "Ctrl+X O による次ペイン移動バインドが存在すること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``EmacsKeyHandlerの初期化テスト``() =
         let panes = createMockFrameViews ()
         let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
-        Assert.That(handler.CurrentPaneIndex, Is.EqualTo(0), "初期ペインインデックスは0であること")
+        Assert.AreEqual(0, handler.CurrentPaneIndex, "初期ペインインデックスは0であること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ペインインデックス設定テスト``() =
         let panes = createMockFrameViews ()
         let handler = EmacsKeyHandler(panes, createMockSessionManager ())
 
         // 有効なインデックス設定
         handler.SetCurrentPaneIndex(3)
-        Assert.That(handler.CurrentPaneIndex, Is.EqualTo(3), "有効なインデックスが設定されること")
+        Assert.AreEqual(3, handler.CurrentPaneIndex, "有効なインデックスが設定されること")
 
         // 無効なインデックス設定（負の値）
         handler.SetCurrentPaneIndex(-1)
-        Assert.That(handler.CurrentPaneIndex, Is.EqualTo(3), "負のインデックスは無視されること")
+        Assert.AreEqual(3, handler.CurrentPaneIndex, "負のインデックスは無視されること")
 
         // 無効なインデックス設定（範囲外）
         handler.SetCurrentPaneIndex(10)
-        Assert.That(handler.CurrentPaneIndex, Is.EqualTo(3), "範囲外のインデックスは無視されること")
+        Assert.AreEqual(3, handler.CurrentPaneIndex, "範囲外のインデックスは無視されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``シングルキーバインドテスト``() =
         // CI環境ではスキップ（Terminal.Gui Application.Refresh依存）
         skipIfCI ()
@@ -114,9 +119,10 @@ type KeyBindingsTests() =
         let refreshKey = KeyEvent(Key.CtrlMask ||| Key.L, KeyModifiers())
         let handled = handler.HandleKey(refreshKey)
 
-        Assert.That(handled, Is.True, "Ctrl+L キーが処理されること")
+        Assert.IsTrue(handled, "Ctrl+L キーが処理されること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``マルチキーシーケンステスト``() =
         skipIfCI ()
         let panes = createMockFrameViews ()
@@ -126,16 +132,17 @@ type KeyBindingsTests() =
         let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
         let firstHandled = handler.HandleKey(firstKey)
 
-        Assert.That(firstHandled, Is.True, "最初のキー（Ctrl+X）が処理されること")
+        Assert.IsTrue(firstHandled, "最初のキー（Ctrl+X）が処理されること")
 
         // 次のキー O (NextPane)
         let secondKey = KeyEvent(Key.O, KeyModifiers())
         let secondHandled = handler.HandleKey(secondKey)
 
-        Assert.That(secondHandled, Is.True, "2番目のキー（O）が処理されること")
-        Assert.That(handler.CurrentPaneIndex, Is.EqualTo(1), "次のペインに移動していること")
+        Assert.IsTrue(secondHandled, "2番目のキー（O）が処理されること")
+        Assert.AreEqual(1, handler.CurrentPaneIndex, "次のペインに移動していること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``キーシーケンスタイムアウトテスト``() =
         let panes = createMockFrameViews ()
         let handler = EmacsKeyHandler(panes, createMockSessionManager ())
@@ -143,15 +150,16 @@ type KeyBindingsTests() =
         // Ctrl+X を送信
         let firstKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
         let firstHandled = handler.HandleKey(firstKey)
-        Assert.That(firstHandled, Is.True)
+        Assert.IsTrue(firstHandled)
 
         // 2秒以上待機をシミュレート（実際の待機は行わず、無効なキーで代用）
         let invalidKey = KeyEvent(Key.A, KeyModifiers())
         let invalidHandled = handler.HandleKey(invalidKey)
 
-        Assert.That(invalidHandled, Is.False, "無効なキーシーケンスは処理されないこと")
+        Assert.IsFalse(invalidHandled, "無効なキーシーケンスは処理されないこと")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ダイレクトペイン移動テスト``() =
         skipIfCI ()
         let panes = createMockFrameViews ()
@@ -164,10 +172,11 @@ type KeyBindingsTests() =
         handler.HandleKey(firstKey) |> ignore
         let handled = handler.HandleKey(secondKey)
 
-        Assert.That(handled, Is.True, "ダイレクト移動キーが処理されること")
-        Assert.That(handler.CurrentPaneIndex, Is.EqualTo(3), "指定ペインに移動していること")
+        Assert.IsTrue(handled, "ダイレクト移動キーが処理されること")
+        Assert.AreEqual(3, handler.CurrentPaneIndex, "指定ペインに移動していること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``前ペイン移動テスト``() =
         skipIfCI ()
         let panes = createMockFrameViews ()
@@ -183,10 +192,11 @@ type KeyBindingsTests() =
         handler.HandleKey(firstKey) |> ignore
         let handled = handler.HandleKey(secondKey)
 
-        Assert.That(handled, Is.True, "前ペイン移動キーが処理されること")
-        Assert.That(handler.CurrentPaneIndex, Is.EqualTo(1), "前のペインに移動していること")
+        Assert.IsTrue(handled, "前ペイン移動キーが処理されること")
+        Assert.AreEqual(1, handler.CurrentPaneIndex, "前のペインに移動していること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``ペイン移動の循環テスト``() =
         skipIfCI ()
         let panes = createMockFrameViews ()
@@ -202,7 +212,7 @@ type KeyBindingsTests() =
         handler.HandleKey(firstKey) |> ignore
         handler.HandleKey(secondKey) |> ignore
 
-        Assert.That(handler.CurrentPaneIndex, Is.EqualTo(0), "最後のペインから最初のペインに循環すること")
+        Assert.AreEqual(0, handler.CurrentPaneIndex, "最後のペインから最初のペインに循環すること")
 
         // 前のペインに移動（循環して7に戻る）
         let thirdKey = KeyEvent(Key.CtrlMask ||| Key.X, KeyModifiers())
@@ -211,9 +221,10 @@ type KeyBindingsTests() =
         handler.HandleKey(thirdKey) |> ignore
         handler.HandleKey(fourthKey) |> ignore
 
-        Assert.That(handler.CurrentPaneIndex, Is.EqualTo(7), "最初のペインから最後のペインに循環すること")
+        Assert.AreEqual(7, handler.CurrentPaneIndex, "最初のペインから最後のペインに循環すること")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``Ctrl-X Ctrl-C終了コマンドテスト``() =
         // CI環境ではスキップ（Terminal.Gui Application.RequestStop依存）
         skipIfCI ()
@@ -225,8 +236,8 @@ type KeyBindingsTests() =
         let secondKey = KeyEvent(Key.CtrlMask ||| Key.C, KeyModifiers())
 
         let firstHandled = handler.HandleKey(firstKey)
-        Assert.That(firstHandled, Is.True, "最初のキー（Ctrl+X）が処理されること")
+        Assert.IsTrue(firstHandled, "最初のキー（Ctrl+X）が処理されること")
 
         // 2番目のキーでExitアクションが実行される（Application.RequestStop()が呼ばれる）
         let secondHandled = handler.HandleKey(secondKey)
-        Assert.That(secondHandled, Is.True, "2番目のキー（Ctrl+C）が処理されること")
+        Assert.IsTrue(secondHandled, "2番目のキー（Ctrl+C）が処理されること")

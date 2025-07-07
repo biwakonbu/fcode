@@ -8,6 +8,7 @@ open System.IO
 open System.Diagnostics
 
 [<TestFixture>]
+[<Category("Performance")>]
 type StoragePerformanceTests() =
 
     let createTestTask (id: int) =

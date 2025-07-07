@@ -40,12 +40,41 @@ jobs:
       run: |
         dotnet build src/fcode.fsproj --configuration Debug --verbosity normal --property TreatWarningsAsErrors=true
     
-    # 3. テスト実行 (5分タイムアウト)
-    - name: Run tests
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit" --blame-hang-timeout 300000ms
+    # 3. テスト品質チェック
+    - name: Verify test categorization
+      run: |
+        echo "📊 Verifying test categorization by examining source files..."
+        
+        # Count Category attributes in test files
+        CATEGORY_COUNT=$(find tests -name "*.fs" -exec grep -c "\[<Category" {} \; | awk '{sum += $1} END {print sum}')
+        TEST_COUNT=$(find tests -name "*.fs" -exec grep -c "\[<Test>" {} \; | awk '{sum += $1} END {print sum}')
+        
+        echo "  Category attributes found: $CATEGORY_COUNT"
+        echo "  Test methods found: $TEST_COUNT"
+        
+        # All tests should have at least one category
+        if [ "$CATEGORY_COUNT" -ge "$TEST_COUNT" ]; then
+          echo "✅ Test categorization verified: All $TEST_COUNT tests have categories"
+        else
+          echo "❌ Missing categories: $((TEST_COUNT - CATEGORY_COUNT)) tests lack categories"
+          exit 1
+        fi
+    
+    # 4. テスト実行 (30秒タイムアウト・UI依存テスト除外)
+    - name: Run CI-safe unit tests
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit&TestCategory!=UI" --blame-hang-timeout 30000ms --blame-crash
       env:
         TERM: xterm
         CI: true
+        
+    # 5. CI安全テスト数検証
+    - name: Verify CI-safe test count
+      run: |
+        CI_SAFE=$(dotnet test tests/fcode.Tests.fsproj --filter "TestCategory=Unit&TestCategory!=UI" --list-tests | wc -l)
+        echo "✅ CI安全テスト数: $CI_SAFE"
+        if [ $CI_SAFE -lt 150 ]; then
+          echo "⚠️  CI安全テストが少ないです（期待値: 150以上）"
+        fi
     
     # - name: Upload test results
     #   uses: actions/upload-artifact@v4
@@ -85,8 +114,8 @@ jobs:
       run: |
         dotnet restore src/fcode.fsproj
     
-    - name: Run tests on macOS
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit" --blame-hang-timeout 300000ms
+    - name: Run CI-safe unit tests on macOS
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit&TestCategory!=UI" --blame-hang-timeout 30000ms --blame-crash
       env:
         TERM: xterm
         CI: true

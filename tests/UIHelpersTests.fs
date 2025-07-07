@@ -31,6 +31,7 @@ type UIHelpersTests() =
                 ()
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``findTextViews should find direct TextView``() =
         // Arrange
         let textView = new TextView()
@@ -44,6 +45,7 @@ type UIHelpersTests() =
         Assert.AreSame(textView, result.[0])
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``findTextViews should find TextView inside FrameView ContentView hierarchy``() =
         // Arrange - Program.fsのmakePaneと同じ方法でFrameViewを作成
         let frameView = new FrameView("test")
@@ -59,6 +61,7 @@ type UIHelpersTests() =
         Assert.AreEqual("test content", result.[0].Text.ToString())
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``getTextViewsFromPane should return empty list for pane without TextView``() =
         // Arrange
         let frameView = new FrameView("empty")
@@ -70,6 +73,7 @@ type UIHelpersTests() =
         Assert.AreEqual(0, result.Length)
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``getTextViewsFromPane should find TextView in ContentView hierarchy``() =
         // Arrange - Program.fsのmakePaneロジックを再現
         let frameView = new FrameView("test")
@@ -93,6 +97,7 @@ type UIHelpersTests() =
         Assert.IsTrue(result.[0].Text.ToString().Contains("testペイン"))
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``findTextViews should handle multiple nested TextViews``() =
         // Arrange
         let container = new View()
@@ -116,6 +121,7 @@ type UIHelpersTests() =
         CollectionAssert.Contains(texts, "second")
 
     [<Test>]
+    [<Category("Unit")>]
     member _.``findTextViews should handle empty View without crash``() =
         // Arrange
         let emptyView = new View()
@@ -361,6 +367,7 @@ type UIHelpersTests() =
         Assert.AreEqual(unicodeText, result.[0].Text.ToString(), "Unicode文字が正確に保持される")
 
     [<Test>]
+    [<Category("Unit")>]
     [<Category("Integration")>]
     member _.``UIHelpers統合テスト - 実際のProgram.fs形式でのTextView発見``() =
         // Arrange - Program.fsのmakePane関数と同じ形式でFrameViewを作成

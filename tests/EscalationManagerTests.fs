@@ -1,7 +1,7 @@
 module FCode.Tests.EscalationManagerTests
 
 open System
-open Xunit
+open NUnit.Framework
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.IAgentStateManager
 open FCode.Collaboration.ITaskDependencyGraph
@@ -47,8 +47,8 @@ let createTestEscalationManager () =
 
 /// ==== 致命度評価テスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``EvaluateSeverity Critical errors detected correctly`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -56,13 +56,13 @@ let ``EvaluateSeverity Critical errors detected correctly`` () =
         let! result = escalationManager.EvaluateSeverity("task1", "agent1", "Critical failure detected")
 
         match result with
-        | Result.Ok severity -> Assert.Equal(EscalationSeverity.Critical, severity)
+        | Result.Ok severity -> Assert.AreEqual(EscalationSeverity.Critical, severity)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``EvaluateSeverity Severe errors detected correctly`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -70,13 +70,13 @@ let ``EvaluateSeverity Severe errors detected correctly`` () =
         let! result = escalationManager.EvaluateSeverity("task1", "agent1", "Exception occurred in process")
 
         match result with
-        | Result.Ok severity -> Assert.Equal(EscalationSeverity.Severe, severity)
+        | Result.Ok severity -> Assert.AreEqual(EscalationSeverity.Severe, severity)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``EvaluateSeverity Important warnings detected correctly`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -84,13 +84,13 @@ let ``EvaluateSeverity Important warnings detected correctly`` () =
         let! result = escalationManager.EvaluateSeverity("task1", "agent1", "Warning: timeout occurred")
 
         match result with
-        | Result.Ok severity -> Assert.Equal(EscalationSeverity.Important, severity)
+        | Result.Ok severity -> Assert.AreEqual(EscalationSeverity.Important, severity)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``EvaluateSeverity Moderate issues default correctly`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -98,13 +98,13 @@ let ``EvaluateSeverity Moderate issues default correctly`` () =
         let! result = escalationManager.EvaluateSeverity("task1", "agent1", "Some minor issue")
 
         match result with
-        | Result.Ok severity -> Assert.Equal(EscalationSeverity.Moderate, severity)
+        | Result.Ok severity -> Assert.AreEqual(EscalationSeverity.Moderate, severity)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``EvaluateSeverity empty error message handled`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -112,15 +112,15 @@ let ``EvaluateSeverity empty error message handled`` () =
         let! result = escalationManager.EvaluateSeverity("task1", "agent1", "")
 
         match result with
-        | Result.Ok severity -> Assert.Equal(EscalationSeverity.Moderate, severity)
+        | Result.Ok severity -> Assert.AreEqual(EscalationSeverity.Moderate, severity)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
 /// ==== PO通知レベル判定テスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``DetermineNotificationLevel Critical severity triggers notification`` () =
     let (escalationManager, _, _, _, _) = createTestEscalationManager ()
 
@@ -135,11 +135,11 @@ let ``DetermineNotificationLevel Critical severity triggers notification`` () =
     match escalationManager.DetermineNotificationLevel(EscalationSeverity.Critical, factors) with
     | Result.Ok(shouldNotify, reason) ->
         Assert.True(shouldNotify)
-        Assert.Contains("Critical", reason)
+        Assert.IsTrue(reason.Contains("Critical"))
     | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``DetermineNotificationLevel Important severity triggers notification`` () =
     let (escalationManager, _, _, _, _) = createTestEscalationManager ()
 
@@ -154,11 +154,11 @@ let ``DetermineNotificationLevel Important severity triggers notification`` () =
     match escalationManager.DetermineNotificationLevel(EscalationSeverity.Important, factors) with
     | Result.Ok(shouldNotify, reason) ->
         Assert.True(shouldNotify)
-        Assert.Contains("Important", reason)
+        Assert.IsTrue(reason.Contains("Important"))
     | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``DetermineNotificationLevel Moderate severity below threshold`` () =
     let (escalationManager, _, _, _, _) = createTestEscalationManager ()
 
@@ -173,11 +173,11 @@ let ``DetermineNotificationLevel Moderate severity below threshold`` () =
     match escalationManager.DetermineNotificationLevel(EscalationSeverity.Moderate, factors) with
     | Result.Ok(shouldNotify, reason) ->
         Assert.False(shouldNotify)
-        Assert.Contains("Moderate", reason)
+        Assert.IsTrue(reason.Contains("Moderate"))
     | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``DetermineNotificationLevel EscalationDisabled returns false`` () =
     let config =
         { testConfig with
@@ -212,13 +212,13 @@ let ``DetermineNotificationLevel EscalationDisabled returns false`` () =
     match escalationManager.DetermineNotificationLevel(EscalationSeverity.Critical, factors) with
     | Result.Ok(shouldNotify, reason) ->
         Assert.False(shouldNotify)
-        Assert.Contains("無効", reason)
+        Assert.IsTrue(reason.Contains("無効"))
     | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
 
 /// ==== エスカレーション発生処理テスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TriggerEscalation creates valid escalation context`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -227,18 +227,18 @@ let ``TriggerEscalation creates valid escalation context`` () =
 
         match result with
         | Result.Ok context ->
-            Assert.Equal("task1", context.TaskId)
-            Assert.Equal("agent1", context.AgentId)
-            Assert.Equal("test error", context.Description)
+            Assert.AreEqual("task1", context.TaskId)
+            Assert.AreEqual("agent1", context.AgentId)
+            Assert.AreEqual("test error", context.Description)
             Assert.True(context.EscalationId.StartsWith("ESC-"))
             // 新しい評価ロジックでは"error"キーワードによりSevereになる
-            Assert.Equal(EscalationSeverity.Severe, context.Severity)
+            Assert.AreEqual(EscalationSeverity.Severe, context.Severity)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``TriggerEscalation generates unique escalation IDs`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -247,16 +247,15 @@ let ``TriggerEscalation generates unique escalation IDs`` () =
         let! result2 = escalationManager.TriggerEscalation("task2", "agent2", "error2")
 
         match result1, result2 with
-        | Result.Ok context1, Result.Ok context2 ->
-            Assert.NotEqual<string>(context1.EscalationId, context2.EscalationId)
+        | Result.Ok context1, Result.Ok context2 -> Assert.AreNotEqual(context1.EscalationId, context2.EscalationId)
         | _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
 /// ==== 自動復旧テスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AttemptAutoRecovery succeeds when attempts below limit`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -270,14 +269,14 @@ let ``AttemptAutoRecovery succeeds when attempts below limit`` () =
             | Result.Ok(success, message) ->
                 // Severeレベルでは自動復旧が無効なため失敗する
                 Assert.False(success)
-                Assert.Contains("致命度", message)
+                Assert.AreEqual(message, "致命度")
             | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
         | Result.Error _ -> Assert.True(false, "エスカレーション作成が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``AttemptAutoRecovery fails when attempts exceed limit`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -296,7 +295,7 @@ let ``AttemptAutoRecovery fails when attempts exceed limit`` () =
             match recoveryResult with
             | Result.Ok(success, message) ->
                 Assert.False(success)
-                Assert.Contains("上限", message)
+                Assert.AreEqual(message, "上限")
             | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
         | Result.Error _ -> Assert.True(false, "エスカレーション作成が失敗")
     }
@@ -304,8 +303,8 @@ let ``AttemptAutoRecovery fails when attempts exceed limit`` () =
 
 /// ==== 判断待機管理テスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ManageWaitingDecision returns appropriate action for Moderate severity`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -325,8 +324,8 @@ let ``ManageWaitingDecision returns appropriate action for Moderate severity`` (
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ManageWaitingDecision returns WaitForPODecision for Important severity`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -348,8 +347,8 @@ let ``ManageWaitingDecision returns WaitForPODecision for Important severity`` (
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ManageWaitingDecision returns StopTaskExecution for Critical severity`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -369,8 +368,8 @@ let ``ManageWaitingDecision returns StopTaskExecution for Critical severity`` ()
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ManageWaitingDecision returns error for non-existent escalation`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -388,8 +387,8 @@ let ``ManageWaitingDecision returns error for non-existent escalation`` () =
 
 /// ==== 緊急対応フローテスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ExecuteEmergencyResponse creates valid result`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -401,8 +400,8 @@ let ``ExecuteEmergencyResponse creates valid result`` () =
 
             match emergencyResult with
             | Result.Ok result ->
-                Assert.Equal(context.EscalationId, result.EscalationId)
-                Assert.Equal(DataProtectionMode, result.Action)
+                Assert.AreEqual(context.EscalationId, result.EscalationId)
+                Assert.AreEqual(result.Action, DataProtectionMode)
                 Assert.True(result.PONotified)
                 Assert.True(result.ImpactMitigated)
                 Assert.True(result.ResolvedAt.IsSome)
@@ -413,8 +412,8 @@ let ``ExecuteEmergencyResponse creates valid result`` () =
 
 /// ==== PO判断処理テスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ProcessPODecision approved creates correct result`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -426,10 +425,10 @@ let ``ProcessPODecision approved creates correct result`` () =
 
             match poResult with
             | Result.Ok result ->
-                Assert.Equal(context.EscalationId, result.EscalationId)
+                Assert.AreEqual(context.EscalationId, result.EscalationId)
 
                 match result.Action with
-                | ContinueWithAlternative reason -> Assert.Equal("承認理由", reason)
+                | ContinueWithAlternative reason -> Assert.AreEqual(reason, "承認理由")
                 | _ -> Assert.True(false, "期待されるアクション: ContinueWithAlternative")
 
                 Assert.True(result.PONotified)
@@ -439,8 +438,8 @@ let ``ProcessPODecision approved creates correct result`` () =
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ProcessPODecision rejected creates correct result`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -452,8 +451,8 @@ let ``ProcessPODecision rejected creates correct result`` () =
 
             match poResult with
             | Result.Ok result ->
-                Assert.Equal(context.EscalationId, result.EscalationId)
-                Assert.Equal(StopTaskExecution, result.Action)
+                Assert.AreEqual(context.EscalationId, result.EscalationId)
+                Assert.AreEqual(result.Action, StopTaskExecution)
                 Assert.True(result.PONotified)
                 Assert.False(result.ImpactMitigated)
             | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
@@ -461,8 +460,8 @@ let ``ProcessPODecision rejected creates correct result`` () =
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``ProcessPODecision non-existent escalation returns error`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -480,8 +479,8 @@ let ``ProcessPODecision non-existent escalation returns error`` () =
 
 /// ==== エスカレーション履歴テスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``GetEscalationHistory returns empty list initially`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -489,13 +488,13 @@ let ``GetEscalationHistory returns empty list initially`` () =
         let! historyResult = escalationManager.GetEscalationHistory(None, None)
 
         match historyResult with
-        | Result.Ok history -> Assert.Empty(history)
+        | Result.Ok history -> Assert.IsEmpty(history)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``GetEscalationHistory contains resolved escalations`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -508,9 +507,9 @@ let ``GetEscalationHistory contains resolved escalations`` () =
 
             match historyResult with
             | Result.Ok history ->
-                Assert.Single(history) |> ignore
+                Assert.IsNotEmpty(history)
                 let result = history.[0]
-                Assert.Equal(context.EscalationId, result.EscalationId)
+                Assert.AreEqual(context.EscalationId, result.EscalationId)
             | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
         | Result.Error _ -> Assert.True(false, "エスカレーション作成が失敗")
     }
@@ -518,8 +517,8 @@ let ``GetEscalationHistory contains resolved escalations`` () =
 
 /// ==== アクティブエスカレーションテスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``GetActiveEscalations returns empty list initially`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -527,13 +526,13 @@ let ``GetActiveEscalations returns empty list initially`` () =
         let! activeResult = escalationManager.GetActiveEscalations()
 
         match activeResult with
-        | Result.Ok active -> Assert.Empty(active)
+        | Result.Ok active -> Assert.IsEmpty(active)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``GetActiveEscalations contains triggered escalations`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -545,16 +544,16 @@ let ``GetActiveEscalations contains triggered escalations`` () =
 
             match activeResult with
             | Result.Ok active ->
-                Assert.Single(active) |> ignore
+                Assert.IsNotEmpty(active)
                 let activeContext = active.[0]
-                Assert.Equal(context.EscalationId, activeContext.EscalationId)
+                Assert.AreEqual(context.EscalationId, activeContext.EscalationId)
             | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
         | Result.Error _ -> Assert.True(false, "エスカレーション作成が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``GetActiveEscalations empty after resolution`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -566,7 +565,7 @@ let ``GetActiveEscalations empty after resolution`` () =
             let! activeResult = escalationManager.GetActiveEscalations()
 
             match activeResult with
-            | Result.Ok active -> Assert.Empty(active)
+            | Result.Ok active -> Assert.IsEmpty(active)
             | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
         | Result.Error _ -> Assert.True(false, "エスカレーション作成が失敗")
     }
@@ -574,8 +573,8 @@ let ``GetActiveEscalations empty after resolution`` () =
 
 /// ==== エスカレーション統計テスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``GetEscalationStatistics returns valid statistics`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -584,14 +583,14 @@ let ``GetEscalationStatistics returns valid statistics`` () =
 
         match statsResult with
         | Result.Ok stats ->
-            Assert.Equal(0, stats.TotalEscalations)
+            Assert.AreEqual(0, stats.TotalEscalations)
             Assert.True(stats.LastUpdated > DateTime.MinValue)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``GetEscalationStatistics reflects escalation count`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -605,7 +604,7 @@ let ``GetEscalationStatistics reflects escalation count`` () =
             let! statsResult = escalationManager.GetEscalationStatistics()
 
             match statsResult with
-            | Result.Ok stats -> Assert.Equal(2, stats.TotalEscalations)
+            | Result.Ok stats -> Assert.AreEqual(2, stats.TotalEscalations)
             | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
         | _ -> Assert.True(false, "エスカレーション作成が失敗")
     }
@@ -613,8 +612,8 @@ let ``GetEscalationStatistics reflects escalation count`` () =
 
 /// ==== 並行性テスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``Multiple concurrent escalations handled correctly`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -636,20 +635,20 @@ let ``Multiple concurrent escalations handled correctly`` () =
                 | _ -> false)
             |> Array.length
 
-        Assert.Equal(10, successCount)
+        Assert.AreEqual(10, successCount)
 
         let! activeResult = escalationManager.GetActiveEscalations()
 
         match activeResult with
-        | Result.Ok active -> Assert.Equal(10, active.Length)
+        | Result.Ok active -> Assert.AreEqual(10, active.Length)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
 /// ==== エラーハンドリングテスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Unit")>]
+[<Test>]
+[<Category("Unit")>]
 let ``EscalationManager handles null/empty parameters gracefully`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -666,8 +665,9 @@ let ``EscalationManager handles null/empty parameters gracefully`` () =
 
 /// ==== 統合テスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Integration")>]
+[<Test>]
+[<Category("Unit")>]
+[<Category("Integration")>]
 let ``Complete escalation workflow from trigger to resolution`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -709,15 +709,15 @@ let ``Complete escalation workflow from trigger to resolution`` () =
 
             match historyResult with
             | Result.Ok history ->
-                Assert.Single(history) |> ignore
-                Assert.Equal(context.EscalationId, history.[0].EscalationId)
+                Assert.IsNotEmpty(history)
+                Assert.AreEqual(context.EscalationId, history.[0].EscalationId)
             | Result.Error _ -> Assert.True(false, "履歴取得が失敗")
 
             // 6. アクティブエスカレーション確認（解決後は空）
             let! activeResult = escalationManager.GetActiveEscalations()
 
             match activeResult with
-            | Result.Ok active -> Assert.Empty(active)
+            | Result.Ok active -> Assert.IsEmpty(active)
             | Result.Error _ -> Assert.True(false, "アクティブエスカレーション取得が失敗")
 
         | Result.Error _ -> Assert.True(false, "エスカレーション作成が失敗")
@@ -726,8 +726,9 @@ let ``Complete escalation workflow from trigger to resolution`` () =
 
 /// ==== パフォーマンステスト ====
 
-[<Fact>]
-[<Trait("TestCategory", "Performance")>]
+[<Test>]
+[<Category("Unit")>]
+[<Category("Performance")>]
 let ``Large number of escalations performance test`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -754,19 +755,20 @@ let ``Large number of escalations performance test`` () =
                 | _ -> false)
             |> Array.length
 
-        Assert.Equal(escalationCount, successCount)
+        Assert.AreEqual(escalationCount, successCount)
         Assert.True(duration.TotalSeconds < 5.0, $"パフォーマンス要件: 100エスカレーション < 5秒、実際: {duration.TotalSeconds}秒")
 
         let! activeResult = escalationManager.GetActiveEscalations()
 
         match activeResult with
-        | Result.Ok active -> Assert.Equal(escalationCount, active.Length)
+        | Result.Ok active -> Assert.AreEqual(escalationCount, active.Length)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously
 
-[<Fact>]
-[<Trait("TestCategory", "Performance")>]
+[<Test>]
+[<Category("Unit")>]
+[<Category("Performance")>]
 let ``Concurrent escalation resolution performance test`` () =
     async {
         let (escalationManager, _, _, _, _) = createTestEscalationManager ()
@@ -784,7 +786,7 @@ let ``Concurrent escalation resolution performance test`` () =
                 | Result.Ok context -> Some context
                 | _ -> None)
 
-        Assert.Equal(escalationCount, contexts.Length)
+        Assert.AreEqual(escalationCount, contexts.Length)
 
         let startTime = DateTime.UtcNow
 
@@ -805,13 +807,13 @@ let ``Concurrent escalation resolution performance test`` () =
                 | _ -> false)
             |> Array.length
 
-        Assert.Equal(escalationCount, successCount)
+        Assert.AreEqual(escalationCount, successCount)
         Assert.True(duration.TotalSeconds < 3.0, $"パフォーマンス要件: 50並行解決 < 3秒、実際: {duration.TotalSeconds}秒")
 
         let! activeResult = escalationManager.GetActiveEscalations()
 
         match activeResult with
-        | Result.Ok active -> Assert.Empty(active)
+        | Result.Ok active -> Assert.IsEmpty(active)
         | Result.Error _ -> Assert.True(false, "期待される成功が失敗")
     }
     |> Async.RunSynchronously

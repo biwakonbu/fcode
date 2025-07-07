@@ -283,13 +283,9 @@ type private ActivityUIUpdater() =
         if not disposed then
             disposed <- true
             withUILock (fun () -> conversationTextView <- None)
-            GC.SuppressFinalize(this)
 
     interface IDisposable with
         member this.Dispose() = this.Dispose()
-
-    /// ファイナライザ
-    override this.Finalize() = this.Dispose()
 
     /// リソース解放状態確認
     member private this.ThrowIfDisposed() =
@@ -324,13 +320,9 @@ type UnifiedActivityManager() =
             disposed <- true
             (storage :> IDisposable).Dispose()
             (uiUpdater :> IDisposable).Dispose()
-            GC.SuppressFinalize(this)
 
     interface IDisposable with
         member this.Dispose() = this.Dispose()
-
-    /// ファイナライザ
-    override this.Finalize() = this.Dispose()
 
     /// リソース解放状態確認
     member private this.ThrowIfDisposed() =

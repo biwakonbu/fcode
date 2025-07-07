@@ -122,24 +122,27 @@ module ErrorHandling =
             Error error
 
     /// Exception → FCodeError変換（機密情報安全化）
-    let fromException (category: string) (operation: string) (ex: Exception) =
+    let fromException (category: string) (operation: string) (ex: Exception option) =
         match ex with
-        | :? System.IO.IOException as ioEx ->
-            DatabaseError
-                { DatabasePath = "unknown"
-                  Operation = operation
-                  SqlState = None
-                  Message = SecurityUtils.sanitizeLogMessage ioEx.Message
-                  Recoverable = true }
-        | :? ArgumentException as argEx -> ValidationError(SecurityUtils.sanitizeLogMessage argEx.Message)
-        | :? UnauthorizedAccessException as authEx ->
-            ProcessError
-                { Component = category
-                  Operation = operation
-                  Message = SecurityUtils.sanitizeLogMessage authEx.Message
-                  Recoverable = false
-                  ProcessId = None }
-        | _ -> SystemError(SecurityUtils.sanitizeLogMessage ex.Message)
+        | None -> SystemError("Unknown error occurred")
+        | Some ex ->
+            match ex with
+            | :? System.IO.IOException as ioEx ->
+                DatabaseError
+                    { DatabasePath = "unknown"
+                      Operation = operation
+                      SqlState = None
+                      Message = SecurityUtils.sanitizeLogMessage ioEx.Message
+                      Recoverable = true }
+            | :? ArgumentException as argEx -> ValidationError(SecurityUtils.sanitizeLogMessage argEx.Message)
+            | :? UnauthorizedAccessException as authEx ->
+                ProcessError
+                    { Component = category
+                      Operation = operation
+                      Message = SecurityUtils.sanitizeLogMessage authEx.Message
+                      Recoverable = false
+                      ProcessId = None }
+            | _ -> SystemError(SecurityUtils.sanitizeLogMessage ex.Message)
 
     /// 非同期操作のエラーハンドリング
     let handleAsyncOperation (category: string) (operation: string) (asyncOp: Async<'T>) =
@@ -148,7 +151,7 @@ module ErrorHandling =
                 let! result = asyncOp
                 return Ok result
             with ex ->
-                return Error(fromException category operation ex)
+                return Error(fromException category operation (Some ex))
         }
 
     /// プロセス起動専用エラー作成

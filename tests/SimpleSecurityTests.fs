@@ -221,7 +221,7 @@ Stack trace: at Application.ProcessPayment(String cardNumber) in /src/Payment.cs
 
         // Logger.Exception メソッドのテスト（セキュリティ機能付き）
         let testLogger = FCode.Logger.Logger(FCode.SecurityUtils.sanitizeLogMessage)
-        testLogger.Exception("TestCategory", "Test operation with sensitive data", sensitiveException)
+        testLogger.Exception("TestCategory", "Test operation with sensitive data", Some sensitiveException)
 
         // ログファイルを読み取り、機密情報が除去されていることを確認
         let logContent = File.ReadAllText(testLogger.LogPath)

@@ -85,25 +85,30 @@ type Logger(?sanitizerFunction: string -> string) =
     member this.Warning(category: string, message: string) = this.Log(Warning, category, message)
     member this.Error(category: string, message: string) = this.Log(Error, category, message)
 
-    member this.Exception(category: string, message: string, ex: Exception) =
+    member this.Exception(category: string, message: string, ex: Exception option) =
         let sanitizedMessage =
             match sanitizerFunction with
             | Some sanitizer -> sanitizer message
             | None -> message
 
-        let sanitizedExceptionMessage =
-            match sanitizerFunction with
-            | Some sanitizer -> sanitizer ex.Message
-            | None -> ex.Message
+        match ex with
+        | None ->
+            let fullMessage = sanitizedMessage + " - Exception: Unknown exception occurred"
+            this.Log(Error, category, fullMessage)
+        | Some ex ->
+            let sanitizedExceptionMessage =
+                match sanitizerFunction with
+                | Some sanitizer -> sanitizer ex.Message
+                | None -> ex.Message
 
-        let fullMessage =
-            sanitizedMessage
-            + " - Exception: "
-            + sanitizedExceptionMessage
-            + " - Type: "
-            + ex.GetType().Name
+            let fullMessage =
+                sanitizedMessage
+                + " - Exception: "
+                + sanitizedExceptionMessage
+                + " - Type: "
+                + ex.GetType().Name
 
-        this.Log(Error, category, fullMessage)
+            this.Log(Error, category, fullMessage)
 
 // グローバルロガーインスタンス（セキュリティ機能付き）
 let logger = Logger(SecurityUtils.sanitizeLogMessage)
@@ -113,4 +118,4 @@ let logDebug category message = logger.Debug(category, message)
 let logInfo category message = logger.Info(category, message)
 let logWarning category message = logger.Warning(category, message)
 let logError category message = logger.Error(category, message)
-let logException category message ex = logger.Exception(category, message, ex)
+let logException category message ex = logger.Exception(category, message, Some ex)

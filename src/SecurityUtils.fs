@@ -22,10 +22,12 @@ module SecurityUtils =
           "TOKEN"
           "PRIVATE"
           "CREDENTIAL"
-          "AUTH"
           "JWT"
           "DATABASE_URL"
           "CONNECTION" ]
+
+    /// 機密情報として扱う環境変数の単語境界パターン
+    let private sensitiveEnvWordPatterns = [ "AUTH" ]
 
     /// 危険な環境変数として扱うパターン
     let private dangerousEnvPatterns =
@@ -159,11 +161,25 @@ module SecurityUtils =
     let filterSensitiveEnvironment (environment: Map<string, string>) : Map<string, string> =
         environment
         |> Map.filter (fun key value ->
+            let upperKey = key.ToUpper()
             // 機密情報パターンにマッチしないもののみ保持
-            not (
-                sensitiveEnvPatterns
-                |> List.exists (fun pattern -> key.ToUpper().Contains(pattern))
-            ))
+            let hasExactMatch =
+                sensitiveEnvPatterns |> List.exists (fun pattern -> upperKey.Contains(pattern))
+
+            // 単語境界パターンのチェック（AUTHなどの誤検出防止）
+            let hasWordMatch =
+                sensitiveEnvWordPatterns
+                |> List.exists (fun pattern ->
+                    // 以下の場合のみ機密扱い
+                    // - AUTH (完全一致)
+                    // - MY_AUTH (末尾)
+                    // - TEST_AUTH_FLAG (中間)
+                    // 除外: AUTH_SERVICE, AUTHORIZATION_HEADER, OAUTH_CLIENT_ID
+                    upperKey = pattern
+                    || upperKey.EndsWith("_" + pattern)
+                    || upperKey.Contains("_" + pattern + "_"))
+
+            not (hasExactMatch || hasWordMatch))
 
     /// 危険な環境変数をフィルタリング
     let filterDangerousEnvironment (environment: Map<string, string>) : Map<string, string> =

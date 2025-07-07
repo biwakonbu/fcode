@@ -412,8 +412,8 @@ type SecurityTests() =
     [<Test>]
     [<Category("Unit")>]
     member this.``セキュリティ機能基本テスト``() =
-        // SecurityUtilsの基本機能をテスト
-        let testMessage = "API Key: sk-1234567890abcdef"
+        // SecurityUtilsの基本機能をテスト（テスト用のフェイクキー）
+        let testMessage = "API Key: sk-test12345678901234fake"
         let sanitized = FCode.SecurityUtils.sanitizeLogMessage testMessage
 
         // API Keyが除去されていることを確認

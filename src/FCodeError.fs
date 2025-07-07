@@ -121,7 +121,7 @@ module ErrorHandling =
             debugLogger category $"{operation} technical details: {errorMsg.TechnicalDetails}"
             Error error
 
-    /// Exception → FCodeError変換
+    /// Exception → FCodeError変換（機密情報安全化）
     let fromException (category: string) (operation: string) (ex: Exception) =
         match ex with
         | :? System.IO.IOException as ioEx ->
@@ -129,17 +129,17 @@ module ErrorHandling =
                 { DatabasePath = "unknown"
                   Operation = operation
                   SqlState = None
-                  Message = ioEx.Message
+                  Message = SecurityUtils.sanitizeLogMessage ioEx.Message
                   Recoverable = true }
-        | :? ArgumentException as argEx -> ValidationError argEx.Message
+        | :? ArgumentException as argEx -> ValidationError(SecurityUtils.sanitizeLogMessage argEx.Message)
         | :? UnauthorizedAccessException as authEx ->
             ProcessError
                 { Component = category
                   Operation = operation
-                  Message = authEx.Message
+                  Message = SecurityUtils.sanitizeLogMessage authEx.Message
                   Recoverable = false
                   ProcessId = None }
-        | _ -> SystemError ex.Message
+        | _ -> SystemError(SecurityUtils.sanitizeLogMessage ex.Message)
 
     /// 非同期操作のエラーハンドリング
     let handleAsyncOperation (category: string) (operation: string) (asyncOp: Async<'T>) =

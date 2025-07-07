@@ -5,6 +5,8 @@ open System
 open System.IO
 open FCode.SessionPersistenceManager
 open FCode.DetachAttachManager
+open FCode.SecurityUtils
+open FCode.Logger
 
 [<TestFixture>]
 [<Category("Unit")>]
@@ -406,3 +408,14 @@ type SecurityTests() =
             | Error _ -> () // 読み込みエラーは期待される動作かもしれない
 
         | Error _ -> () // 保存エラーも期待される動作かもしれない
+
+    [<Test>]
+    [<Category("Unit")>]
+    member this.``セキュリティ機能基本テスト``() =
+        // SecurityUtilsの基本機能をテスト
+        let testMessage = "API Key: sk-1234567890abcdef"
+        let sanitized = FCode.SecurityUtils.sanitizeLogMessage testMessage
+
+        // API Keyが除去されていることを確認
+        Assert.IsFalse(sanitized.Contains("sk-"), "API Keyが除去されていません")
+        Assert.IsTrue(sanitized.Contains("[API_KEY]"), "API Keyが適切に置換されていません")

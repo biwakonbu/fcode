@@ -5,6 +5,7 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="SecurityUtils.fs" />
     <Compile Include="Logger.fs" />
     <Compile Include="UIAbstractions.fs" />
     <Compile Include="FCodeError.fs" />
@@ -33,7 +34,6 @@
     <Compile Include="EnvironmentIsolation.fs" />
     <Compile Include="FileLockManager.fs" />
     <Compile Include="SessionStateManager.fs" />
-    <Compile Include="SecurityUtils.fs" />
     <Compile Include="SessionPersistenceManager.fs" />
     <Compile Include="DetachAttachManager.fs" />
     <!-- Collaboration Infrastructure -->

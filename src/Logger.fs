@@ -46,23 +46,31 @@ type Logger() =
                     | Warning -> "WARN"
                     | Error -> "ERROR"
 
-                let logLine = "[" + timestamp + "] [" + levelStr + "] [" + category + "] " + message
+                // ログメッセージから機密情報を除去
+                let sanitizedMessage = SecurityUtils.sanitizeLogMessage message
+
+                let logLine =
+                    "[" + timestamp + "] [" + levelStr + "] [" + category + "] " + sanitizedMessage
+
                 File.AppendAllText(logFile, logLine + Environment.NewLine)
 
                 // 重要なエラーはコンソールにも出力
                 if level = Error then
                     Console.WriteLine(logLine)
             with ex ->
-                // ログ出力でエラーが発生した場合はコンソールのみに出力
+                // ログ出力でエラーが発生した場合はコンソールのみに出力（機密情報除去）
+                let sanitizedMessage = SecurityUtils.sanitizeLogMessage message
+                let sanitizedExceptionType = ex.GetType().Name
+
                 Console.WriteLine(
                     "LOG ERROR: "
-                    + ex.Message
+                    + sanitizedExceptionType
                     + " - Original: ["
                     + level.ToString()
                     + "] ["
                     + category
                     + "] "
-                    + message
+                    + sanitizedMessage
                 ))
 
     member this.Debug(category: string, message: string) = this.Log(Debug, category, message)
@@ -71,8 +79,15 @@ type Logger() =
     member this.Error(category: string, message: string) = this.Log(Error, category, message)
 
     member this.Exception(category: string, message: string, ex: Exception) =
+        let sanitizedMessage = SecurityUtils.sanitizeLogMessage message
+        let sanitizedExceptionMessage = SecurityUtils.sanitizeLogMessage ex.Message
+
         let fullMessage =
-            message + " - Exception: " + ex.Message + " - StackTrace: " + ex.StackTrace
+            sanitizedMessage
+            + " - Exception: "
+            + sanitizedExceptionMessage
+            + " - Type: "
+            + ex.GetType().Name
 
         this.Log(Error, category, fullMessage)
 

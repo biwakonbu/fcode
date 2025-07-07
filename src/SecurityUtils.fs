@@ -174,12 +174,12 @@ module SecurityUtils =
                     key.ToUpper() = "SHELL"
                     && dangerousCommandPatterns |> List.exists (fun pattern -> pattern.IsMatch(value))
                 then
-                    Logger.logWarning "Security" $"危険なSHELL環境変数を除去: {key}={value}"
+                    printfn $"Security Warning: 危険なSHELL環境変数を除去: {key}={value}"
                     false
                 else if key.ToUpper() = "SHELL" then
                     true // 安全なSHELLは保持
                 else
-                    Logger.logWarning "Security" $"危険な環境変数を除去: {key}"
+                    printfn $"Security Warning: 危険な環境変数を除去: {key}"
                     false
             else
                 true)
@@ -256,7 +256,7 @@ module SecurityUtils =
     /// 会話履歴の長さ制限チェック
     let validateConversationLength (conversation: string list) (maxLength: int) : Result<string list, string> =
         if conversation.Length > maxLength then
-            Logger.logWarning "Security" $"会話履歴が制限を超えているため切り詰めます: {conversation.Length} > {maxLength}"
+            printfn $"Security Warning: 会話履歴が制限を超えているため切り詰めます: {conversation.Length} > {maxLength}"
             Ok(conversation |> List.take maxLength)
         else
             Ok conversation
@@ -313,20 +313,47 @@ module SecurityUtils =
         with ex ->
             Error $"セッションセキュリティ検証エラー: {ex.Message}"
 
-    /// ログメッセージの機密情報除去
+    /// ログメッセージの機密情報除去（強化版）
     let sanitizeLogMessage (message: string) : string =
-        let mutable sanitized = message
+        if String.IsNullOrEmpty(message) then
+            message
+        else
+            let mutable sanitized = message
 
-        // API KEYを除去
-        let apiKeyPattern = Regex(@"sk-[a-zA-Z0-9\-_]{10,}", RegexOptions.IgnoreCase)
-        sanitized <- apiKeyPattern.Replace(sanitized, "[API_KEY]")
+            // API KEYパターンを除去
+            let apiKeyPattern = Regex(@"sk-[a-zA-Z0-9\-_]{10,}", RegexOptions.IgnoreCase)
+            sanitized <- apiKeyPattern.Replace(sanitized, "[API_KEY]")
 
-        // パスワードらしき情報を除去
-        let passwordPattern = Regex(@"password[:\s=]+[^\s]+", RegexOptions.IgnoreCase)
-        sanitized <- passwordPattern.Replace(sanitized, "password=[REDACTED]")
+            // パスワード情報を除去
+            let passwordPattern = Regex(@"password[:\s=]+[^\s]+", RegexOptions.IgnoreCase)
+            sanitized <- passwordPattern.Replace(sanitized, "password=[REDACTED]")
 
-        // 長いトークンらしき文字列を除去
-        let tokenPattern = Regex(@"[a-zA-Z0-9]{32,}", RegexOptions.IgnoreCase)
-        sanitized <- tokenPattern.Replace(sanitized, "[TOKEN]")
+            // 長いトークンらしき文字列を除去
+            let tokenPattern = Regex(@"[a-zA-Z0-9]{32,}", RegexOptions.IgnoreCase)
+            sanitized <- tokenPattern.Replace(sanitized, "[TOKEN]")
 
-        sanitized
+            // データベース接続文字列を除去
+            let dbConnectionPattern =
+                Regex(@"(Server|Host|Data Source)[^;]*;", RegexOptions.IgnoreCase)
+
+            sanitized <- dbConnectionPattern.Replace(sanitized, "Database=[REDACTED];")
+
+            // ファイルパス情報を制限（ホームディレクトリを除去）
+            let homePathPattern = Regex(@"/home/[^/\s]+", RegexOptions.IgnoreCase)
+            sanitized <- homePathPattern.Replace(sanitized, "/home/[USER]")
+
+            // 機密性の高い環境変数値を除去
+            sensitiveEnvPatterns
+            |> List.iter (fun pattern ->
+                let envPattern =
+                    Regex($@"{pattern.ToString()}[:\s=]+[^\s]+", RegexOptions.IgnoreCase)
+
+                sanitized <- envPattern.Replace(sanitized, $"{pattern}=[REDACTED]"))
+
+            // 例外メッセージ内のスタックトレース情報を制限
+            let stackTracePattern =
+                Regex(@"at [^\r\n]+\.[^\r\n]+\([^\r\n]*\)[^\r\n]*", RegexOptions.IgnoreCase)
+
+            sanitized <- stackTracePattern.Replace(sanitized, "at [STACK_TRACE]")
+
+            sanitized

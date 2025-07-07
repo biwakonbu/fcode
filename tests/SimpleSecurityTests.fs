@@ -54,7 +54,11 @@ type SimpleSecurityTests() =
             // MongoDB/PostgreSQL URLは専用パターンで処理される
             if dbString.StartsWith("mongodb://") || dbString.StartsWith("postgresql://") then
                 // これらのURL形式は専用パターンで[REDACTED]に置換される
-                Assert.IsFalse(sanitized.Contains("mongopass") && sanitized.Contains("pgpass123"), "URL形式のパスワードが除去されていません")
+                Assert.IsFalse(
+                    sanitized.Contains("mongopass") && sanitized.Contains("pgpass123"),
+                    "URL形式のパスワードが除去されていません"
+                )
+
                 Assert.IsTrue(sanitized.Contains("[REDACTED]"), "URLが適切に置換されていません")
 
     [<Test>]
@@ -82,6 +86,7 @@ type SimpleSecurityTests() =
                     sanitized.Contains("def456789012345678901234567890123456789012345678"),
                     "API Tokenが削除されていません"
                 )
+
                 Assert.IsTrue(sanitized.Contains("TOKEN=[REDACTED]"), "TOKEN環境変数パターンで置換されていません")
             elif tokenString.Contains("ghi789012345678901234567890123456789012345678901") then
                 // Access token形式は環境変数パターンで処理される
@@ -89,6 +94,7 @@ type SimpleSecurityTests() =
                     sanitized.Contains("ghi789012345678901234567890123456789012345678901"),
                     "Access tokenが削除されていません"
                 )
+
                 Assert.IsTrue(sanitized.Contains("TOKEN=[REDACTED]"), "TOKEN環境変数パターンで置換されていません")
             elif tokenString.Contains("jkl012345678901234567890123456789012345678901234") then
                 // Refresh token形式は環境変数パターンで処理される
@@ -96,6 +102,7 @@ type SimpleSecurityTests() =
                     sanitized.Contains("jkl012345678901234567890123456789012345678901234"),
                     "Refresh tokenが削除されていません"
                 )
+
                 Assert.IsTrue(sanitized.Contains("TOKEN=[REDACTED]"), "TOKEN環境変数パターンで置換されていません")
             elif tokenString.Contains("mno345678901234567890123456789012345678901234567") then
                 // 32文字一般パターンは削除されない（偽陽性回避）
@@ -103,13 +110,20 @@ type SimpleSecurityTests() =
                     sanitized.Contains("mno345678901234567890123456789012345678901234567"),
                     "一般的な32文字パターンは削除されません（偽陽性回避）"
                 )
-            else
+            else if
                 // JWTトークンは専用パターンで処理される
-                if tokenString.Contains("eyJ") then
-                    Assert.IsFalse(sanitized.Contains("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"), "JWTトークンが除去されていません")
-                    Assert.IsTrue(sanitized.Contains("[JWT_TOKEN]"), "JWTトークンが適切に置換されていません")
-                else
-                    printfn "その他のトークンパターンは現在未対応です"
+                tokenString.Contains("eyJ")
+            then
+                Assert.IsFalse(
+                    sanitized.Contains(
+                        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+                    ),
+                    "JWTトークンが除去されていません"
+                )
+
+                Assert.IsTrue(sanitized.Contains("[JWT_TOKEN]"), "JWTトークンが適切に置換されていません")
+            else
+                printfn "その他のトークンパターンは現在未対応です"
 
     [<Test>]
     [<Category("Unit")>]
@@ -300,10 +314,7 @@ Stack trace: at Application.ProcessPayment(String cardNumber) in /src/Payment.cs
             // 新しい実装では個別のパスワードパターンが処理される
             // 新しい実装では個別のパスワードパターンが処理される
             if message.Contains("Password=") then
-                Assert.IsTrue(
-                    sanitized.Contains("PASSWORD=[REDACTED]"),
-                    "データベース接続文字列が適切に置換されていません"
-                )
+                Assert.IsTrue(sanitized.Contains("PASSWORD=[REDACTED]"), "データベース接続文字列が適切に置換されていません")
 
             // 個別の期待値をメッセージ毎に確認（新しい実装では個別の機密パターンのみ処理）
             if message.Contains("localhost") then

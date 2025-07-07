@@ -203,12 +203,12 @@ module SecurityUtils =
                     key.ToUpper() = "SHELL"
                     && dangerousCommandPatterns |> List.exists (fun pattern -> pattern.IsMatch(value))
                 then
-                    printfn $"Security Warning: 危険なSHELL環境変数を除去: {key}={value}"
+                    // Security Warning: 危険なSHELL環境変数を除去（ログ出力は上位レイヤーで実施）
                     false
                 else if key.ToUpper() = "SHELL" then
                     true // 安全なSHELLは保持
                 else
-                    printfn $"Security Warning: 危険な環境変数を除去: {key}"
+                    // Security Warning: 危険な環境変数を除去（ログ出力は上位レイヤーで実施）
                     false
             else
                 true)
@@ -266,7 +266,7 @@ module SecurityUtils =
     /// 会話履歴の長さ制限チェック
     let validateConversationLength (conversation: string list) (maxLength: int) : Result<string list, string> =
         if conversation.Length > maxLength then
-            printfn $"Security Warning: 会話履歴が制限を超えているため切り詰めます: {conversation.Length} > {maxLength}"
+            // Security Warning: 会話履歴が制限を超えているため切り詰めます（ログ出力は上位レイヤーで実施）
             Ok(conversation |> List.take maxLength)
         else
             Ok conversation

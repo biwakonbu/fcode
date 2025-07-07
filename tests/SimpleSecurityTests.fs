@@ -123,7 +123,7 @@ type SimpleSecurityTests() =
 
                 Assert.IsTrue(sanitized.Contains("[JWT_TOKEN]"), "JWTトークンが適切に置換されていません")
             else
-                printfn "その他のトークンパターンは現在未対応です"
+                () // その他のトークンパターンは現在未対応です
 
     [<Test>]
     [<Category("Unit")>]

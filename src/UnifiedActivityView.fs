@@ -139,34 +139,60 @@ type private ActivityStorage() =
 type private ActivityUIUpdater() =
     let mutable conversationTextView: TextView option = None
     let uiLockObj = obj ()
+    let mutable disposed = false
 
     /// UI操作用オブジェクトロック
     let withUILock f = lock uiLockObj f
 
     member this.SetTextView(textView: TextView) =
-        withUILock (fun () -> conversationTextView <- Some textView)
+        this.ThrowIfDisposed()
+
+        try
+            if isNull textView then
+                logError "UnifiedActivityView" "Attempted to set null TextView"
+            else
+                withUILock (fun () ->
+                    conversationTextView <- Some textView
+                    logInfo "UnifiedActivityView" "TextView set successfully")
+        with ex ->
+            logException "UnifiedActivityView" "SetTextView failed" ex
 
     member this.UpdateDisplay(activities: UnifiedActivity[]) : Result<unit, string> =
-        let currentTextView = withUILock (fun () -> conversationTextView)
+        this.ThrowIfDisposed()
 
-        match currentTextView with
-        | Some textView when not (isNull textView) ->
-            try
-                let displayText = this.FormatActivitiesForDisplay(activities)
-                let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+        try
+            // 引数バリデーション
+            if isNull activities then
+                Result.Error "Activities array is null"
+            else
+                let currentTextView = withUILock (fun () -> conversationTextView)
 
-                if not isCI then
-                    this.SafeUIUpdate(textView, displayText)
+                match currentTextView with
+                | Some textView when not (isNull textView) ->
+                    try
+                        let displayText = this.FormatActivitiesForDisplay(activities)
+                        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
-                Result.Ok()
-            with ex ->
-                Result.Error $"UI update failed: {ex.Message}"
-        | _ -> Result.Error "TextView not set or is null"
+                        if not isCI then
+                            this.SafeUIUpdate(textView, displayText)
+
+                        Result.Ok()
+                    with ex ->
+                        logException "UnifiedActivityView" "Display update failed" ex
+                        Result.Error $"UI update failed: {ex.Message}"
+                | Some _ -> Result.Error "TextView is null"
+                | None -> Result.Error "TextView not set"
+        with ex ->
+            logException "UnifiedActivityView" "UpdateDisplay exception" ex
+            Result.Error $"UpdateDisplay failed: {ex.Message}"
 
     /// 安全なUI更新
     member private this.SafeUIUpdate(textView: TextView, content: string) =
         try
-            if not (isNull Application.MainLoop) then
+            // 引数バリデーション
+            if isNull content then
+                logError "UnifiedActivityView" "Content is null"
+            else if not (isNull Application.MainLoop) then
                 Application.MainLoop.Invoke(fun () ->
                     try
                         textView.Text <- ustring.Make(content)
@@ -174,6 +200,7 @@ type private ActivityUIUpdater() =
                     with ex ->
                         logException "UnifiedActivityView" "UI thread update failed" ex)
             else
+                // MainLoop未初期化の場合の直接更新
                 textView.Text <- ustring.Make(content)
                 textView.SetNeedsDisplay()
         with ex ->
@@ -181,34 +208,54 @@ type private ActivityUIUpdater() =
 
     /// 活動表示フォーマット
     member private this.FormatActivitiesForDisplay(activities: UnifiedActivity[]) =
-        let header = "=== 統合エージェント活動ログ ===\n\n"
+        try
+            let header = "=== 統合エージェント活動ログ ===\n\n"
 
-        let recentActivities =
-            activities
-            |> Array.sortByDescending (fun a -> a.Timestamp)
-            |> Array.take (min 10 activities.Length)
+            if isNull activities || activities.Length = 0 then
+                header + "活動データがありません\n"
+            else
+                let recentActivities =
+                    activities
+                    |> Array.filter (fun a -> not (isNull a.Message))
+                    |> Array.sortByDescending (fun a -> a.Timestamp)
+                    |> Array.take (min 10 activities.Length)
 
-        let activityLines =
-            recentActivities
-            |> Array.map (fun activity ->
-                let timeStr = activity.Timestamp.ToString("HH:mm:ss")
-                let agentStr = activity.AgentId.PadRight(6)
-                let typeStr = this.GetActivityTypeDisplay(activity.ActivityType)
-                let priorityStr = this.GetPriorityDisplay(activity.Priority)
+                let activityLines =
+                    recentActivities
+                    |> Array.map (fun activity ->
+                        try
+                            let timeStr = activity.Timestamp.ToString("HH:mm:ss")
 
-                let messagePreview =
-                    if activity.Message.Length > 60 then
-                        activity.Message.[..57] + "..."
-                    else
-                        activity.Message
+                            let agentStr =
+                                if isNull activity.AgentId then
+                                    "UNKNOWN"
+                                else
+                                    activity.AgentId.PadRight(6)
 
-                $"[{timeStr}] {agentStr} {typeStr} {priorityStr} {messagePreview}")
-            |> String.concat "\n"
+                            let typeStr = this.GetActivityTypeDisplay(activity.ActivityType)
+                            let priorityStr = this.GetPriorityDisplay(activity.Priority)
 
-        let footer =
-            $"\n\n--- 最新{recentActivities.Length}件 / 総活動数: {activities.Length} ---\nキーバインド: ESC(終了) Ctrl+X(コマンド) Ctrl+Tab(ペイン切替)"
+                            let messagePreview =
+                                if isNull activity.Message then
+                                    "(空メッセージ)"
+                                elif activity.Message.Length > 60 then
+                                    activity.Message.[..57] + "..."
+                                else
+                                    activity.Message
 
-        header + activityLines + footer
+                            $"[{timeStr}] {agentStr} {typeStr} {priorityStr} {messagePreview}"
+                        with ex ->
+                            logException "UnifiedActivityView" "Activity formatting failed" ex
+                            $"[ERROR] 活動表示エラー: {ex.Message}")
+                    |> String.concat "\n"
+
+                let footer =
+                    $"\n\n--- 最新{recentActivities.Length}件 / 総活動数: {activities.Length} ---\nキーバインド: ESC(終了) Ctrl+X(コマンド) Ctrl+Tab(ペイン切替)"
+
+                header + activityLines + footer
+        with ex ->
+            logException "UnifiedActivityView" "Format activities failed" ex
+            "=== 統合エージェント活動ログ ===\n\n[ERROR] 活動表示の生成に失敗しました\n"
 
     /// 活動種別表示
     member private this.GetActivityTypeDisplay(activityType: ActivityType) =
@@ -231,6 +278,24 @@ type private ActivityUIUpdater() =
         | Normal -> "[🟢]"
         | Low -> "[⚪]"
 
+    /// リソース解放
+    member this.Dispose() =
+        if not disposed then
+            disposed <- true
+            withUILock (fun () -> conversationTextView <- None)
+            GC.SuppressFinalize(this)
+
+    interface IDisposable with
+        member this.Dispose() = this.Dispose()
+
+    /// ファイナライザ
+    override this.Finalize() = this.Dispose()
+
+    /// リソース解放状態確認
+    member private this.ThrowIfDisposed() =
+        if disposed then
+            raise (ObjectDisposedException("ActivityUIUpdater"))
+
 // ===============================================
 // 統合活動表示管理 (依存性注入によるSOLID設計)
 // ===============================================
@@ -240,7 +305,7 @@ type UnifiedActivityManager() =
     // 依存性注入による責務分離
     let transformer = ActivityTransformer()
     let storage = new ActivityStorage()
-    let uiUpdater = ActivityUIUpdater()
+    let uiUpdater = new ActivityUIUpdater()
     let mutable disposed = false
 
     /// 会話ペインTextView設定
@@ -258,6 +323,7 @@ type UnifiedActivityManager() =
         if not disposed then
             disposed <- true
             (storage :> IDisposable).Dispose()
+            (uiUpdater :> IDisposable).Dispose()
             GC.SuppressFinalize(this)
 
     interface IDisposable with

@@ -118,4 +118,6 @@ let logDebug category message = logger.Debug(category, message)
 let logInfo category message = logger.Info(category, message)
 let logWarning category message = logger.Warning(category, message)
 let logError category message = logger.Error(category, message)
-let logException category message ex = logger.Exception(category, message, Some ex)
+
+let logException category message ex =
+    logger.Exception(category, message, Some ex)

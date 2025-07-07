@@ -42,7 +42,7 @@
     <!-- <Compile Include="SecurityTests.fs"/> Temporarily disabled for type errors -->
     <!-- <Compile Include="SecurityUtilsTests.fs"/> Temporarily disabled for type errors -->
     <Compile Include="SecurityUtilsFalsePositiveTests.fs"/>
-    <!-- <Compile Include="SimpleSecurityTests.fs"/> Temporarily disabled for new security implementation -->
+    <Compile Include="SimpleSecurityTests.fs"/>
     <Compile Include="ErrorHandlingTests.fs"/>
     <Compile Include="ConcurrencyTests.fs"/>
     <Compile Include="RealtimeCollaborationTests.fs"/>

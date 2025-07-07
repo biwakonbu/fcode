@@ -13,18 +13,19 @@ module SecurityUtils =
         | SecurityOk of 'T
         | SecurityError of string
 
-    /// 機密情報として扱う環境変数のパターン
+    /// 機密情報として扱う環境変数のパターン（環境変数名のみ）
     let private sensitiveEnvPatterns =
-        [ Regex(@".*API_?KEY.*", RegexOptions.IgnoreCase)
-          Regex(@".*SECRET.*", RegexOptions.IgnoreCase)
-          Regex(@".*PASSWORD.*", RegexOptions.IgnoreCase)
-          Regex(@".*TOKEN.*", RegexOptions.IgnoreCase)
-          Regex(@".*PRIVATE.*", RegexOptions.IgnoreCase)
-          Regex(@".*CREDENTIAL.*", RegexOptions.IgnoreCase)
-          Regex(@".*AUTH.*", RegexOptions.IgnoreCase)
-          Regex(@"JWT.*", RegexOptions.IgnoreCase)
-          Regex(@".*DATABASE_URL.*", RegexOptions.IgnoreCase)
-          Regex(@".*CONNECTION.*", RegexOptions.IgnoreCase) ]
+        [ "API_KEY"
+          "APIKEY"
+          "SECRET"
+          "PASSWORD"
+          "TOKEN"
+          "PRIVATE"
+          "CREDENTIAL"
+          "AUTH"
+          "JWT"
+          "DATABASE_URL"
+          "CONNECTION" ]
 
     /// 危険な環境変数として扱うパターン
     let private dangerousEnvPatterns =
@@ -159,7 +160,10 @@ module SecurityUtils =
         environment
         |> Map.filter (fun key value ->
             // 機密情報パターンにマッチしないもののみ保持
-            not (sensitiveEnvPatterns |> List.exists (fun pattern -> pattern.IsMatch(key))))
+            not (
+                sensitiveEnvPatterns
+                |> List.exists (fun pattern -> key.ToUpper().Contains(pattern))
+            ))
 
     /// 危険な環境変数をフィルタリング
     let filterDangerousEnvironment (environment: Map<string, string>) : Map<string, string> =
@@ -342,11 +346,10 @@ module SecurityUtils =
             let homePathPattern = Regex(@"/home/[^/\s]+", RegexOptions.IgnoreCase)
             sanitized <- homePathPattern.Replace(sanitized, "/home/[USER]")
 
-            // 機密性の高い環境変数値を除去
+            // 機密性の高い環境変数値を除去（環境変数の形式のみに限定）
             sensitiveEnvPatterns
             |> List.iter (fun pattern ->
-                let envPattern =
-                    Regex($@"{pattern.ToString()}[:\s=]+[^\s]+", RegexOptions.IgnoreCase)
+                let envPattern = Regex($@"\b{pattern}[:\s=]+[^\s]+", RegexOptions.IgnoreCase)
 
                 sanitized <- envPattern.Replace(sanitized, $"{pattern}=[REDACTED]"))
 

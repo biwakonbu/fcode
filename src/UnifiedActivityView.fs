@@ -84,7 +84,7 @@ type private ActivityTransformer() =
 
                 Result.Ok activity
         with ex ->
-            Result.Error $"Activity transformation failed: {ex.Message}"
+            Result.Error "Activity transformation failed"
 
     /// 活動ID生成
     member this.GenerateActivityId() =
@@ -113,7 +113,7 @@ type private ActivityStorage() =
 
             Result.Ok()
         with ex ->
-            Result.Error $"Failed to add activity: {ex.Message}"
+            Result.Error "Failed to add activity"
 
     member this.GetActivities() =
         withLock (fun () -> activities.ToArray())
@@ -179,12 +179,12 @@ type private ActivityUIUpdater() =
                         Result.Ok()
                     with ex ->
                         logException "UnifiedActivityView" "Display update failed" ex
-                        Result.Error $"UI update failed: {ex.Message}"
+                        Result.Error "UI update failed"
                 | Some _ -> Result.Error "TextView is null"
                 | None -> Result.Error "TextView not set"
         with ex ->
             logException "UnifiedActivityView" "UpdateDisplay exception" ex
-            Result.Error $"UpdateDisplay failed: {ex.Message}"
+            Result.Error "UpdateDisplay failed"
 
     /// 安全なUI更新
     member private this.SafeUIUpdate(textView: TextView, content: string) =
@@ -246,7 +246,7 @@ type private ActivityUIUpdater() =
                             $"[{timeStr}] {agentStr} {typeStr} {priorityStr} {messagePreview}"
                         with ex ->
                             logException "UnifiedActivityView" "Activity formatting failed" ex
-                            $"[ERROR] 活動表示エラー: {ex.Message}")
+                            "[ERROR] 活動表示の処理に失敗しました")
                     |> String.concat "\n"
 
                 let footer =
@@ -436,7 +436,7 @@ type UnifiedActivityManager() =
                 logWarning "UnifiedActivityView" $"UI update after clear failed: {uiError}"
                 Result.Ok() // データクリアは成功
         with ex ->
-            let errorMsg = $"Failed to clear activities: {ex.Message}"
+            let errorMsg = "Failed to clear activities"
             logError "UnifiedActivityView" errorMsg
             Result.Error errorMsg
 

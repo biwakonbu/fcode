@@ -18,10 +18,6 @@ type SimpleSecurityTests() =
         // API Keyが除去されていることを確認
         Assert.IsFalse(sanitized.Contains("sk-"), "API Keyが除去されていません")
 
-        // デバッグ用に実際の結果を出力
-        printfn $"Original: {testMessage}"
-        printfn $"Sanitized: {sanitized}"
-
         // パスワード情報が除去されていることを確認
         Assert.IsFalse(sanitized.Contains("secret123"), "パスワードが除去されていません")
 
@@ -106,7 +102,3 @@ type SimpleSecurityTests() =
         Assert.IsTrue(filteredEnv.ContainsKey("AUTH_SERVICE"), "AUTH_SERVICEが誤って削除されています")
         Assert.IsTrue(filteredEnv.ContainsKey("AUTHORIZATION_HEADER"), "AUTHORIZATION_HEADERが誤って削除されています")
         Assert.IsTrue(filteredEnv.ContainsKey("OAUTH_CLIENT_ID"), "OAUTH_CLIENT_IDが誤って削除されています")
-
-        // 結果の確認
-        printfn $"フィルタ前: {testEnv.Count} 個の環境変数"
-        printfn $"フィルタ後: {filteredEnv.Count} 個の環境変数"

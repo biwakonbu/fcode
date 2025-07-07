@@ -39,8 +39,9 @@
     <Compile Include="SessionIsolationTests.fs"/>
     <Compile Include="SessionPersistenceTests.fs"/>
     <Compile Include="DetachAttachTests.fs"/>
-    <!-- <Compile Include="SecurityTests.fs"/> Temporarily disabled for security fix -->
-    <!-- <Compile Include="SecurityUtilsTests.fs"/> Temporarily disabled for type issues -->
+    <!-- <Compile Include="SecurityTests.fs"/> Temporarily disabled for type errors -->
+    <!-- <Compile Include="SecurityUtilsTests.fs"/> Temporarily disabled for type errors -->
+    <Compile Include="SecurityUtilsFalsePositiveTests.fs"/>
     <Compile Include="SimpleSecurityTests.fs"/>
     <Compile Include="ErrorHandlingTests.fs"/>
     <Compile Include="ConcurrencyTests.fs"/>

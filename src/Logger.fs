@@ -10,7 +10,7 @@ type LogLevel =
     | Warning
     | Error
 
-type Logger() =
+type Logger(?sanitizerFunction: string -> string) =
     let logDir = Path.Combine(Path.GetTempPath(), "fcode-logs")
 
     let logFile =
@@ -47,7 +47,10 @@ type Logger() =
                     | Error -> "ERROR"
 
                 // ログメッセージから機密情報を除去
-                let sanitizedMessage = SecurityUtils.sanitizeLogMessage message
+                let sanitizedMessage =
+                    match sanitizerFunction with
+                    | Some sanitizer -> sanitizer message
+                    | None -> message
 
                 let logLine =
                     "[" + timestamp + "] [" + levelStr + "] [" + category + "] " + sanitizedMessage
@@ -59,7 +62,11 @@ type Logger() =
                     Console.WriteLine(logLine)
             with ex ->
                 // ログ出力でエラーが発生した場合はコンソールのみに出力（機密情報除去）
-                let sanitizedMessage = SecurityUtils.sanitizeLogMessage message
+                let sanitizedMessage =
+                    match sanitizerFunction with
+                    | Some sanitizer -> sanitizer message
+                    | None -> message
+
                 let sanitizedExceptionType = ex.GetType().Name
 
                 Console.WriteLine(
@@ -79,8 +86,15 @@ type Logger() =
     member this.Error(category: string, message: string) = this.Log(Error, category, message)
 
     member this.Exception(category: string, message: string, ex: Exception) =
-        let sanitizedMessage = SecurityUtils.sanitizeLogMessage message
-        let sanitizedExceptionMessage = SecurityUtils.sanitizeLogMessage ex.Message
+        let sanitizedMessage =
+            match sanitizerFunction with
+            | Some sanitizer -> sanitizer message
+            | None -> message
+
+        let sanitizedExceptionMessage =
+            match sanitizerFunction with
+            | Some sanitizer -> sanitizer ex.Message
+            | None -> ex.Message
 
         let fullMessage =
             sanitizedMessage
@@ -91,8 +105,8 @@ type Logger() =
 
         this.Log(Error, category, fullMessage)
 
-// グローバルロガーインスタンス
-let logger = Logger()
+// グローバルロガーインスタンス（セキュリティ機能付き）
+let logger = Logger(SecurityUtils.sanitizeLogMessage)
 
 // 便利な関数
 let logDebug category message = logger.Debug(category, message)

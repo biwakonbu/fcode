@@ -377,7 +377,7 @@ type UnifiedActivityManager
         let uiUpdater = new ActivityUIUpdater() :> IUIUpdater
         let formatter = new ActivityFormatter() :> IActivityFormatter
         let validator = new ActivityValidator() :> IActivityValidator
-        UnifiedActivityManager(transformer, storage, uiUpdater, formatter, validator)
+        new UnifiedActivityManager(transformer, storage, uiUpdater, formatter, validator)
 
     /// 会話ペインTextView設定
     member this.SetConversationTextView(textView: TextView) =

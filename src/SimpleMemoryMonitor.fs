@@ -15,11 +15,21 @@ type SimpleMemoryConfig =
       MaxMemoryMB: int64
       CheckIntervalMinutes: int }
 
+/// メモリ制限定数
+[<Literal>]
+let private WARNING_THRESHOLD_MB = 400L
+
+[<Literal>]
+let private MAX_MEMORY_MB = 500L
+
+[<Literal>]
+let private CHECK_INTERVAL_MINUTES = 10
+
 /// デフォルト設定（実用的な値）
 let defaultMemoryConfig =
-    { WarningThresholdMB = 400L // 400MB で警告
-      MaxMemoryMB = 500L // 500MB で制限
-      CheckIntervalMinutes = 10 } // 10分間隔でチェック
+    { WarningThresholdMB = WARNING_THRESHOLD_MB // 400MB で警告
+      MaxMemoryMB = MAX_MEMORY_MB // 500MB で制限
+      CheckIntervalMinutes = CHECK_INTERVAL_MINUTES } // 10分間隔でチェック
 
 // ===============================================
 // メモリ監視機能
@@ -30,35 +40,47 @@ type SimpleMemoryMonitor(config: SimpleMemoryConfig) =
     let mutable lastCheckTime = DateTime.MinValue
 
     /// 現在のメモリ使用量を取得（MB）
-    member this.GetCurrentMemoryMB() : int64 =
+    member public this.GetCurrentMemoryMB() : int64 =
         let currentProcess = Process.GetCurrentProcess()
         currentProcess.WorkingSet64 / (1024L * 1024L)
 
     /// メモリ使用量チェック
-    member this.CheckMemoryUsage() : string option =
-        let now = DateTime.UtcNow
-        let timeSinceLastCheck = now - lastCheckTime
-
-        if timeSinceLastCheck.TotalMinutes >= float config.CheckIntervalMinutes then
-            lastCheckTime <- now
+    member public this.CheckMemoryUsage() : string option =
+        if this.ShouldCheckMemory() then
             let currentMemory = this.GetCurrentMemoryMB()
-
-            if currentMemory >= config.MaxMemoryMB then
-                let message = $"メモリ使用量が上限を超過: {currentMemory}MB >= {config.MaxMemoryMB}MB"
-                logError "SimpleMemoryMonitor" message
-                Some message
-            elif currentMemory >= config.WarningThresholdMB then
-                let message = $"メモリ使用量警告: {currentMemory}MB >= {config.WarningThresholdMB}MB"
-                logWarning "SimpleMemoryMonitor" message
-                Some message
-            else
-                logDebug "SimpleMemoryMonitor" $"メモリ使用量正常: {currentMemory}MB"
-                None
+            this.EvaluateMemoryUsage(currentMemory)
         else
             None
 
+    /// チェック実行判定
+    member private this.ShouldCheckMemory() : bool =
+        let now = DateTime.UtcNow
+        let timeSinceLastCheck = now - lastCheckTime
+
+        let shouldCheck =
+            timeSinceLastCheck.TotalMinutes >= float config.CheckIntervalMinutes
+
+        if shouldCheck then
+            lastCheckTime <- now
+
+        shouldCheck
+
+    /// メモリ使用量評価
+    member private this.EvaluateMemoryUsage(currentMemory: int64) : string option =
+        if currentMemory >= config.MaxMemoryMB then
+            let message = $"メモリ使用量が上限を超過: {currentMemory}MB >= {config.MaxMemoryMB}MB"
+            logError "SimpleMemoryMonitor" message
+            Some message
+        elif currentMemory >= config.WarningThresholdMB then
+            let message = $"メモリ使用量警告: {currentMemory}MB >= {config.WarningThresholdMB}MB"
+            logWarning "SimpleMemoryMonitor" message
+            Some message
+        else
+            logDebug "SimpleMemoryMonitor" $"メモリ使用量正常: {currentMemory}MB"
+            None
+
     /// 軽量GC実行（条件付き）
-    member this.OptionalGC() : bool =
+    member public this.OptionalGC() : bool =
         let currentMemory = this.GetCurrentMemoryMB()
 
         if currentMemory >= config.WarningThresholdMB then
@@ -74,14 +96,18 @@ type SimpleMemoryMonitor(config: SimpleMemoryConfig) =
                 else
                     logDebug "SimpleMemoryMonitor" $"軽量GC実行: メモリ解放なし ({currentMemory}MB)"
                     false
-            with ex ->
+            with
+            | :? OutOfMemoryException as ex ->
+                logError "SimpleMemoryMonitor" $"軽量GC実行エラー（OutOfMemory）: {ex.Message}"
+                false
+            | ex ->
                 logError "SimpleMemoryMonitor" $"軽量GC実行エラー: {ex.Message}"
                 false
         else
             false
 
     /// メモリ状態レポート
-    member this.GetMemoryReport() : string =
+    member public this.GetMemoryReport() : string =
         let currentMemory = this.GetCurrentMemoryMB()
 
         let warningLevel =
@@ -102,4 +128,9 @@ let globalMemoryMonitor = SimpleMemoryMonitor(defaultMemoryConfig)
 let checkMemoryUsage () = globalMemoryMonitor.CheckMemoryUsage()
 
 /// 便利関数: メモリレポート取得
-let getMemoryReport () = globalMemoryMonitor.GetMemoryReport()
+let getMemoryReport () =
+    try
+        globalMemoryMonitor.GetMemoryReport()
+    with
+    | :? OutOfMemoryException as ex -> $"メモリレポート取得エラー（OutOfMemory）: {ex.Message}"
+    | ex -> $"メモリレポート取得エラー: {ex.Message}"

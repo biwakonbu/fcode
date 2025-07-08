@@ -22,14 +22,18 @@ type SimpleMemoryMonitorTests() =
         let currentMemory = monitor.GetCurrentMemoryMB()
 
         Assert.Greater(currentMemory, 0L, "メモリ使用量は正の値であるべき")
-        Assert.Less(currentMemory, 32768L, "メモリ使用量は合理的な範囲内であるべき (32GB未満)")
+        let maxReasonableMemory = 32768L // 32GB
+        Assert.Less(currentMemory, maxReasonableMemory, "メモリ使用量は合理的な範囲内であるべき (32GB未満)")
 
     [<Test>]
     member this.``メモリ使用量チェック: 正常範囲での動作``() =
         // 十分に高い閾値でテスト（テスト環境で警告が出ないように）
+        let highThreshold = 16384L // 16GB
+        let veryHighMax = 32768L // 32GB
+
         let config =
-            { WarningThresholdMB = 16384L
-              MaxMemoryMB = 32768L
+            { WarningThresholdMB = highThreshold
+              MaxMemoryMB = veryHighMax
               CheckIntervalMinutes = 0 }
 
         let monitor = SimpleMemoryMonitor(config)
@@ -42,9 +46,12 @@ type SimpleMemoryMonitorTests() =
     [<Test>]
     member this.``メモリ使用量チェック: 警告閾値設定``() =
         // 非常に低い閾値でテスト（必ず警告が出るように）
+        let lowThreshold = 1L
+        let lowMax = 2L
+
         let config =
-            { WarningThresholdMB = 1L
-              MaxMemoryMB = 2L
+            { WarningThresholdMB = lowThreshold
+              MaxMemoryMB = lowMax
               CheckIntervalMinutes = 0 }
 
         let monitor = SimpleMemoryMonitor(config)

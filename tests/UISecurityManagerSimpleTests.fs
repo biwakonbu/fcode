@@ -111,3 +111,30 @@ type UISecurityManagerSimpleTests() =
             | Ok _ -> Assert.Fail("サイズ制限が機能していない")
         finally
             System.Environment.SetEnvironmentVariable("CI", null)
+
+    [<Test>]
+    member this.``XSS攻撃対策サニタイズテスト``() =
+        // CI環境設定
+        System.Environment.SetEnvironmentVariable("CI", "true")
+
+        try
+            use updater =
+                new SecureUIUpdater(UIPermissionLevel.FullAccess, SecurityLevel.Medium)
+
+            // XSS攻撃パターンをテスト
+            let xssContent =
+                "<script>alert('XSS')</script><iframe src=\"evil.com\"></iframe>javascript:alert('test')onclick=alert(1)"
+
+            let mockTextView = MockTextView() :> IUpdatableView
+            let result = updater.SecureUpdateUI(mockTextView, xssContent)
+
+            match result with
+            | Ok _ ->
+                // サニタイズされたコンテンツを確認
+                Assert.IsFalse(mockTextView.Text.Contains("<script"))
+                Assert.IsFalse(mockTextView.Text.Contains("<iframe"))
+                Assert.IsFalse(mockTextView.Text.Contains("javascript:"))
+                Assert.IsFalse(mockTextView.Text.Contains("onclick"))
+            | Error msg -> Assert.Fail($"XSS対策テスト失敗: {msg}")
+        finally
+            System.Environment.SetEnvironmentVariable("CI", null)

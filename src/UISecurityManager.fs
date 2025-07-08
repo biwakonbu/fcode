@@ -48,25 +48,26 @@ type SecureUIUpdater(permissionLevel: UIPermissionLevel, securityLevel: Security
 
     /// セキュリティレベル別デフォルト制限取得
     member private this.GetDefaultLimits() : UIResourceLimits =
-        if securityLevel = Low then
+        match securityLevel with
+        | Low ->
             { MaxContentSize = 1_000_000
               MaxUpdateFrequency = TimeSpan.FromMilliseconds(50.0)
               MaxConcurrentOperations = 20
               MemoryLimitMB = 100
               CPULimitPercentage = 50 }
-        elif securityLevel = Medium then
+        | Medium ->
             { MaxContentSize = 500_000
               MaxUpdateFrequency = TimeSpan.FromMilliseconds(100.0)
               MaxConcurrentOperations = 10
               MemoryLimitMB = 50
               CPULimitPercentage = 30 }
-        elif securityLevel = High then
+        | High ->
             { MaxContentSize = 100_000
               MaxUpdateFrequency = TimeSpan.FromMilliseconds(200.0)
               MaxConcurrentOperations = 5
               MemoryLimitMB = 25
               CPULimitPercentage = 20 }
-        else
+        | Critical ->
             { MaxContentSize = 50_000
               MaxUpdateFrequency = TimeSpan.FromMilliseconds(500.0)
               MaxConcurrentOperations = 2
@@ -74,18 +75,32 @@ type SecureUIUpdater(permissionLevel: UIPermissionLevel, securityLevel: Security
               CPULimitPercentage = 10 }
 
     /// 権限確認
-    member private this.HasUpdatePermission() : bool =
-        if permissionLevel = ReadOnly then false else true
+    member private this.HasUpdatePermission() : bool = permissionLevel <> ReadOnly
 
-    /// 入力サニタイズ
+    /// 入力サニタイズ (XSS攻撃対策強化版)
     member private this.SanitizeContent(content: string) : string =
         if String.IsNullOrEmpty(content) then
             content
         else
             let mutable sanitized = content
-            // 基本的なサニタイズ
+
+            // XSS攻撃パターン除去
             sanitized <- Regex.Replace(sanitized, @"<script[^>]*>.*?</script>", "", RegexOptions.IgnoreCase)
+            sanitized <- Regex.Replace(sanitized, @"<iframe[^>]*>.*?</iframe>", "", RegexOptions.IgnoreCase)
             sanitized <- Regex.Replace(sanitized, @"javascript:", "", RegexOptions.IgnoreCase)
+            sanitized <- Regex.Replace(sanitized, @"data:", "", RegexOptions.IgnoreCase)
+            sanitized <- Regex.Replace(sanitized, @"vbscript:", "", RegexOptions.IgnoreCase)
+
+            // イベントハンドラ属性除去
+            sanitized <- Regex.Replace(sanitized, @"on\w+\s*=", "", RegexOptions.IgnoreCase)
+
+            // HTMLエンティティエンコーディング
+            sanitized <- sanitized.Replace("&", "&amp;")
+            sanitized <- sanitized.Replace("<", "&lt;")
+            sanitized <- sanitized.Replace(">", "&gt;")
+            sanitized <- sanitized.Replace("\"", "&quot;")
+            sanitized <- sanitized.Replace("'", "&#x27;")
+
             sanitized
 
     /// セキュアUI更新実行

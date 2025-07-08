@@ -68,11 +68,11 @@
     <Compile Include="MinimalWorkflowTests.fs"/>
     <!-- Phase 3: Test Strategy Enhancement -->
     <Compile Include="TestStrategyValidationTests.fs"/>
-    <!-- SOLID Design & Comprehensive Testing Suite (Phase 4で修正予定) -->
-    <!-- <Compile Include="SOLIDDesignTests.fs"/> -->
-    <!-- <Compile Include="ComprehensiveIntegrationTests.fs"/> -->
-    <!-- <Compile Include="CICompatibilityTests.fs"/> -->
-    <!-- <Compile Include="RobustStabilityTests.fs"/> -->
+    <!-- SOLID Design & Comprehensive Testing Suite (Phase 5で有効化) -->
+    <Compile Include="SOLIDDesignTests.fs"/>
+    <Compile Include="ComprehensiveIntegrationTests.fs"/>
+    <Compile Include="CICompatibilityTests.fs"/>
+    <Compile Include="RobustStabilityTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

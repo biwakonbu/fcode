@@ -34,6 +34,8 @@ type SOLIDDesignTestSuite() =
               MessageType = MessageType.Progress
               Priority = MessagePriority.Normal
               Timestamp = DateTime.Now
+              ExpiresAt = None
+              CorrelationId = None
               Metadata = Map.empty }
 
         // Act
@@ -108,7 +110,7 @@ type SOLIDDesignTestSuite() =
             result
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         Assert.AreEqual(1, manager.GetMetricCount())
@@ -125,15 +127,15 @@ type SOLIDDesignTestSuite() =
     member this.``ActivityType should be extensible without modifying existing code``() =
         // Arrange & Act
         let activityTypes =
-            [ CodeGeneration
-              Testing
-              QualityReview
-              Documentation
-              TaskAssignment
-              Progress
-              Escalation
-              Decision
-              SystemMessage ]
+            [ ActivityType.CodeGeneration
+              ActivityType.Testing
+              ActivityType.QualityReview
+              ActivityType.Documentation
+              ActivityType.TaskAssignment
+              ActivityType.Progress
+              ActivityType.Escalation
+              ActivityType.Decision
+              ActivityType.SystemMessage ]
 
         // Assert - 新しい活動タイプを追加する際は既存コードを変更せずに拡張可能
         Assert.AreEqual(9, activityTypes.Length)
@@ -142,34 +144,38 @@ type SOLIDDesignTestSuite() =
         let testActivity =
             { ActivityId = "test-act-001"
               AgentId = "test-agent"
-              ActivityType = CodeGeneration
+              ActivityType = ActivityType.CodeGeneration
               Message = "Generated new module"
               Timestamp = DateTime.Now
               Priority = MessagePriority.Normal
               Metadata = Map.empty
               RelatedTaskId = None
-              Status = Completed }
+              Status = ActivityStatus.Completed }
 
-        Assert.AreEqual(CodeGeneration, testActivity.ActivityType)
+        Assert.AreEqual(ActivityType.CodeGeneration, testActivity.ActivityType)
 
     [<Test>]
     [<Category("Unit")>]
     member this.``EscalationUrgency should be extensible for new urgency levels``() =
         // Arrange & Act
-        let urgencyLevels = [ Immediate; Urgent; EscalationUrgency.Normal; Low ]
+        let urgencyLevels =
+            [ EscalationUrgency.Immediate
+              EscalationUrgency.Urgent
+              EscalationUrgency.Normal
+              EscalationUrgency.Low ]
 
         // Assert
         Assert.AreEqual(4, urgencyLevels.Length)
 
         // 型安全性とパターンマッチング確保
-        let testUrgency = Immediate
+        let testUrgency = EscalationUrgency.Immediate
 
         let expectedDeadline =
             match testUrgency with
-            | Immediate -> DateTime.Now.AddHours(1.0)
-            | Urgent -> DateTime.Now.AddHours(4.0)
+            | EscalationUrgency.Immediate -> DateTime.Now.AddHours(1.0)
+            | EscalationUrgency.Urgent -> DateTime.Now.AddHours(4.0)
             | EscalationUrgency.Normal -> DateTime.Now.AddDays(1.0)
-            | Low -> DateTime.Now.AddDays(3.0)
+            | EscalationUrgency.Low -> DateTime.Now.AddDays(3.0)
 
         Assert.Greater(expectedDeadline, DateTime.Now)
 
@@ -207,14 +213,14 @@ type SOLIDDesignTestSuite() =
             activityResult
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         Assert.That(
             progressResult
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         // Cleanup
@@ -244,7 +250,7 @@ type SOLIDDesignTestSuite() =
             activityResult
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         // Cleanup
@@ -290,9 +296,11 @@ type SOLIDDesignTestSuite() =
               FromAgent = "test-agent"
               ToAgent = None
               Content = "Dependency injection test"
-              MessageType = MessageType.SystemMessage
+              MessageType = MessageType.Notification
               Priority = MessagePriority.Normal
               Timestamp = DateTime.Now
+              ExpiresAt = None
+              CorrelationId = None
               Metadata = Map.empty }
 
         let result = addActivityFromMessage testMessage
@@ -302,7 +310,7 @@ type SOLIDDesignTestSuite() =
             result
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         Assert.AreEqual(1, originalManager.GetActivityCount())
@@ -319,14 +327,14 @@ type SOLIDDesignTestSuite() =
 
         // Act - 抽象化された操作のみ使用
         let systemActivityResult =
-            manager.AddSystemActivity("system", SystemMessage, "System initialization complete")
+            manager.AddSystemActivity("system", ActivityType.SystemMessage, "System initialization complete")
 
         // Assert - ストレージの具体的な実装に依存しない
         Assert.That(
             systemActivityResult
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         // 内部ストレージの実装変更があっても外部インターフェースは変わらない
@@ -355,7 +363,7 @@ type SOLIDQualityMetricsTestSuite() =
 
         // Act - 各マネージャーは他に依存せずに動作
         let activityResult =
-            activityManager.AddSystemActivity("system", SystemMessage, "Test message")
+            activityManager.AddSystemActivity("system", ActivityType.SystemMessage, "Test message")
 
         let escalationId =
             escalationManager.CreateEscalationNotification(
@@ -380,7 +388,7 @@ type SOLIDQualityMetricsTestSuite() =
             activityResult
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         Assert.IsFalse(String.IsNullOrEmpty(escalationId))
@@ -390,7 +398,7 @@ type SOLIDQualityMetricsTestSuite() =
             metricResult
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         // Cleanup
@@ -405,7 +413,9 @@ type SOLIDQualityMetricsTestSuite() =
         let manager = new UnifiedActivityManager()
 
         // Act - 関連する機能が一つのクラスに集約
-        let addResult = manager.AddSystemActivity("agent1", Progress, "Progress update")
+        let addResult =
+            manager.AddSystemActivity("agent1", ActivityType.Progress, "Progress update")
+
         let activities = manager.GetAllActivities()
         let count = manager.GetActivityCount()
         let clearResult = manager.ClearActivities()
@@ -415,7 +425,7 @@ type SOLIDQualityMetricsTestSuite() =
             addResult
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         Assert.IsNotNull(activities)
@@ -425,7 +435,7 @@ type SOLIDQualityMetricsTestSuite() =
             clearResult
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         Assert.AreEqual(0, manager.GetActivityCount())
@@ -442,14 +452,15 @@ type SOLIDQualityMetricsTestSuite() =
         injectActivityManager testManager
 
         // グローバル関数経由でテスト
-        let testResult = addSystemActivity "test-agent" Testing "Unit test execution"
+        let testResult =
+            addSystemActivity "test-agent" ActivityType.Testing "Unit test execution"
 
         // Assert - モックされたインスタンスでテスト実行
         Assert.That(
             testResult
             |> function
                 | Result.Ok _ -> true
-                | _ -> false, Is.True
+                | _ -> false
         )
 
         Assert.AreEqual(1, testManager.GetActivityCount())

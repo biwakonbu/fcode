@@ -107,7 +107,7 @@ type RobustStabilityTestSuite() =
                 recoveryResult
                 |> function
                     | Result.Ok _ -> true
-                    | _ -> false, Is.True
+                    | _ -> false
             )
 
             recoveryManager.Dispose()

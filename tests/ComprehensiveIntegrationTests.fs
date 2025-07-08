@@ -35,7 +35,7 @@ type ComprehensiveIntegrationTestSuite() =
                 initResult
                 |> function
                     | Result.Ok _ -> true
-                    | _ -> false, Is.True
+                    | _ -> false
             )
 
             // 2. 進捗メトリクス作成
@@ -46,7 +46,7 @@ type ComprehensiveIntegrationTestSuite() =
                 metricResult
                 |> function
                     | Result.Ok _ -> true
-                    | _ -> false, Is.True
+                    | _ -> false
             )
 
             // 3. エスカレーション通知作成
@@ -103,6 +103,8 @@ type ComprehensiveIntegrationTestSuite() =
                   MessageType = MessageType.Progress
                   Priority = MessagePriority.Normal
                   Timestamp = DateTime.Now
+                  ExpiresAt = None
+                  CorrelationId = None
                   Metadata = Map.ofList [ ("metric_type", "task_completion"); ("metric_value", "75.0"); ("unit", "%") ] }
 
             // 1. 活動として処理
@@ -112,7 +114,7 @@ type ComprehensiveIntegrationTestSuite() =
                 activityResult
                 |> function
                     | Result.Ok _ -> true
-                    | _ -> false, Is.True
+                    | _ -> false
             )
 
             // 2. 進捗データとして処理
@@ -122,7 +124,7 @@ type ComprehensiveIntegrationTestSuite() =
                 progressResult
                 |> function
                     | Result.Ok _ -> true
-                    | _ -> false, Is.True
+                    | _ -> false
             )
 
             // 結果検証
@@ -147,7 +149,7 @@ type ComprehensiveIntegrationTestSuite() =
                 validResult
                 |> function
                     | Result.Ok _ -> true
-                    | _ -> false, Is.True
+                    | _ -> false
             )
 
             // 2. 無効なメトリクス作成（エラーケース）
@@ -158,7 +160,7 @@ type ComprehensiveIntegrationTestSuite() =
                 invalidResult
                 |> function
                     | Result.Error _ -> true
-                    | _ -> false, Is.True
+                    | _ -> false
             )
 
             // 3. システム回復確認
@@ -169,7 +171,7 @@ type ComprehensiveIntegrationTestSuite() =
                 recoveryResult
                 |> function
                     | Result.Ok _ -> true
-                    | _ -> false, Is.True
+                    | _ -> false
             )
 
             // 結果検証

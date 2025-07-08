@@ -35,7 +35,7 @@ type CICompatibilityTestSuite() =
                 result
                 |> function
                     | Result.Ok _ -> true
-                    | _ -> false, Is.True
+                    | _ -> false
             )
 
             Assert.AreEqual(1, activityManager.GetActivityCount())
@@ -61,7 +61,7 @@ type CICompatibilityTestSuite() =
                 metricResult
                 |> function
                     | Result.Ok _ -> true
-                    | _ -> false, Is.True
+                    | _ -> false
             )
 
             Assert.AreEqual(1, progressManager.GetMetricCount())
@@ -191,7 +191,7 @@ type CIConcurrencyTestSuite() =
             let memoryIncrease = finalMemory - initialMemory
 
             // メモリリークが許容範囲内
-            Assert.AreEqual(Is.LessThan(10_000_000L, memoryIncrease)) // 10MB未満
+            Assert.That(memoryIncrease, Is.LessThan(10_000_000L)) // 10MB未満
 
         finally
             Environment.SetEnvironmentVariable("CI", originalCIValue)

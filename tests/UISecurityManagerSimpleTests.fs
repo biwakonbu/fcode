@@ -3,6 +3,7 @@ namespace fcode.Tests
 
 open NUnit.Framework
 open fcode
+open FCode.Tests.TestHelpers
 
 [<TestFixture>]
 [<Category("Unit")>]
@@ -73,19 +74,21 @@ type UISecurityManagerSimpleTests() =
             use limitedWriteUpdater =
                 new SecureUIUpdater(UIPermissionLevel.LimitedWrite, SecurityLevel.Medium)
 
-            // ReadOnlyは更新拒否されることを確認
-            let readOnlyResult = readOnlyUpdater.SecureUpdateUI(null, "テスト")
+            // ReadOnlyは更新拒否されることを確認（MockTextViewを使用）
+            let mockView1 = MockTextView() :> IUpdatableView
+            let readOnlyResult = readOnlyUpdater.SecureUpdateUI(mockView1, "テスト")
 
             match readOnlyResult with
-            | Error msg -> Assert.IsTrue(msg.Contains("権限なし") || msg.Contains("null"))
+            | Error msg -> Assert.IsTrue(msg.Contains("権限なし"))
             | Ok _ -> Assert.Fail("ReadOnly権限で更新が許可された")
 
-            // LimitedWriteはnullチェックが動作することを確認
-            let limitedWriteResult = limitedWriteUpdater.SecureUpdateUI(null, "テスト")
+            // LimitedWriteは正常動作することを確認
+            let mockView2 = MockTextView() :> IUpdatableView
+            let limitedWriteResult = limitedWriteUpdater.SecureUpdateUI(mockView2, "テスト")
 
             match limitedWriteResult with
-            | Error msg -> Assert.IsTrue(msg.Contains("null"))
-            | Ok _ -> Assert.Fail("null TextViewで更新が許可された")
+            | Ok _ -> Assert.Pass("LimitedWrite権限で更新が成功")
+            | Error msg -> Assert.Fail($"LimitedWrite権限で更新が失敗: {msg}")
         finally
             System.Environment.SetEnvironmentVariable("CI", null)
 
@@ -100,7 +103,8 @@ type UISecurityManagerSimpleTests() =
 
             // Critical セキュリティレベルでは50KB制限
             let largeContent = String.replicate 60000 "A"
-            let result = updater.SecureUpdateUI(new Terminal.Gui.TextView(), largeContent)
+            let mockTextView = MockTextView() :> IUpdatableView
+            let result = updater.SecureUpdateUI(mockTextView, largeContent)
 
             match result with
             | Error msg -> Assert.IsTrue(msg.Contains("制限超過"))

@@ -7,6 +7,20 @@ open System.Text.RegularExpressions
 open System.Threading
 open Terminal.Gui
 
+/// UI依存分離用インターフェース
+type IUpdatableView =
+    abstract member Text: string with get, set
+    abstract member SetNeedsDisplay: unit -> unit
+
+/// Terminal.GuiのTextView用ラッパー
+type TextViewWrapper(textView: TextView) =
+    interface IUpdatableView with
+        member _.Text
+            with get () = textView.Text.ToString()
+            and set (value) = textView.Text <- value
+
+        member _.SetNeedsDisplay() = textView.SetNeedsDisplay()
+
 /// UI操作権限レベル
 type UIPermissionLevel =
     | ReadOnly
@@ -75,12 +89,12 @@ type SecureUIUpdater(permissionLevel: UIPermissionLevel, securityLevel: Security
             sanitized
 
     /// セキュアUI更新実行
-    member this.SecureUpdateUI(textView: TextView, content: string) : Result<unit, string> =
+    member this.SecureUpdateUI(updatableView: IUpdatableView, content: string) : Result<unit, string> =
         try
             if disposed then
                 Error "SecureUIUpdater is disposed"
-            elif isNull textView then
-                Error "TextView is null"
+            elif obj.ReferenceEquals(updatableView, null) then
+                Error "UpdatableView is null"
             elif not (this.HasUpdatePermission()) then
                 Error "UI更新権限なし"
             else
@@ -99,14 +113,19 @@ type SecureUIUpdater(permissionLevel: UIPermissionLevel, securityLevel: Security
                     else
                         try
                             Application.MainLoop.Invoke(fun () ->
-                                textView.Text <- sanitizedContent
-                                textView.SetNeedsDisplay())
+                                updatableView.Text <- sanitizedContent
+                                updatableView.SetNeedsDisplay())
 
                             Ok()
                         with ex ->
                             Error $"UI更新実行エラー: {ex.Message}"
         with ex ->
             Error $"セキュリティチェックエラー: {ex.Message}"
+
+    /// TextView用の下位互換性メソッド
+    member this.SecureUpdateUI(textView: TextView, content: string) : Result<unit, string> =
+        let wrapper = TextViewWrapper(textView)
+        this.SecureUpdateUI(wrapper, content)
 
     /// リソース状態取得
     member this.GetResourceStatus() : string =

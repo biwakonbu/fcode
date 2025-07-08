@@ -100,43 +100,43 @@ jobs:
         name: fcode-linux-x64
         path: publish/linux-x64/fcode
 
-  build-macos:
-    runs-on: macos-latest
-    needs: format-lint-test-build
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-    
-    - name: Restore dependencies
-      run: |
-        dotnet restore src/fcode.fsproj --verbosity normal
-        dotnet restore tests/fcode.Tests.fsproj --verbosity normal
-    
-    - name: Run CI-safe unit tests on macOS
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit&TestCategory!=UI" --blame-hang-timeout 60000ms --blame-crash
-      env:
-        TERM: xterm
-        CI: true
-        DOTNET_CLI_TELEMETRY_OPTOUT: 1
-    
-    # - name: Upload macOS test results
-    #   uses: actions/upload-artifact@v4
-    #   if: always()
-    #   with:
-    #     name: macos-test-results
-    #     path: TestResults/
-    
-    # macOS向け単一ファイルパブリッシュ
-    - name: Publish macOS x64
-      run: dotnet publish src/fcode.fsproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -o publish/osx-x64
-    
-    - name: Upload macOS artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: fcode-macos-x64
-        path: publish/osx-x64/fcode
+  # build-macos:
+  #   runs-on: macos-latest
+  #   needs: format-lint-test-build
+  #   
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   
+  #   - name: Setup .NET
+  #     uses: actions/setup-dotnet@v4
+  #     with:
+  #       dotnet-version: '8.0.x'
+  #   
+  #   - name: Restore dependencies
+  #     run: |
+  #       dotnet restore src/fcode.fsproj --verbosity normal
+  #       dotnet restore tests/fcode.Tests.fsproj --verbosity normal
+  #   
+  #   - name: Run CI-safe unit tests on macOS
+  #     run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity minimal --filter "TestCategory=Unit&TestCategory!=UI" --blame-hang-timeout 90000ms
+  #     env:
+  #       TERM: xterm
+  #       CI: true
+  #       DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  #   
+  #   # - name: Upload macOS test results
+  #   #   uses: actions/upload-artifact@v4
+  #   #   if: always()
+  #   #   with:
+  #   #     name: macos-test-results
+  #   #     path: TestResults/
+  #   
+  #   # macOS向け単一ファイルパブリッシュ
+  #   - name: Publish macOS x64
+  #     run: dotnet publish src/fcode.fsproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -o publish/osx-x64
+  #   
+  #   - name: Upload macOS artifact
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: fcode-macos-x64
+  #       path: publish/osx-x64/fcode

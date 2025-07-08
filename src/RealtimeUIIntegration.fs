@@ -198,8 +198,8 @@ type private EventLoopManager
 
                         if errors.IsEmpty then
                             errorManager.ResetBackoffState()
-                            // キャンセレーション対応Sleep
-                            do! Async.Sleep(1000)
+                            // FC-024: リアルタイムUI最適化・更新頻度向上
+                            do! Async.Sleep(500) // 1000ms→500msで更新頻度向上
                         else
                             errorManager.IncrementRetryCount()
 

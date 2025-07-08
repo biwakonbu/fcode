@@ -213,39 +213,82 @@ type SessionManager() =
 
                     let buffer = StringBuilder()
 
-                    // UI更新頻度制限のためのタイマー
+                    // FC-024: リアルタイムUI最適化・応答性向上＋メモリ効率改善
                     let mutable lastUiUpdate = DateTime.Now
-                    let uiUpdateThresholdMs = 100 // 100ms間隔制限
+                    let uiUpdateThresholdMs = 50 // 50ms間隔制限（従来100ms→50msで応答性向上）
+                    let mutable bufferedLines = 0
+                    let maxBufferedLines = 5 // バッファに5行以上溜まったら強制更新
+                    let maxBufferSize = 50000 // バッファサイズ制限（50KB）
 
-                    // 標準出力の非同期読み取り設定
+                    // FC-024: 最適化された標準出力の非同期読み取り設定
                     proc.OutputDataReceived.Add(fun args ->
                         if not (isNull args.Data) then
                             logDebug $"Claude-{paneId}" $"STDOUT: {args.Data}"
                             buffer.AppendLine($"[OUT] {args.Data}") |> ignore
+                            bufferedLines <- bufferedLines + 1
 
-                            // UI更新頻度制限
+                            // メモリ効率改善：バッファサイズ制限
+                            if buffer.Length > maxBufferSize then
+                                let content = buffer.ToString()
+                                let lines = content.Split('\n')
+                                let trimmedLines = lines |> Array.skip (lines.Length / 2) // 前半削除
+                                buffer.Clear() |> ignore
+                                buffer.Append(String.Join("\n", trimmedLines)) |> ignore
+                                logDebug $"Claude-{paneId}" "Buffer trimmed for memory efficiency"
+
+                            // UI更新頻度制限＋バッファ制限による改善されたUI更新ロジック
                             let now = DateTime.Now
+                            let timeSinceLastUpdate = (now - lastUiUpdate).TotalMilliseconds
 
-                            if (now - lastUiUpdate).TotalMilliseconds > float uiUpdateThresholdMs then
-                                outputView.Text <- buffer.ToString()
-                                outputView.SetNeedsDisplay()
-                                Application.Refresh()
-                                lastUiUpdate <- now)
+                            if
+                                timeSinceLastUpdate > float uiUpdateThresholdMs
+                                || bufferedLines >= maxBufferedLines
+                            then
+                                try
+                                    Application.MainLoop.Invoke(fun () ->
+                                        outputView.Text <- buffer.ToString()
+                                        outputView.SetNeedsDisplay()
+                                        Application.Refresh())
 
-                    // 標準エラーの非同期読み取り設定（UI更新頻度制限共有）
+                                    lastUiUpdate <- now
+                                    bufferedLines <- 0
+                                with ex ->
+                                    logError $"Claude-{paneId}" $"UI update failed: {ex.Message}")
+
+                    // FC-024: 最適化された標準エラーの非同期読み取り設定
                     proc.ErrorDataReceived.Add(fun args ->
                         if not (isNull args.Data) then
                             logError $"Claude-{paneId}" $"STDERR: {args.Data}"
                             buffer.AppendLine($"[ERR] {args.Data}") |> ignore
+                            bufferedLines <- bufferedLines + 1
 
-                            // UI更新頻度制限
+                            // メモリ効率改善：バッファサイズ制限（標準エラー版）
+                            if buffer.Length > maxBufferSize then
+                                let content = buffer.ToString()
+                                let lines = content.Split('\n')
+                                let trimmedLines = lines |> Array.skip (lines.Length / 2) // 前半削除
+                                buffer.Clear() |> ignore
+                                buffer.Append(String.Join("\n", trimmedLines)) |> ignore
+                                logDebug $"Claude-{paneId}" "Buffer trimmed for memory efficiency (stderr)"
+
+                            // UI更新頻度制限＋バッファ制限による改善されたUI更新ロジック
                             let now = DateTime.Now
+                            let timeSinceLastUpdate = (now - lastUiUpdate).TotalMilliseconds
 
-                            if (now - lastUiUpdate).TotalMilliseconds > float uiUpdateThresholdMs then
-                                outputView.Text <- buffer.ToString()
-                                outputView.SetNeedsDisplay()
-                                Application.Refresh()
-                                lastUiUpdate <- now)
+                            if
+                                timeSinceLastUpdate > float uiUpdateThresholdMs
+                                || bufferedLines >= maxBufferedLines
+                            then
+                                try
+                                    Application.MainLoop.Invoke(fun () ->
+                                        outputView.Text <- buffer.ToString()
+                                        outputView.SetNeedsDisplay()
+                                        Application.Refresh())
+
+                                    lastUiUpdate <- now
+                                    bufferedLines <- 0
+                                with ex ->
+                                    logError $"Claude-{paneId}" $"UI update failed: {ex.Message}")
 
                     logDebug "SessionManager" $"Starting async read for pane: {paneId}"
                     proc.BeginOutputReadLine()

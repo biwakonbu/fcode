@@ -555,8 +555,8 @@ let main argv =
             // let eventLoop = OptimizedEventLoop(defaultConfig)
             // eventLoop.Run()
 
-            // TEMPORARILY DISABLED for debugging
-            // setupDelayedAutoStart ()
+            // FC-024: リアルタイムUI最適化・Claude Code自動起動機能復旧
+            setupDelayedAutoStart ()
             Application.Run(top)
             logInfo "Application" "TUI application loop ended"
 

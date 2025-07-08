@@ -46,53 +46,88 @@ type UnifiedActivity =
       Status: ActivityStatus } // 状態
 
 // ===============================================
-// 内部責務分離型 (SOLID準拠設計)
+// インターフェース定義 (SOLID準拠設計)
 // ===============================================
 
-/// 活動データ変換責務 (Single Responsibility)
+/// 活動データ変換インターフェース (Dependency Inversion Principle)
+type IActivityTransformer =
+    abstract member TransformMessage: AgentMessage -> Result<UnifiedActivity, string>
+    abstract member GenerateActivityId: unit -> string
+
+/// 活動ストレージインターフェース (Dependency Inversion Principle)
+type IActivityStorage =
+    abstract member AddActivity: UnifiedActivity -> Result<unit, string>
+    abstract member GetActivities: unit -> UnifiedActivity[]
+    abstract member GetActivityCount: unit -> int
+    abstract member Clear: unit -> unit
+    inherit IDisposable
+
+/// 活動フォーマッターインターフェース (Interface Segregation Principle)
+type IActivityFormatter =
+    abstract member FormatActivitiesForDisplay: UnifiedActivity[] -> string
+    abstract member GetActivityTypeDisplay: ActivityType -> string
+    abstract member GetPriorityDisplay: MessagePriority -> string
+
+/// UI更新インターフェース (Interface Segregation Principle)
+type IUIUpdater =
+    abstract member UpdateText: string -> Result<unit, string>
+    abstract member SetTextView: TextView -> Result<unit, string>
+    inherit IDisposable
+
+/// 活動検証インターフェース (Single Responsibility Principle)
+type IActivityValidator =
+    abstract member ValidateActivities: UnifiedActivity[] -> Result<UnifiedActivity[], string>
+    abstract member ValidateMessage: AgentMessage -> Result<AgentMessage, string>
+
+// ===============================================
+// 責務分離実装クラス (SOLID準拠設計)
+// ===============================================
+
+/// 活動データ変換実装 (Single Responsibility)
 type private ActivityTransformer() =
-    /// AgentMessageからUnifiedActivity変換 - 入力検証強化
-    member this.TransformMessage(message: AgentMessage) : Result<UnifiedActivity, string> =
-        try
-            // 基本的な入力検証
-            if String.IsNullOrWhiteSpace(message.FromAgent) then
-                Result.Error "エージェントIDが無効です"
-            elif String.IsNullOrWhiteSpace(message.Content) then
-                Result.Error "メッセージ内容が無効です"
-            else
-                let activityType =
-                    match message.MessageType with
-                    | MessageType.TaskAssignment -> ActivityType.TaskAssignment
-                    | MessageType.Progress -> ActivityType.Progress
-                    | MessageType.QualityReview -> ActivityType.QualityReview
-                    | MessageType.Escalation -> ActivityType.Escalation
-                    | MessageType.StateUpdate -> ActivityType.SystemMessage
-                    | MessageType.ResourceRequest -> ActivityType.SystemMessage
-                    | MessageType.Collaboration -> ActivityType.Decision
-                    | MessageType.Notification -> ActivityType.SystemMessage
+    interface IActivityTransformer with
+        /// AgentMessageからUnifiedActivity変換 - 入力検証強化
+        member this.TransformMessage(message: AgentMessage) : Result<UnifiedActivity, string> =
+            try
+                // 基本的な入力検証
+                if String.IsNullOrWhiteSpace(message.FromAgent) then
+                    Result.Error "エージェントIDが無効です"
+                elif String.IsNullOrWhiteSpace(message.Content) then
+                    Result.Error "メッセージ内容が無効です"
+                else
+                    let activityType =
+                        match message.MessageType with
+                        | MessageType.TaskAssignment -> ActivityType.TaskAssignment
+                        | MessageType.Progress -> ActivityType.Progress
+                        | MessageType.QualityReview -> ActivityType.QualityReview
+                        | MessageType.Escalation -> ActivityType.Escalation
+                        | MessageType.StateUpdate -> ActivityType.SystemMessage
+                        | MessageType.ResourceRequest -> ActivityType.SystemMessage
+                        | MessageType.Collaboration -> ActivityType.Decision
+                        | MessageType.Notification -> ActivityType.SystemMessage
 
-                let activity =
-                    { ActivityId = this.GenerateActivityId()
-                      AgentId = message.FromAgent
-                      ActivityType = activityType
-                      Message = message.Content
-                      Timestamp = message.Timestamp
-                      Priority = message.Priority
-                      Metadata = message.Metadata
-                      RelatedTaskId = message.Metadata.TryFind("task_id")
-                      Status = Received }
+                    let activity =
+                        { ActivityId = (this :> IActivityTransformer).GenerateActivityId()
+                          AgentId = message.FromAgent
+                          ActivityType = activityType
+                          Message = message.Content
+                          Timestamp = message.Timestamp
+                          Priority = message.Priority
+                          Metadata = message.Metadata
+                          RelatedTaskId = message.Metadata.TryFind("task_id")
+                          Status = Received }
 
-                Result.Ok activity
-        with ex ->
-            Result.Error "Activity transformation failed"
+                    Result.Ok activity
+            with ex ->
+                Result.Error "Activity transformation failed"
 
-    /// 活動ID生成
-    member this.GenerateActivityId() =
-        let timestamp = DateTime.Now.ToString("HHmmss")
-        let guidPart = Guid.NewGuid().ToString("N")[..3]
-        $"act-{timestamp}-{guidPart}"
+        /// 活動ID生成
+        member this.GenerateActivityId() =
+            let timestamp = DateTime.Now.ToString("HHmmss")
+            let guidPart = Guid.NewGuid().ToString("N")[..3]
+            $"act-{timestamp}-{guidPart}"
 
-/// 活動ストレージ責務 (Single Responsibility) - スレッドセーフ実装
+/// 活動ストレージ実装 (Single Responsibility) - スレッドセーフ実装
 type private ActivityStorage() =
     let activities = ConcurrentQueue<UnifiedActivity>()
     let maxActivities = 1000
@@ -103,27 +138,31 @@ type private ActivityStorage() =
     let lockObj = obj ()
     let withLock f = lock lockObj f
 
-    member this.AddActivity(activity: UnifiedActivity) : Result<unit, string> =
-        try
+    interface IActivityStorage with
+        member this.AddActivity(activity: UnifiedActivity) : Result<unit, string> =
+            try
+                withLock (fun () ->
+                    activities.Enqueue(activity)
+                    // 最大数超過時の古い活動削除（スレッドセーフ）
+                    while activities.Count > maxActivities do
+                        activities.TryDequeue() |> ignore)
+
+                Result.Ok()
+            with ex ->
+                Result.Error "Failed to add activity"
+
+        member this.GetActivities() =
+            withLock (fun () -> activities.ToArray())
+
+        member this.GetActivityCount() = activities.Count
+
+        member this.Clear() =
             withLock (fun () ->
-                activities.Enqueue(activity)
-                // 最大数超過時の古い活動削除（スレッドセーフ）
-                while activities.Count > maxActivities do
-                    activities.TryDequeue() |> ignore)
+                while activities.TryDequeue() |> fst do
+                    ())
 
-            Result.Ok()
-        with ex ->
-            Result.Error "Failed to add activity"
-
-    member this.GetActivities() =
-        withLock (fun () -> activities.ToArray())
-
-    member this.GetActivityCount() = activities.Count
-
-    member this.Clear() =
-        withLock (fun () ->
-            while activities.TryDequeue() |> fst do
-                ())
+    /// パブリックClearメソッド（互換性維持）
+    member this.Clear() = (this :> IActivityStorage).Clear()
 
     /// リソース解放
     member this.Dispose() =
@@ -135,7 +174,111 @@ type private ActivityStorage() =
     interface IDisposable with
         member this.Dispose() = this.Dispose()
 
-/// UI更新責務 (Single Responsibility) - スレッドセーフ実装
+/// 活動フォーマッター実装 (Single Responsibility)
+type private ActivityFormatter() =
+    interface IActivityFormatter with
+        /// 活動表示フォーマット
+        member this.FormatActivitiesForDisplay(activities: UnifiedActivity[]) =
+            try
+                let header = "=== 統合エージェント活動ログ ===\n\n"
+
+                if isNull activities || activities.Length = 0 then
+                    header + "活動データがありません\n"
+                else
+                    let recentActivities =
+                        activities
+                        |> Array.filter (fun a -> not (isNull a.Message))
+                        |> Array.sortByDescending (fun a -> a.Timestamp)
+                        |> Array.take (min 10 activities.Length)
+
+                    let activityLines =
+                        recentActivities
+                        |> Array.map (fun activity ->
+                            try
+                                let timeStr = activity.Timestamp.ToString("HH:mm:ss")
+
+                                let agentStr =
+                                    if isNull activity.AgentId then
+                                        "UNKNOWN"
+                                    else
+                                        activity.AgentId.PadRight(6)
+
+                                let typeStr =
+                                    (this :> IActivityFormatter).GetActivityTypeDisplay(activity.ActivityType)
+
+                                let priorityStr = (this :> IActivityFormatter).GetPriorityDisplay(activity.Priority)
+
+                                let messagePreview =
+                                    if isNull activity.Message then
+                                        "(空メッセージ)"
+                                    elif activity.Message.Length > 60 then
+                                        activity.Message.[..57] + "..."
+                                    else
+                                        activity.Message
+
+                                $"[{timeStr}] {agentStr} {typeStr} {priorityStr} {messagePreview}"
+                            with ex ->
+                                logException "ActivityFormatter" "Activity formatting failed" ex
+                                "[ERROR] 活動表示の処理に失敗しました")
+                        |> String.concat "\n"
+
+                    let footer =
+                        $"\n\n--- 最新{recentActivities.Length}件 / 総活動数: {activities.Length} ---\nキーバインド: ESC(終了) Ctrl+X(コマンド) Ctrl+Tab(ペイン切替)"
+
+                    header + activityLines + footer
+            with ex ->
+                logException "ActivityFormatter" "Format activities failed" ex
+                "=== 統合エージェント活動ログ ===\n\n[ERROR] 活動表示の生成に失敗しました\n"
+
+        /// 活動種別表示
+        member this.GetActivityTypeDisplay(activityType: ActivityType) =
+            match activityType with
+            | CodeGeneration -> "🔧 CODE"
+            | Testing -> "🧪 TEST"
+            | QualityReview -> "📋 QA  "
+            | Documentation -> "📝 DOC "
+            | TaskAssignment -> "📌 TASK"
+            | Progress -> "📊 PROG"
+            | Escalation -> "🚨 ESC "
+            | Decision -> "💭 DEC "
+            | SystemMessage -> "⚙️ SYS "
+
+        /// 優先度表示
+        member this.GetPriorityDisplay(priority: MessagePriority) =
+            match priority with
+            | Critical -> "[🔴]"
+            | High -> "[🟡]"
+            | Normal -> "[🟢]"
+            | Low -> "[⚪]"
+
+/// 活動検証実装 (Single Responsibility)
+type private ActivityValidator() =
+    interface IActivityValidator with
+        member this.ValidateActivities(activities: UnifiedActivity[]) : Result<UnifiedActivity[], string> =
+            try
+                if isNull activities then
+                    Result.Error "Activities array is null"
+                else
+                    let validActivities =
+                        activities
+                        |> Array.filter (fun a -> not (isNull a.AgentId) && not (String.IsNullOrWhiteSpace(a.Message)))
+
+                    Result.Ok validActivities
+            with ex ->
+                Result.Error "Activity validation failed"
+
+        member this.ValidateMessage(message: AgentMessage) : Result<AgentMessage, string> =
+            try
+                if String.IsNullOrWhiteSpace(message.FromAgent) then
+                    Result.Error "エージェントIDが無効です"
+                elif String.IsNullOrWhiteSpace(message.Content) then
+                    Result.Error "メッセージ内容が無効です"
+                else
+                    Result.Ok message
+            with ex ->
+                Result.Error "Message validation failed"
+
+/// UI更新実装 (Single Responsibility) - スレッドセーフ実装
 type private ActivityUIUpdater() =
     let mutable conversationTextView: TextView option = None
     let uiLockObj = obj ()
@@ -144,139 +287,63 @@ type private ActivityUIUpdater() =
     /// UI操作用オブジェクトロック
     let withUILock f = lock uiLockObj f
 
-    member this.SetTextView(textView: TextView) =
-        this.ThrowIfDisposed()
+    interface IUIUpdater with
+        member this.SetTextView(textView: TextView) : Result<unit, string> =
+            try
+                if disposed then
+                    Result.Error "UIUpdater is disposed"
+                elif isNull textView then
+                    Result.Error "TextView is null"
+                else
+                    withUILock (fun () ->
+                        conversationTextView <- Some textView
+                        logInfo "ActivityUIUpdater" "TextView set successfully")
 
-        try
-            if isNull textView then
-                logError "UnifiedActivityView" "Attempted to set null TextView"
-            else
-                withUILock (fun () ->
-                    conversationTextView <- Some textView
-                    logInfo "UnifiedActivityView" "TextView set successfully")
-        with ex ->
-            logException "UnifiedActivityView" "SetTextView failed" ex
+                    Result.Ok()
+            with ex ->
+                logException "ActivityUIUpdater" "SetTextView failed" ex
+                Result.Error "SetTextView failed"
 
-    member this.UpdateDisplay(activities: UnifiedActivity[]) : Result<unit, string> =
-        this.ThrowIfDisposed()
+        member this.UpdateText(content: string) : Result<unit, string> =
+            try
+                if disposed then
+                    Result.Error "UIUpdater is disposed"
+                elif isNull content then
+                    Result.Error "Content is null"
+                else
+                    let currentTextView = withUILock (fun () -> conversationTextView)
 
-        try
-            // 引数バリデーション
-            if isNull activities then
-                Result.Error "Activities array is null"
-            else
-                let currentTextView = withUILock (fun () -> conversationTextView)
-
-                match currentTextView with
-                | Some textView when not (isNull textView) ->
-                    try
-                        let displayText = this.FormatActivitiesForDisplay(activities)
+                    match currentTextView with
+                    | Some textView when not (isNull textView) ->
                         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
 
                         if not isCI then
-                            this.SafeUIUpdate(textView, displayText)
+                            this.SafeUIUpdate(textView, content)
 
                         Result.Ok()
-                    with ex ->
-                        logException "UnifiedActivityView" "Display update failed" ex
-                        Result.Error "UI update failed"
-                | Some _ -> Result.Error "TextView is null"
-                | None -> Result.Error "TextView not set"
-        with ex ->
-            logException "UnifiedActivityView" "UpdateDisplay exception" ex
-            Result.Error "UpdateDisplay failed"
+                    | Some _ -> Result.Error "TextView is null"
+                    | None -> Result.Error "TextView not set"
+            with ex ->
+                logException "ActivityUIUpdater" "UpdateText failed" ex
+                Result.Error "UpdateText failed"
 
     /// 安全なUI更新
     member private this.SafeUIUpdate(textView: TextView, content: string) =
         try
-            // 引数バリデーション
-            if isNull content then
-                logError "UnifiedActivityView" "Content is null"
-            else if not (isNull Application.MainLoop) then
+            if not (isNull Application.MainLoop) then
                 Application.MainLoop.Invoke(fun () ->
                     try
                         textView.Text <- ustring.Make(content)
                         textView.SetNeedsDisplay()
                     with ex ->
-                        logException "UnifiedActivityView" "UI thread update failed" ex)
+                        logException "ActivityUIUpdater" "UI thread update failed" ex)
             else
                 // MainLoop未初期化の場合の直接更新
                 textView.Text <- ustring.Make(content)
                 textView.SetNeedsDisplay()
         with ex ->
-            logException "UnifiedActivityView" "Safe UI update failed" ex
+            logException "ActivityUIUpdater" "Safe UI update failed" ex
 
-    /// 活動表示フォーマット
-    member private this.FormatActivitiesForDisplay(activities: UnifiedActivity[]) =
-        try
-            let header = "=== 統合エージェント活動ログ ===\n\n"
-
-            if isNull activities || activities.Length = 0 then
-                header + "活動データがありません\n"
-            else
-                let recentActivities =
-                    activities
-                    |> Array.filter (fun a -> not (isNull a.Message))
-                    |> Array.sortByDescending (fun a -> a.Timestamp)
-                    |> Array.take (min 10 activities.Length)
-
-                let activityLines =
-                    recentActivities
-                    |> Array.map (fun activity ->
-                        try
-                            let timeStr = activity.Timestamp.ToString("HH:mm:ss")
-
-                            let agentStr =
-                                if isNull activity.AgentId then
-                                    "UNKNOWN"
-                                else
-                                    activity.AgentId.PadRight(6)
-
-                            let typeStr = this.GetActivityTypeDisplay(activity.ActivityType)
-                            let priorityStr = this.GetPriorityDisplay(activity.Priority)
-
-                            let messagePreview =
-                                if isNull activity.Message then
-                                    "(空メッセージ)"
-                                elif activity.Message.Length > 60 then
-                                    activity.Message.[..57] + "..."
-                                else
-                                    activity.Message
-
-                            $"[{timeStr}] {agentStr} {typeStr} {priorityStr} {messagePreview}"
-                        with ex ->
-                            logException "UnifiedActivityView" "Activity formatting failed" ex
-                            "[ERROR] 活動表示の処理に失敗しました")
-                    |> String.concat "\n"
-
-                let footer =
-                    $"\n\n--- 最新{recentActivities.Length}件 / 総活動数: {activities.Length} ---\nキーバインド: ESC(終了) Ctrl+X(コマンド) Ctrl+Tab(ペイン切替)"
-
-                header + activityLines + footer
-        with ex ->
-            logException "UnifiedActivityView" "Format activities failed" ex
-            "=== 統合エージェント活動ログ ===\n\n[ERROR] 活動表示の生成に失敗しました\n"
-
-    /// 活動種別表示
-    member private this.GetActivityTypeDisplay(activityType: ActivityType) =
-        match activityType with
-        | CodeGeneration -> "🔧 CODE"
-        | Testing -> "🧪 TEST"
-        | QualityReview -> "📋 QA  "
-        | Documentation -> "📝 DOC "
-        | TaskAssignment -> "📌 TASK"
-        | Progress -> "📊 PROG"
-        | Escalation -> "🚨 ESC "
-        | Decision -> "💭 DEC "
-        | SystemMessage -> "⚙️ SYS "
-
-    /// 優先度表示
-    member private this.GetPriorityDisplay(priority: MessagePriority) =
-        match priority with
-        | Critical -> "[🔴]"
-        | High -> "[🟡]"
-        | Normal -> "[🟢]"
-        | Low -> "[⚪]"
 
     /// リソース解放
     member this.Dispose() =
@@ -287,32 +354,37 @@ type private ActivityUIUpdater() =
     interface IDisposable with
         member this.Dispose() = this.Dispose()
 
-    /// リソース解放状態確認
-    member private this.ThrowIfDisposed() =
-        if disposed then
-            raise (ObjectDisposedException("ActivityUIUpdater"))
-
 // ===============================================
 // 統合活動表示管理 (依存性注入によるSOLID設計)
 // ===============================================
 
-/// 統合活動表示管理クラス (リファクタリング版)
-type UnifiedActivityManager() =
-    // 依存性注入による責務分離
-    let transformer = ActivityTransformer()
-    let storage = new ActivityStorage()
-    let uiUpdater = new ActivityUIUpdater()
+/// 統合活動表示管理クラス (真の依存性注入パターン)
+type UnifiedActivityManager
+    (
+        transformer: IActivityTransformer,
+        storage: IActivityStorage,
+        uiUpdater: IUIUpdater,
+        formatter: IActivityFormatter,
+        validator: IActivityValidator
+    ) =
     let mutable disposed = false
+
+    /// デフォルトコンストラクタ (既存互換性維持)
+    new() =
+        let transformer = new ActivityTransformer() :> IActivityTransformer
+        let storage = new ActivityStorage() :> IActivityStorage
+        let uiUpdater = new ActivityUIUpdater() :> IUIUpdater
+        let formatter = new ActivityFormatter() :> IActivityFormatter
+        let validator = new ActivityValidator() :> IActivityValidator
+        UnifiedActivityManager(transformer, storage, uiUpdater, formatter, validator)
 
     /// 会話ペインTextView設定
     member this.SetConversationTextView(textView: TextView) =
         this.ThrowIfDisposed()
 
-        if not (isNull textView) then
-            uiUpdater.SetTextView(textView)
-            logInfo "UnifiedActivityView" "Conversation TextView set for unified activity display"
-        else
-            logWarning "UnifiedActivityView" "Attempted to set null TextView for conversation display"
+        match uiUpdater.SetTextView(textView) with
+        | Result.Ok() -> logInfo "UnifiedActivityView" "Conversation TextView set for unified activity display"
+        | Result.Error error -> logWarning "UnifiedActivityView" $"Failed to set TextView: {error}"
 
     /// リソース解放
     member this.Dispose() =
@@ -333,11 +405,16 @@ type UnifiedActivityManager() =
     member this.AddActivityFromMessage(message: AgentMessage) : Result<unit, string> =
         this.ThrowIfDisposed()
 
-        match transformer.TransformMessage(message) with
-        | Result.Ok activity -> this.AddActivity(activity)
-        | Result.Error error ->
-            logWarning "UnifiedActivityView" $"Message transformation failed: {error}"
-            Result.Error error
+        match validator.ValidateMessage(message) with
+        | Result.Ok validMessage ->
+            match transformer.TransformMessage(validMessage) with
+            | Result.Ok activity -> this.AddActivity(activity)
+            | Result.Error error ->
+                logWarning "UnifiedActivityView" $"Message transformation failed: {error}"
+                Result.Error error
+        | Result.Error validationError ->
+            logWarning "UnifiedActivityView" $"Message validation failed: {validationError}"
+            Result.Error validationError
 
     /// エージェント活動追加 (直接) - Result型対応
     member this.AddActivity(activity: UnifiedActivity) : Result<unit, string> =
@@ -345,25 +422,32 @@ type UnifiedActivityManager() =
 
         match storage.AddActivity(activity) with
         | Result.Ok() ->
-            // UI更新
+            // 活動表示用にフォーマットしてUI更新
             let activities = storage.GetActivities()
 
-            match uiUpdater.UpdateDisplay(activities) with
-            | Result.Ok() ->
-                let messagePreview =
-                    if activity.Message.Length > 50 then
-                        activity.Message.[..50] + "..."
-                    else
-                        activity.Message
+            match validator.ValidateActivities(activities) with
+            | Result.Ok validActivities ->
+                let displayText = formatter.FormatActivitiesForDisplay(validActivities)
 
-                logDebug
-                    "UnifiedActivityView"
-                    $"Activity added: {activity.AgentId} - {activity.ActivityType} - {messagePreview}"
+                match uiUpdater.UpdateText(displayText) with
+                | Result.Ok() ->
+                    let messagePreview =
+                        if activity.Message.Length > 50 then
+                            activity.Message.[..50] + "..."
+                        else
+                            activity.Message
 
-                Result.Ok()
-            | Result.Error uiError ->
-                logWarning "UnifiedActivityView" $"UI update failed: {uiError}"
-                Result.Ok() // データ追加は成功したので、UIエラーは警告のみ
+                    logDebug
+                        "UnifiedActivityView"
+                        $"Activity added: {activity.AgentId} - {activity.ActivityType} - {messagePreview}"
+
+                    Result.Ok()
+                | Result.Error uiError ->
+                    logWarning "UnifiedActivityView" $"UI update failed: {uiError}"
+                    Result.Ok() // データ追加は成功したので、UIエラーは警告のみ
+            | Result.Error validationError ->
+                logWarning "UnifiedActivityView" $"Activity validation failed: {validationError}"
+                Result.Ok() // データ追加は成功
         | Result.Error storageError ->
             logError "UnifiedActivityView" $"Storage error: {storageError}"
             Result.Error storageError
@@ -427,8 +511,9 @@ type UnifiedActivityManager() =
         try
             storage.Clear()
             let activities = storage.GetActivities()
+            let displayText = formatter.FormatActivitiesForDisplay(activities)
 
-            match uiUpdater.UpdateDisplay(activities) with
+            match uiUpdater.UpdateText(displayText) with
             | Result.Ok() ->
                 logInfo "UnifiedActivityView" "All activities cleared"
                 Result.Ok()

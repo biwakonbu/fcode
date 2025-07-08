@@ -372,12 +372,12 @@ type UnifiedActivityManager
 
     /// デフォルトコンストラクタ (既存互換性維持)
     new() =
-        let transformer = new ActivityTransformer() :> IActivityTransformer
+        let transformer = ActivityTransformer() :> IActivityTransformer
         let storage = new ActivityStorage() :> IActivityStorage
         let uiUpdater = new ActivityUIUpdater() :> IUIUpdater
-        let formatter = new ActivityFormatter() :> IActivityFormatter
-        let validator = new ActivityValidator() :> IActivityValidator
-        UnifiedActivityManager(transformer, storage, uiUpdater, formatter, validator)
+        let formatter = ActivityFormatter() :> IActivityFormatter
+        let validator = ActivityValidator() :> IActivityValidator
+        new UnifiedActivityManager(transformer, storage, uiUpdater, formatter, validator)
 
     /// 会話ペインTextView設定
     member this.SetConversationTextView(textView: TextView) =

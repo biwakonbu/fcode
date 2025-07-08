@@ -15,6 +15,7 @@ open FCode.EscalationNotificationUI
 open FCode.ProgressDashboard
 open FCode.RealtimeUIIntegration
 open FCode.FullWorkflowCoordinator
+open FCode.SimpleMemoryMonitor
 
 [<EntryPoint>]
 let main argv =
@@ -22,6 +23,11 @@ let main argv =
         logInfo "Application" "=== fcode TUI Application Starting ==="
         let argsString = System.String.Join(" ", argv)
         logInfo "Application" $"Command line args: {argsString}"
+
+        // 軽量メモリ監視初期化
+        let initialMemoryReport = getMemoryReport ()
+        logInfo "MemoryMonitor" $"起動時メモリ状態: {initialMemoryReport}"
+
 
         // Check if running in CI environment
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
@@ -562,8 +568,11 @@ let main argv =
             // 3. ユーザー体験: 手動起動の手間を省き、即座に開発開始可能
             // 4. テスト結果: 399テストケース全成功、自動起動での異常なし
             setupDelayedAutoStart ()
+
+
             Application.Run(top)
             logInfo "Application" "TUI application loop ended"
+
 
             // Cleanup
             logInfo "Application" "Cleaning up sessions"

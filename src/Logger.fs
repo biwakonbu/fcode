@@ -96,10 +96,29 @@ type Logger(?sanitizerFunction: string -> string) =
             let fullMessage = sanitizedMessage + " - Exception: Unknown exception occurred"
             this.Log(Error, category, fullMessage)
         | Some ex ->
+            // 例外メッセージと内部例外メッセージも含めて徹底的にサニタイズ
             let sanitizedExceptionMessage =
                 match sanitizerFunction with
-                | Some sanitizer -> sanitizer ex.Message
+                | Some sanitizer ->
+                    let baseMessage = sanitizer ex.Message
+                    // 内部例外があれば、それもサニタイズ
+                    match ex.InnerException with
+                    | null -> baseMessage
+                    | innerEx -> baseMessage + " - Inner: " + sanitizer innerEx.Message
                 | None -> ex.Message
+
+            // スタックトレースからも機密情報を除去
+            let sanitizedStackTrace =
+                match sanitizerFunction with
+                | Some sanitizer when not (String.IsNullOrEmpty(ex.StackTrace)) ->
+                    let stackLines =
+                        ex.StackTrace.Split([| '\n'; '\r' |], StringSplitOptions.RemoveEmptyEntries)
+
+                    let sanitizedLines =
+                        stackLines |> Array.map sanitizer |> Array.take (min 3 stackLines.Length) // 最大3行に制限
+
+                    String.Join(" | ", sanitizedLines)
+                | _ -> "[STACK_TRACE_REDACTED]"
 
             let fullMessage =
                 sanitizedMessage

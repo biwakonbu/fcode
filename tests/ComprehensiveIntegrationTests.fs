@@ -9,6 +9,7 @@ open FCode.ProgressDashboard
 open FCode.EscalationNotificationUI
 open FCode.DecisionTimelineView
 open FCode.AgentMessaging
+open FCode.Tests.SOLIDDesignTests.ResultAssert
 
 // ===============================================
 // 包括的統合テストスイート
@@ -31,23 +32,13 @@ type ComprehensiveIntegrationTestSuite() =
             let initResult =
                 activityManager.AddSystemActivity("system", SystemMessage, "System integration test started")
 
-            Assert.That(
-                initResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false
-            )
+            assertIsOk initResult
 
             // 2. 進捗メトリクス作成
             let metricResult =
                 progressManager.CreateMetric(TaskCompletion, "Integration Test Progress", 25.0, 100.0, "%")
 
-            Assert.That(
-                metricResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false
-            )
+            assertIsOk metricResult
 
             // 3. エスカレーション通知作成
             let escalationId =
@@ -110,22 +101,12 @@ type ComprehensiveIntegrationTestSuite() =
             // 1. 活動として処理
             let activityResult = activityManager.AddActivityFromMessage(testMessage)
 
-            Assert.That(
-                activityResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false
-            )
+            assertIsOk activityResult
 
             // 2. 進捗データとして処理
             let progressResult = progressManager.ProcessProgressMessage(testMessage)
 
-            Assert.That(
-                progressResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false
-            )
+            assertIsOk progressResult
 
             // 結果検証
             Assert.AreEqual(1, activityManager.GetActivityCount())

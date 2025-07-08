@@ -9,6 +9,22 @@ open FCode.ProgressDashboard
 open FCode.AgentMessaging
 
 // ===============================================
+// テストヘルパー関数
+// ===============================================
+
+/// Result型のアサーションヘルパー関数
+module ResultAssert =
+    let assertIsOk (result: Result<'T, 'E>) =
+        match result with
+        | Result.Ok _ -> Assert.IsTrue(true)
+        | Result.Error err -> Assert.Fail($"Expected Ok but got Error: {err}")
+
+    let assertIsError (result: Result<'T, 'E>) =
+        match result with
+        | Result.Error _ -> Assert.IsTrue(true)
+        | Result.Ok value -> Assert.Fail($"Expected Error but got Ok: {value}")
+
+// ===============================================
 // SOLID設計原則テストスイート
 // ===============================================
 
@@ -42,11 +58,7 @@ type SOLIDDesignTestSuite() =
         let result = manager.AddActivityFromMessage(message)
 
         // Assert
-        Assert.IsTrue(
-            match result with
-            | Result.Ok _ -> true
-            | _ -> false
-        )
+        ResultAssert.assertIsOk result
 
         Assert.AreEqual(1, manager.GetActivityCount())
 

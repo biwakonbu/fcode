@@ -8,6 +8,7 @@ open FCode.ProgressDashboard
 open FCode.EscalationNotificationUI
 open FCode.DecisionTimelineView
 open FCode.AgentMessaging
+open FCode.Tests.SOLIDDesignTests.ResultAssert
 
 // ===============================================
 // CI環境互換性テストスイート
@@ -31,12 +32,7 @@ type CICompatibilityTestSuite() =
             let result =
                 activityManager.AddSystemActivity("ci-test", SystemMessage, "CI compatibility test")
 
-            Assert.That(
-                result
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false
-            )
+            assertIsOk result
 
             Assert.AreEqual(1, activityManager.GetActivityCount())
 
@@ -57,12 +53,7 @@ type CICompatibilityTestSuite() =
             let metricResult =
                 progressManager.CreateMetric(TaskCompletion, "CI Test Metric", 75.0, 100.0, "%")
 
-            Assert.That(
-                metricResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false
-            )
+            assertIsOk metricResult
 
             Assert.AreEqual(1, progressManager.GetMetricCount())
 

@@ -128,26 +128,42 @@ type SimpleSecurityTests() =
     [<Test>]
     [<Category("Unit")>]
     member this.``ホームディレクトリパス情報サニタイズテスト詳細``() =
-        // ホームディレクトリパスのテスト
+        // ホームディレクトリパスのテスト（UnixとWindows）
         let homePathTestCases =
-            [ "Configuration file loaded from /home/alice/.config/app/settings.json"
+            [ // Unix形式
+              "Configuration file loaded from /home/alice/.config/app/settings.json"
               "Backup created at /home/bob/Documents/backups/database_20241201.sql"
               "Log file: /home/charlie/workspace/project/logs/application.log"
               "SSH key found at /home/devuser/.ssh/id_rsa"
-              "Profile directory: /home/testuser/Desktop/profiles/production.profile" ]
+              "Profile directory: /home/testuser/Desktop/profiles/production.profile"
+              // Windows形式
+              "Configuration file loaded from C:\\Users\\alice\\.config\\app\\settings.json"
+              "Backup created at C:\\Users\\bob\\Documents\\backups\\database_20241201.sql"
+              "Log file: C:\\Users\\charlie\\workspace\\project\\logs\\application.log"
+              "SSH key found at C:\\Users\\devuser\\.ssh\\id_rsa"
+              "Profile directory: C:\\Users\\testuser\\Desktop\\profiles\\production.profile" ]
 
         for pathString in homePathTestCases do
             let sanitized = FCode.SecurityUtils.sanitizeLogMessage pathString
 
-            // ユーザー名が除去されていることを確認
-            Assert.IsFalse(sanitized.Contains("/home/alice"), "ユーザー名aliceが残存しています")
-            Assert.IsFalse(sanitized.Contains("/home/bob"), "ユーザー名bobが残存しています")
-            Assert.IsFalse(sanitized.Contains("/home/charlie"), "ユーザー名charlieが残存しています")
-            Assert.IsFalse(sanitized.Contains("/home/devuser"), "ユーザー名devuserが残存しています")
-            Assert.IsFalse(sanitized.Contains("/home/testuser"), "ユーザー名testuserが残存しています")
+            // ユーザー名が除去されていることを確認（UnixとWindows両方）
+            Assert.IsFalse(sanitized.Contains("/home/alice"), "Unix ユーザー名aliceが残存しています")
+            Assert.IsFalse(sanitized.Contains("/home/bob"), "Unix ユーザー名bobが残存しています")
+            Assert.IsFalse(sanitized.Contains("/home/charlie"), "Unix ユーザー名charlieが残存しています")
+            Assert.IsFalse(sanitized.Contains("/home/devuser"), "Unix ユーザー名devuserが残存しています")
+            Assert.IsFalse(sanitized.Contains("/home/testuser"), "Unix ユーザー名testuserが残存しています")
 
-            // 適切な置換が行われていることを確認
-            Assert.IsTrue(sanitized.Contains("/home/[USER]"), "ホームディレクトリが適切に置換されていません")
+            Assert.IsFalse(sanitized.Contains("C:\\Users\\alice"), "Windows ユーザー名aliceが残存しています")
+            Assert.IsFalse(sanitized.Contains("C:\\Users\\bob"), "Windows ユーザー名bobが残存しています")
+            Assert.IsFalse(sanitized.Contains("C:\\Users\\charlie"), "Windows ユーザー名charlieが残存しています")
+            Assert.IsFalse(sanitized.Contains("C:\\Users\\devuser"), "Windows ユーザー名devuserが残存しています")
+            Assert.IsFalse(sanitized.Contains("C:\\Users\\testuser"), "Windows ユーザー名testuserが残存しています")
+
+            // 適切な置換が行われていることを確認（パスに応じて判定）
+            if pathString.Contains("/home/") then
+                Assert.IsTrue(sanitized.Contains("/home/[USER]"), "Unixホームディレクトリが適切に置換されていません")
+            elif pathString.Contains("C:\\Users\\") then
+                Assert.IsTrue(sanitized.Contains("C:\\Users\\[USER]"), "Windowsユーザーディレクトリが適切に置換されていません")
 
     [<Test>]
     [<Category("Unit")>]
@@ -355,21 +371,34 @@ Stack trace: at Application.ProcessPayment(String cardNumber) in /src/Payment.cs
     [<Test>]
     [<Category("Unit")>]
     member this.``ホームディレクトリパスサニタイズテスト``() =
-        // ホームディレクトリパスのテスト
+        // ホームディレクトリパスのテスト（UnixとWindows）
         let testMessages =
-            [ "File saved to /home/alice/documents/secret.txt"
+            [ // Unix形式
+              "File saved to /home/alice/documents/secret.txt"
               "Error reading /home/bob/config/.env file"
-              "Processing /home/charlie/workspace/project/data.json" ]
+              "Processing /home/charlie/workspace/project/data.json"
+              // Windows形式
+              "File saved to C:\\Users\\alice\\documents\\secret.txt"
+              "Error reading C:\\Users\\bob\\config\\.env file"
+              "Processing C:\\Users\\charlie\\workspace\\project\\data.json" ]
 
         testMessages
         |> List.iter (fun message ->
             let sanitized = FCode.SecurityUtils.sanitizeLogMessage message
 
-            // ホームディレクトリのユーザー名が除去されていることを確認
-            Assert.IsFalse(sanitized.Contains("/home/alice"), "ユーザー名aliceが除去されていません")
-            Assert.IsFalse(sanitized.Contains("/home/bob"), "ユーザー名bobが除去されていません")
-            Assert.IsFalse(sanitized.Contains("/home/charlie"), "ユーザー名charlieが除去されていません")
-            Assert.IsTrue(sanitized.Contains("/home/[USER]"), "ホームディレクトリが適切に置換されていません"))
+            // ホームディレクトリのユーザー名が除去されていることを確認（UnixとWindows）
+            Assert.IsFalse(sanitized.Contains("/home/alice"), "Unix ユーザー名aliceが除去されていません")
+            Assert.IsFalse(sanitized.Contains("/home/bob"), "Unix ユーザー名bobが除去されていません")
+            Assert.IsFalse(sanitized.Contains("/home/charlie"), "Unix ユーザー名charlieが除去されていません")
+            Assert.IsFalse(sanitized.Contains("C:\\Users\\alice"), "Windows ユーザー名aliceが除去されていません")
+            Assert.IsFalse(sanitized.Contains("C:\\Users\\bob"), "Windows ユーザー名bobが除去されていません")
+            Assert.IsFalse(sanitized.Contains("C:\\Users\\charlie"), "Windows ユーザー名charlieが除去されていません")
+
+            // 適切な置換が行われていることを確認（パスに応じて判定）
+            if message.Contains("/home/") then
+                Assert.IsTrue(sanitized.Contains("/home/[USER]"), "Unixホームディレクトリが適切に置換されていません")
+            elif message.Contains("C:\\Users\\") then
+                Assert.IsTrue(sanitized.Contains("C:\\Users\\[USER]"), "Windowsユーザーディレクトリが適切に置換されていません"))
 
     [<Test>]
     [<Category("Unit")>]

@@ -351,7 +351,9 @@ module SecurityUtils =
                       Regex(@"postgresql://[^@]+:[^@]+@[^/]+/[^\s]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
                       "redis_url",
                       Regex(@"redis://[^@]+:[^@]+@[^/]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
-                      "home_path", Regex(@"/home/[^/\s]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "unix_home_path", Regex(@"/home/[^/\s]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "windows_user_path",
+                      Regex(@"C:\\Users\\[^\\]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
                       "stack_trace",
                       Regex(
                           @"at [^\r\n]+\.[^\r\n]+\([^\r\n]*\)[^\r\n]*",
@@ -389,8 +391,9 @@ module SecurityUtils =
             sanitized <- patterns.["postgresql_url"].Replace(sanitized, "postgresql://[REDACTED]")
             sanitized <- patterns.["redis_url"].Replace(sanitized, "redis://[REDACTED]")
 
-            // Home directory paths
-            sanitized <- patterns.["home_path"].Replace(sanitized, "/home/[USER]")
+            // Home directory paths (Unix and Windows)
+            sanitized <- patterns.["unix_home_path"].Replace(sanitized, "/home/[USER]")
+            sanitized <- patterns.["windows_user_path"].Replace(sanitized, "C:\\Users\\[USER]")
 
             // Stack trace information
             sanitized <- patterns.["stack_trace"].Replace(sanitized, "at [STACK_TRACE]")

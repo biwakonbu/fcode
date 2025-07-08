@@ -203,3 +203,50 @@ type SecurityUtilsFalsePositiveTests() =
             elif message.Contains("Password=sqlpass123") then
                 Assert.IsFalse(sanitized.Contains("Password=sqlpass123"), $"SQL Server接続文字列が削除されていません: {sanitized}")
                 Assert.IsTrue(sanitized.Contains("PASSWORD=[REDACTED]"), $"SQL Server接続文字列が適切に置換されていません: {sanitized}")
+
+    [<Test>]
+    [<Category("Unit")>]
+    member this.``WindowsユーザーディレクトリパスがUnixパスと共に適切にサニタイズされることを確認``() =
+        // WindowsとUnixの両方のホームディレクトリパステスト
+        let testCases =
+            [ // Unix形式
+              ("Log file saved to /home/alice/.config/app.log", "Log file saved to /home/[USER]/.config/app.log")
+              ("Config loaded from /home/bob/Documents/settings.json",
+               "Config loaded from /home/[USER]/Documents/settings.json")
+              ("Error in /home/charlie/.ssh/id_rsa", "Error in /home/[USER]/.ssh/id_rsa")
+              // Windows形式
+              ("Log file saved to C:\\Users\\alice\\.config\\app.log",
+               "Log file saved to C:\\Users\\[USER]\\.config\\app.log")
+              ("Config loaded from C:\\Users\\bob\\Documents\\settings.json",
+               "Config loaded from C:\\Users\\[USER]\\Documents\\settings.json")
+              ("Error in C:\\Users\\charlie\\.ssh\\id_rsa", "Error in C:\\Users\\[USER]\\.ssh\\id_rsa")
+              // 混合形式
+              ("Sync from /home/alice to C:\\Users\\bob\\backup", "Sync from /home/[USER] to C:\\Users\\[USER]\\backup") ]
+
+        for (message, expected) in testCases do
+            let sanitized = FCode.SecurityUtils.sanitizeLogMessage message
+
+            // 期待される結果になっていることを確認
+            Assert.AreEqual(expected, sanitized, $"ホームディレクトリパスのサニタイズが期待通りでない: {message} -> {sanitized}")
+
+            // 元のユーザー名が削除されていることを確認
+            Assert.IsFalse(sanitized.Contains("alice"), $"ユーザー名'alice'が残存: {sanitized}")
+            Assert.IsFalse(sanitized.Contains("bob"), $"ユーザー名'bob'が残存: {sanitized}")
+            Assert.IsFalse(sanitized.Contains("charlie"), $"ユーザー名'charlie'が残存: {sanitized}")
+
+    [<Test>]
+    [<Category("Unit")>]
+    member this.``Windowsシステムパスが誤ってサニタイズされないことを確認``() =
+        // Windowsのシステムディレクトリは保持されるべき
+        let systemPaths =
+            [ "C:\\Windows\\System32\\drivers\\etc\\hosts"
+              "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
+              "C:\\ProgramData\\Microsoft\\Windows\\Start Menu"
+              "D:\\Data\\projects\\myapp\\bin\\Release"
+              "E:\\Backup\\system\\registry.bak" ]
+
+        for path in systemPaths do
+            let sanitized = FCode.SecurityUtils.sanitizeLogMessage path
+
+            // システムパスは変更されないべき
+            Assert.AreEqual(path, sanitized, $"システムパスが誤って変更された: {path} -> {sanitized}")

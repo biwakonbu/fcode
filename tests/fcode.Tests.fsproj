@@ -43,6 +43,7 @@
     <!-- <Compile Include="SecurityUtilsTests.fs"/> CodeRabbit指摘：Exception option対応が必要。SecurityUtils.sanitizeLogMessage統合後に再有効化予定 -->
     <Compile Include="SecurityUtilsFalsePositiveTests.fs"/>
     <Compile Include="SimpleSecurityTests.fs"/>
+    <Compile Include="UISecurityManagerSimpleTests.fs"/>
     <Compile Include="ErrorHandlingTests.fs"/>
     <Compile Include="ConcurrencyTests.fs"/>
     <Compile Include="RealtimeCollaborationTests.fs"/>

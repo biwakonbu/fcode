@@ -7,6 +7,7 @@ open System.Threading.Tasks
 open System.Text
 open Terminal.Gui
 open FCode.Logger
+open FCode.PrototypeMessages
 open FCode.QAPromptManager
 open FCode.UXPromptManager
 open FCode.PMPromptManager
@@ -254,25 +255,47 @@ type SessionManager() =
 
                 match findClaudePath () with
                 | None ->
-                    let currentPath =
-                        System.Environment.GetEnvironmentVariable("PATH")
-                        |> Option.ofObj
-                        |> Option.defaultValue "不明"
+                    // Claude CLIが見つからない場合はプロトタイプ実装を使用
+                    logWarning "SessionManager" "Claude CLI not found, using prototype mode"
 
-                    let errorMsg =
-                        "[ERROR] Claude CLI が見つかりません。\n"
-                        + "以下のいずれかでインストールしてください:\n"
-                        + "• curl -fsSL https://claude.ai/cli.sh | sh\n"
-                        + "• npm install -g @anthropic-ai/claude-cli\n"
-                        + $"• PATH環境変数の確認: {currentPath}\n"
-                        + $"• 作業ディレクトリ: {workingDir}"
+                    // FC-005: ペインロール情報を環境変数で設定
+                    let role =
+                        match paneId with
+                        | id when id.StartsWith("dev") -> "dev"
+                        | id when id.StartsWith("qa") -> "qa"
+                        | "ux" -> "ux"
+                        | "pm" -> "pm"
+                        | _ -> "unknown"
 
-                    logError "SessionManager" errorMsg |> ignore
-                    outputView.Text <- errorMsg
+                    let buffer = StringBuilder()
+                    let config = UIUpdateDefaults.loadFromEnvironment ()
+                    let bufferState = ref BufferState.initial
+
+                    // プロトタイプセッション作成
+                    let session =
+                        { Process = None
+                          PaneId = paneId
+                          WorkingDirectory = workingDir
+                          IsActive = true
+                          OutputView = Some outputView
+                          OutputBuffer = buffer }
+
+                    sessions <- sessions.Add(paneId, session)
+
+                    // プロトタイプ初期メッセージ表示（外部化）
+                    let standardMessages = InitialMessages.getStandardMessages paneId workingDir role
+                    let usageInstructions = InitialMessages.getUsageInstructions ()
+                    let roleResponse = RoleMessages.getRoleResponse paneId
+
+                    let allMessages = standardMessages @ [ roleResponse; "" ] @ usageInstructions
+                    allMessages |> List.iter (buffer.AppendLine >> ignore)
+
+                    outputView.Text <- buffer.ToString()
                     outputView.SetNeedsDisplay()
                     Application.Refresh()
 
-                    false
+                    logInfo "SessionManager" $"Prototype session created for pane: {paneId}"
+                    true
                 | Some claudePath ->
                     logDebug "SessionManager" $"Creating ProcessStartInfo for pane: {paneId}"
                     let startInfo = ProcessStartInfo()
@@ -570,13 +593,35 @@ type SessionManager() =
                 with ex ->
                     logException "SessionManager" $"Failed to send input to pane: {paneId}" ex
                     false
+            | None ->
+                // プロトタイプモード: 疑似応答生成
+                try
+                    session.OutputBuffer.AppendLine($"> {input}") |> ignore
+
+                    // 疑似応答生成（外部化）
+                    let response = ResponseGeneration.generatePrototypeResponse input paneId
+
+                    let timestamp = DateTime.Now.ToString("HH:mm:ss")
+                    session.OutputBuffer.AppendLine($"[{timestamp}] {response}") |> ignore
+                    session.OutputBuffer.AppendLine("") |> ignore
+
+                    match session.OutputView with
+                    | Some outputView ->
+                        outputView.Text <- session.OutputBuffer.ToString()
+                        outputView.SetNeedsDisplay()
+                        Application.Refresh()
+                    | None -> ()
+
+                    logDebug "SessionManager" $"Prototype response sent to pane: {paneId}"
+                    true
+                with ex ->
+                    logException "SessionManager" $"Failed to send prototype input to pane: {paneId}" ex
+                    false
             | _ ->
                 logWarning "SessionManager" $"Process not available for input to pane: {paneId}"
-
                 false
         | _ ->
             logWarning "SessionManager" $"No active session for input to pane: {paneId}"
-
             false
 
     member _.IsSessionActive(paneId: string) =

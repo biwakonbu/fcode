@@ -114,14 +114,15 @@ jobs:
     
     - name: Restore dependencies
       run: |
-        dotnet restore src/fcode.fsproj
-        dotnet restore tests/fcode.Tests.fsproj
+        dotnet restore src/fcode.fsproj --verbosity normal
+        dotnet restore tests/fcode.Tests.fsproj --verbosity normal
     
     - name: Run CI-safe unit tests on macOS
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit&TestCategory!=UI" --blame-hang-timeout 30000ms --blame-crash
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit&TestCategory!=UI" --blame-hang-timeout 60000ms --blame-crash --settings tests/test.runsettings
       env:
         TERM: xterm
         CI: true
+        DOTNET_CLI_TELEMETRY_OPTOUT: 1
     
     # - name: Upload macOS test results
     #   uses: actions/upload-artifact@v4

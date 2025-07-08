@@ -15,7 +15,7 @@ open FCode.EscalationNotificationUI
 open FCode.ProgressDashboard
 open FCode.RealtimeUIIntegration
 open FCode.FullWorkflowCoordinator
-open FCode.AdvancedPerformanceOptimizer
+open FCode.SimpleMemoryMonitor
 
 [<EntryPoint>]
 let main argv =
@@ -24,15 +24,10 @@ let main argv =
         let argsString = System.String.Join(" ", argv)
         logInfo "Application" $"Command line args: {argsString}"
 
-        // FC-021: 実用性最適化システム初期化
-        logInfo "PerformanceOptimization" "FC-021 実用性最適化システム開始"
-        let optimizationResult = productionOptimizationManager.RunProductionOptimization()
+        // 軽量メモリ監視初期化
+        let initialMemoryReport = getMemoryReport ()
+        logInfo "MemoryMonitor" $"起動時メモリ状態: {initialMemoryReport}"
 
-        match optimizationResult with
-        | FCode.InputValidation.Valid report -> logInfo "PerformanceOptimization" $"初期最適化完了: {report}"
-        | FCode.InputValidation.Invalid issues ->
-            let issuesStr = String.concat ", " issues
-            logWarning "PerformanceOptimization" $"初期最適化課題: {issuesStr}"
 
         // Check if running in CI environment
         let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
@@ -574,44 +569,10 @@ let main argv =
             // 4. テスト結果: 399テストケース全成功、自動起動での異常なし
             setupDelayedAutoStart ()
 
-            // FC-021: 定期パフォーマンス監視開始
-            let performanceTimer = new System.Timers.Timer(300000.0) // 5分間隔
-
-            performanceTimer.Elapsed.Add(fun _ ->
-                try
-                    let diagnosticReport =
-                        productionOptimizationManager.GenerateComprehensiveDiagnostic()
-
-                    logInfo "PerformanceMonitor" "定期診断実行完了"
-                    logDebug "PerformanceMonitor" diagnosticReport
-
-                    // メモリ使用量チェック
-                    let currentMemory =
-                        System.Diagnostics.Process.GetCurrentProcess().WorkingSet64 / (1024L * 1024L)
-
-                    if currentMemory > 500L then
-                        logWarning "PerformanceMonitor" $"メモリ使用量警告: {currentMemory}MB > 500MB"
-                        let emergencyResult = productionOptimizationManager.EmergencyOptimization()
-                        logInfo "PerformanceMonitor" emergencyResult
-                with ex ->
-                    logError "PerformanceMonitor" $"定期監視エラー: {ex.Message}")
-
-            performanceTimer.Start()
-            logInfo "PerformanceOptimization" "定期パフォーマンス監視開始（5分間隔）"
 
             Application.Run(top)
             logInfo "Application" "TUI application loop ended"
 
-            // FC-021: パフォーマンス監視停止
-            performanceTimer.Stop()
-            performanceTimer.Dispose()
-
-            // 最終診断レポート生成
-            let finalDiagnostic =
-                productionOptimizationManager.GenerateComprehensiveDiagnostic()
-
-            logInfo "PerformanceOptimization" "最終パフォーマンス診断:"
-            logInfo "PerformanceOptimization" finalDiagnostic
 
             // Cleanup
             logInfo "Application" "Cleaning up sessions"

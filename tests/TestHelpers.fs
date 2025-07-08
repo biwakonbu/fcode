@@ -2,6 +2,7 @@ module FCode.Tests.TestHelpers
 
 open Terminal.Gui
 open FCode.ColorSchemes
+open fcode
 
 // MockFrameView: CI環境でのTerminal.Gui完全代替実装
 type MockFrameView(title: string) =
@@ -26,6 +27,30 @@ type MockFrameView(title: string) =
                 this.ColorScheme <- v
 
         member this.Title = this.Title
+
+// MockTextView: UI依存分離テスト用実装
+type MockTextView() =
+    member val Text = "" with get, set
+    member val DisplayUpdateCount = 0 with get, set
+
+    member this.SetNeedsDisplay() =
+        this.DisplayUpdateCount <- this.DisplayUpdateCount + 1
+
+    interface IUpdatableView with
+        member this.Text
+            with get () = this.Text
+            and set (value) = this.Text <- value
+
+        member this.SetNeedsDisplay() = this.SetNeedsDisplay()
+
+// Terminal.GuiのTextView用ラッパー
+type TextViewWrapper(textView: TextView) =
+    interface IUpdatableView with
+        member _.Text
+            with get () = textView.Text.ToString()
+            and set (value) = textView.Text <- value
+
+        member _.SetNeedsDisplay() = textView.SetNeedsDisplay()
 
 // テスト用のFrameViewラッパー（下位互換性維持）
 type TestFrameView(title: string) =

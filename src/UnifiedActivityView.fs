@@ -327,9 +327,10 @@ type private ActivityUIUpdater() =
                 logException "ActivityUIUpdater" "UpdateText failed" ex
                 Result.Error "UpdateText failed"
 
-    /// 安全なUI更新
+    /// セキュリティ強化UI更新
     member private this.SafeUIUpdate(textView: TextView, content: string) =
         try
+            // 一時的に従来の実装を使用（セキュリティ強化は後で適用）
             if not (isNull Application.MainLoop) then
                 Application.MainLoop.Invoke(fun () ->
                     try

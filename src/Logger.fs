@@ -10,7 +10,7 @@ type LogLevel =
     | Warning
     | Error
 
-type Logger() =
+type Logger(?sanitizerFunction: string -> string) =
     let logDir = Path.Combine(Path.GetTempPath(), "fcode-logs")
 
     let logFile =
@@ -46,23 +46,38 @@ type Logger() =
                     | Warning -> "WARN"
                     | Error -> "ERROR"
 
-                let logLine = "[" + timestamp + "] [" + levelStr + "] [" + category + "] " + message
+                // ログメッセージから機密情報を除去
+                let sanitizedMessage =
+                    match sanitizerFunction with
+                    | Some sanitizer -> sanitizer message
+                    | None -> message
+
+                let logLine =
+                    "[" + timestamp + "] [" + levelStr + "] [" + category + "] " + sanitizedMessage
+
                 File.AppendAllText(logFile, logLine + Environment.NewLine)
 
                 // 重要なエラーはコンソールにも出力
                 if level = Error then
                     Console.WriteLine(logLine)
             with ex ->
-                // ログ出力でエラーが発生した場合はコンソールのみに出力
+                // ログ出力でエラーが発生した場合はコンソールのみに出力（機密情報除去）
+                let sanitizedMessage =
+                    match sanitizerFunction with
+                    | Some sanitizer -> sanitizer message
+                    | None -> message
+
+                let sanitizedExceptionType = ex.GetType().Name
+
                 Console.WriteLine(
                     "LOG ERROR: "
-                    + ex.Message
+                    + sanitizedExceptionType
                     + " - Original: ["
                     + level.ToString()
                     + "] ["
                     + category
                     + "] "
-                    + message
+                    + sanitizedMessage
                 ))
 
     member this.Debug(category: string, message: string) = this.Log(Debug, category, message)
@@ -70,18 +85,39 @@ type Logger() =
     member this.Warning(category: string, message: string) = this.Log(Warning, category, message)
     member this.Error(category: string, message: string) = this.Log(Error, category, message)
 
-    member this.Exception(category: string, message: string, ex: Exception) =
-        let fullMessage =
-            message + " - Exception: " + ex.Message + " - StackTrace: " + ex.StackTrace
+    member this.Exception(category: string, message: string, ex: Exception option) =
+        let sanitizedMessage =
+            match sanitizerFunction with
+            | Some sanitizer -> sanitizer message
+            | None -> message
 
-        this.Log(Error, category, fullMessage)
+        match ex with
+        | None ->
+            let fullMessage = sanitizedMessage + " - Exception: Unknown exception occurred"
+            this.Log(Error, category, fullMessage)
+        | Some ex ->
+            let sanitizedExceptionMessage =
+                match sanitizerFunction with
+                | Some sanitizer -> sanitizer ex.Message
+                | None -> ex.Message
 
-// グローバルロガーインスタンス
-let logger = Logger()
+            let fullMessage =
+                sanitizedMessage
+                + " - Exception: "
+                + sanitizedExceptionMessage
+                + " - Type: "
+                + ex.GetType().Name
+
+            this.Log(Error, category, fullMessage)
+
+// グローバルロガーインスタンス（セキュリティ機能付き）
+let logger = Logger(SecurityUtils.sanitizeLogMessage)
 
 // 便利な関数
 let logDebug category message = logger.Debug(category, message)
 let logInfo category message = logger.Info(category, message)
 let logWarning category message = logger.Warning(category, message)
 let logError category message = logger.Error(category, message)
-let logException category message ex = logger.Exception(category, message, ex)
+
+let logException category message ex =
+    logger.Exception(category, message, Some ex)

@@ -13,18 +13,31 @@ module SecurityUtils =
         | SecurityOk of 'T
         | SecurityError of string
 
-    /// 機密情報として扱う環境変数のパターン
-    let private sensitiveEnvPatterns =
-        [ Regex(@".*API_?KEY.*", RegexOptions.IgnoreCase)
-          Regex(@".*SECRET.*", RegexOptions.IgnoreCase)
-          Regex(@".*PASSWORD.*", RegexOptions.IgnoreCase)
-          Regex(@".*TOKEN.*", RegexOptions.IgnoreCase)
-          Regex(@".*PRIVATE.*", RegexOptions.IgnoreCase)
-          Regex(@".*CREDENTIAL.*", RegexOptions.IgnoreCase)
-          Regex(@".*AUTH.*", RegexOptions.IgnoreCase)
-          Regex(@"JWT.*", RegexOptions.IgnoreCase)
-          Regex(@".*DATABASE_URL.*", RegexOptions.IgnoreCase)
-          Regex(@".*CONNECTION.*", RegexOptions.IgnoreCase) ]
+    /// 機密情報として扱う環境変数のパターン（完全一致）
+    let private sensitiveEnvExactPatterns =
+        [ "API_KEY"
+          "APIKEY"
+          "SECRET"
+          "PASSWORD"
+          "TOKEN"
+          "PRIVATE"
+          "CREDENTIAL"
+          "JWT"
+          "DATABASE_URL" ]
+
+    /// 機密情報として扱う環境変数の接頭辞パターン
+    let private sensitiveEnvPrefixPatterns =
+        [ "API_KEY_"; "SECRET_"; "PASSWORD_"; "TOKEN_"; "PRIVATE_"; "CREDENTIAL_" ]
+
+    /// 機密情報として扱う環境変数の接尾辞パターン
+    let private sensitiveEnvSuffixPatterns =
+        [ "_API_KEY"
+          "_SECRET"
+          "_PASSWORD"
+          "_TOKEN"
+          "_PRIVATE"
+          "_CREDENTIAL"
+          "_AUTH" ]
 
     /// 危険な環境変数として扱うパターン
     let private dangerousEnvPatterns =
@@ -158,8 +171,24 @@ module SecurityUtils =
     let filterSensitiveEnvironment (environment: Map<string, string>) : Map<string, string> =
         environment
         |> Map.filter (fun key value ->
+            let upperKey = key.ToUpper()
+
+            // 完全一致チェック
+            let hasExactMatch =
+                sensitiveEnvExactPatterns |> List.exists (fun pattern -> upperKey = pattern)
+
+            // 接頭辞チェック
+            let hasPrefixMatch =
+                sensitiveEnvPrefixPatterns
+                |> List.exists (fun pattern -> upperKey.StartsWith(pattern))
+
+            // 接尾辞チェック
+            let hasSuffixMatch =
+                sensitiveEnvSuffixPatterns
+                |> List.exists (fun pattern -> upperKey.EndsWith(pattern))
+
             // 機密情報パターンにマッチしないもののみ保持
-            not (sensitiveEnvPatterns |> List.exists (fun pattern -> pattern.IsMatch(key))))
+            not (hasExactMatch || hasPrefixMatch || hasSuffixMatch))
 
     /// 危険な環境変数をフィルタリング
     let filterDangerousEnvironment (environment: Map<string, string>) : Map<string, string> =
@@ -174,36 +203,17 @@ module SecurityUtils =
                     key.ToUpper() = "SHELL"
                     && dangerousCommandPatterns |> List.exists (fun pattern -> pattern.IsMatch(value))
                 then
-                    Logger.logWarning "Security" $"危険なSHELL環境変数を除去: {key}={value}"
+                    // Security Warning: 危険なSHELL環境変数を除去（ログ出力は上位レイヤーで実施）
                     false
                 else if key.ToUpper() = "SHELL" then
                     true // 安全なSHELLは保持
                 else
-                    Logger.logWarning "Security" $"危険な環境変数を除去: {key}"
+                    // Security Warning: 危険な環境変数を除去（ログ出力は上位レイヤーで実施）
                     false
             else
                 true)
 
-    /// 会話履歴から機密情報をフィルタリング
-    let filterSensitiveConversation (conversation: string list) : string list =
-        conversation
-        |> List.map (fun message ->
-            let mutable filteredMessage = message
-
-            // API KEYパターンを検出・置換
-            let apiKeyPattern = Regex(@"sk-[a-zA-Z0-9\-_]{20,}", RegexOptions.IgnoreCase)
-            filteredMessage <- apiKeyPattern.Replace(filteredMessage, "[API_KEY_REDACTED]")
-
-            // トークンパターンを検出・置換
-            let tokenPattern = Regex(@"[a-zA-Z0-9]{32,}", RegexOptions.IgnoreCase)
-            filteredMessage <- tokenPattern.Replace(filteredMessage, "[TOKEN_REDACTED]")
-
-            // パスワードらしき文字列を検出・置換
-            let passwordPattern = Regex(@"password[:\s=]+[^\s]+", RegexOptions.IgnoreCase)
-            filteredMessage <- passwordPattern.Replace(filteredMessage, "password=[REDACTED]")
-
-            filteredMessage)
-
+    /// 会話履歴から機密情報をフィルタリング（最適化版） - sanitizeLogMessageの後に定義
     /// ファイル名の安全性を検証
     let validateFileName (fileName: string) : Result<string, string> =
         if String.IsNullOrEmpty(fileName) then
@@ -256,7 +266,7 @@ module SecurityUtils =
     /// 会話履歴の長さ制限チェック
     let validateConversationLength (conversation: string list) (maxLength: int) : Result<string list, string> =
         if conversation.Length > maxLength then
-            Logger.logWarning "Security" $"会話履歴が制限を超えているため切り詰めます: {conversation.Length} > {maxLength}"
+            // Security Warning: 会話履歴が制限を超えているため切り詰めます（ログ出力は上位レイヤーで実施）
             Ok(conversation |> List.take maxLength)
         else
             Ok conversation
@@ -313,20 +323,89 @@ module SecurityUtils =
         with ex ->
             Error $"セッションセキュリティ検証エラー: {ex.Message}"
 
+    /// 事前コンパイル済み正規表現パターン（パフォーマンス最適化）
+    let private compiledPatterns =
+        lazy
+            (let patterns =
+                dict
+                    [ "openai_api_key",
+                      Regex(@"sk-[a-zA-Z0-9\-_]{20,}", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "github_token",
+                      Regex(@"gh[pousr]_[a-zA-Z0-9]{36}", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "aws_access_key", Regex(@"AKIA[0-9A-Z]{16}", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "jwt_token",
+                      Regex(
+                          @"eyJ[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+",
+                          RegexOptions.Compiled ||| RegexOptions.IgnoreCase
+                      )
+                      "password_field",
+                      Regex(@"password[:\s=]+[^\s]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "connection_string",
+                      Regex(
+                          @"(Server|Host|Data Source)\s*=\s*[^;]+;[^;]*Password\s*=\s*[^;]+;",
+                          RegexOptions.Compiled ||| RegexOptions.IgnoreCase
+                      )
+                      "mongodb_url",
+                      Regex(@"mongodb://[^@]+:[^@]+@[^/]+/[^\s]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "postgresql_url",
+                      Regex(@"postgresql://[^@]+:[^@]+@[^/]+/[^\s]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "redis_url",
+                      Regex(@"redis://[^@]+:[^@]+@[^/]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "unix_home_path", Regex(@"/home/[^/\s]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "windows_user_path",
+                      Regex(@"C:\\Users\\[^\\]+", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+                      "stack_trace",
+                      Regex(
+                          @"at [^\r\n]+\.[^\r\n]+\([^\r\n]*\)[^\r\n]*",
+                          RegexOptions.Compiled ||| RegexOptions.IgnoreCase
+                      ) ]
+
+             patterns)
+
     /// ログメッセージの機密情報除去
     let sanitizeLogMessage (message: string) : string =
-        let mutable sanitized = message
+        if String.IsNullOrEmpty(message) then
+            message
+        else
+            let patterns = compiledPatterns.Value
+            let mutable sanitized = message
 
-        // API KEYを除去
-        let apiKeyPattern = Regex(@"sk-[a-zA-Z0-9\-_]{10,}", RegexOptions.IgnoreCase)
-        sanitized <- apiKeyPattern.Replace(sanitized, "[API_KEY]")
+            // OpenAI API Keys
+            sanitized <- patterns.["openai_api_key"].Replace(sanitized, "[API_KEY]")
 
-        // パスワードらしき情報を除去
-        let passwordPattern = Regex(@"password[:\s=]+[^\s]+", RegexOptions.IgnoreCase)
-        sanitized <- passwordPattern.Replace(sanitized, "password=[REDACTED]")
+            // GitHub Tokens
+            sanitized <- patterns.["github_token"].Replace(sanitized, "[GITHUB_TOKEN]")
 
-        // 長いトークンらしき文字列を除去
-        let tokenPattern = Regex(@"[a-zA-Z0-9]{32,}", RegexOptions.IgnoreCase)
-        sanitized <- tokenPattern.Replace(sanitized, "[TOKEN]")
+            // AWS Access Keys
+            sanitized <- patterns.["aws_access_key"].Replace(sanitized, "[AWS_ACCESS_KEY]")
 
-        sanitized
+            // JWT Tokens
+            sanitized <- patterns.["jwt_token"].Replace(sanitized, "[JWT_TOKEN]")
+
+            // Password fields
+            sanitized <- patterns.["password_field"].Replace(sanitized, "password=[REDACTED]")
+
+            // Database connection strings
+            sanitized <- patterns.["connection_string"].Replace(sanitized, "Database=[REDACTED];")
+            sanitized <- patterns.["mongodb_url"].Replace(sanitized, "mongodb://[REDACTED]")
+            sanitized <- patterns.["postgresql_url"].Replace(sanitized, "postgresql://[REDACTED]")
+            sanitized <- patterns.["redis_url"].Replace(sanitized, "redis://[REDACTED]")
+
+            // Home directory paths (Unix and Windows)
+            sanitized <- patterns.["unix_home_path"].Replace(sanitized, "/home/[USER]")
+            sanitized <- patterns.["windows_user_path"].Replace(sanitized, "C:\\Users\\[USER]")
+
+            // Stack trace information
+            sanitized <- patterns.["stack_trace"].Replace(sanitized, "at [STACK_TRACE]")
+
+            // 機密性の高い環境変数値を除去（環境変数の形式のみに限定）
+            sensitiveEnvExactPatterns
+            |> List.iter (fun pattern ->
+                let envPattern = Regex($@"\b{pattern}[:\s=]+[^\s]+", RegexOptions.IgnoreCase)
+                sanitized <- envPattern.Replace(sanitized, $"{pattern}=[REDACTED]"))
+
+            sanitized
+
+    /// 会話履歴から機密情報をフィルタリング（最適化版）
+    let filterSensitiveConversation (conversation: string list) : string list =
+        conversation |> List.map sanitizeLogMessage

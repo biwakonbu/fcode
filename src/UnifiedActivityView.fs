@@ -163,6 +163,7 @@ type private ActivityStorage() =
     /// パブリックClearメソッド（互換性維持）
     member this.Clear() = (this :> IActivityStorage).Clear()
 
+
     /// リソース解放
     member this.Dispose() =
         if not disposed then
@@ -208,7 +209,7 @@ type private ActivityFormatter() =
                                 let priorityStr = (this :> IActivityFormatter).GetPriorityDisplay(activity.Priority)
 
                                 let messagePreview =
-                                    if isNull activity.Message then
+                                    if isNull activity.Message || String.IsNullOrWhiteSpace(activity.Message) then
                                         "(空メッセージ)"
                                     elif activity.Message.Length > 60 then
                                         activity.Message.[..57] + "..."
@@ -431,7 +432,9 @@ type UnifiedActivityManager
                 match uiUpdater.UpdateText(displayText) with
                 | Result.Ok() ->
                     let messagePreview =
-                        if activity.Message.Length > 50 then
+                        if isNull activity.Message || String.IsNullOrWhiteSpace(activity.Message) then
+                            "(空メッセージ)"
+                        elif activity.Message.Length > 50 then
                             activity.Message.[..50] + "..."
                         else
                             activity.Message

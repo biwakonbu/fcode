@@ -196,4 +196,9 @@ type UISecurityManager private () =
             |> Seq.filter (fun (_, time) -> DateTime.UtcNow.Subtract(time) < TimeSpan.FromMinutes(5.0))
             |> Seq.length
 
-        if recentEvents > 50 then [| "高頻度セキュリティイベント検出" |] else [||]
+        let maxRecentEventsThreshold = 50
+
+        if recentEvents > maxRecentEventsThreshold then
+            [| "高頻度セキュリティイベント検出" |]
+        else
+            [||]

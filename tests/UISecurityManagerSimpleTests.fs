@@ -138,3 +138,49 @@ type UISecurityManagerSimpleTests() =
             | Error msg -> Assert.Fail($"XSS対策テスト失敗: {msg}")
         finally
             System.Environment.SetEnvironmentVariable("CI", null)
+
+    [<Test>]
+    member this.``包括的サニタイゼーション検証テスト``() =
+        // CI環境設定
+        System.Environment.SetEnvironmentVariable("CI", "true")
+
+        try
+            use updater =
+                new SecureUIUpdater(UIPermissionLevel.FullAccess, SecurityLevel.Medium)
+
+            // 包括的な悪意ある入力パターン
+            let maliciousInputs =
+                [| "<script>alert('XSS')</script>"
+                   "<iframe src='javascript:alert(1)'></iframe>"
+                   "javascript:void(0)"
+                   "data:text/html,<script>alert('XSS')</script>"
+                   "vbscript:alert('XSS')"
+                   "onclick=\"alert('XSS')\""
+                   "onload=\"alert('XSS')\""
+                   "<img src=x onerror=alert('XSS')>"
+                   "&<>\"'" |]
+
+            let mockTextView = MockTextView() :> IUpdatableView
+
+            for maliciousInput in maliciousInputs do
+                let result = updater.SecureUpdateUI(mockTextView, maliciousInput)
+
+                match result with
+                | Ok _ ->
+                    // サニタイズ結果検証
+                    Assert.IsFalse(mockTextView.Text.Contains("<script"), $"<script>タグが除去されていない: {maliciousInput}")
+                    Assert.IsFalse(mockTextView.Text.Contains("<iframe"), $"<iframe>タグが除去されていない: {maliciousInput}")
+                    Assert.IsFalse(mockTextView.Text.Contains("javascript:"), $"javascript:が除去されていない: {maliciousInput}")
+                    Assert.IsFalse(mockTextView.Text.Contains("data:"), $"data:が除去されていない: {maliciousInput}")
+                    Assert.IsFalse(mockTextView.Text.Contains("vbscript:"), $"vbscript:が除去されていない: {maliciousInput}")
+                    Assert.IsFalse(mockTextView.Text.Contains("onclick"), $"onclickが除去されていない: {maliciousInput}")
+                    Assert.IsFalse(mockTextView.Text.Contains("onload"), $"onloadが除去されていない: {maliciousInput}")
+                    Assert.IsFalse(mockTextView.Text.Contains("onerror"), $"onerrorが除去されていない: {maliciousInput}")
+                    // HTMLエンティティエンコーディング確認
+                    Assert.IsTrue(
+                        mockTextView.Text.Contains("&lt;") || not (mockTextView.Text.Contains("<")),
+                        "HTMLエンコーディング未実装"
+                    )
+                | Error msg -> Assert.Fail($"サニタイゼーション処理が失敗: {maliciousInput}, エラー: {msg}")
+        finally
+            System.Environment.SetEnvironmentVariable("CI", null)

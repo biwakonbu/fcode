@@ -509,6 +509,9 @@ type ProductionOptimizationManager() =
 /// グローバル実用性最適化管理インスタンス
 let productionOptimizationManager = ProductionOptimizationManager()
 
+/// グローバル高速レスポンス最適化インスタンス
+let globalResponseOptimizer = HighSpeedResponseOptimizer()
+
 /// UI更新最適化実行
 let optimizedUIUpdate (updateAction: unit -> unit) (updateName: string) : bool =
     let uiOptimizer = UIResponseOptimizer()
@@ -516,5 +519,4 @@ let optimizedUIUpdate (updateAction: unit -> unit) (updateName: string) : bool =
 
 /// 高速実行（キャッシュ付き）
 let fastExecute<'T> (operationName: string) (operation: unit -> 'T) : 'T =
-    let responseOptimizer = HighSpeedResponseOptimizer()
-    responseOptimizer.FastCachedExecute(operationName, operation)
+    globalResponseOptimizer.FastCachedExecute(operationName, operation)

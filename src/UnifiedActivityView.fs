@@ -131,7 +131,6 @@ type private ActivityTransformer() =
 type private ActivityStorage() =
     let activities = ConcurrentQueue<UnifiedActivity>()
     let maxActivities = 1000
-    let storageSpinLock = ref 0
     let mutable disposed = false
 
     /// オブジェクトロックを使ったスレッドセーフ操作
@@ -465,7 +464,7 @@ type UnifiedActivityManager
         let metadata = defaultArg metadata Map.empty
 
         let activity =
-            { ActivityId = transformer.GenerateActivityId() // プライベートメンバーは外部クラス追加
+            { ActivityId = transformer.GenerateActivityId() // 活動ID生成
               AgentId = agentId
               ActivityType = activityType
               Message = message

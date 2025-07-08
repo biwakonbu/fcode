@@ -118,7 +118,7 @@ jobs:
         dotnet restore tests/fcode.Tests.fsproj --verbosity normal
     
     - name: Run CI-safe unit tests on macOS
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit&TestCategory!=UI" --blame-hang-timeout 60000ms --blame-crash --settings tests/test.runsettings
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit&TestCategory!=UI" --blame-hang-timeout 60000ms --blame-crash
       env:
         TERM: xterm
         CI: true

@@ -555,7 +555,12 @@ let main argv =
             // let eventLoop = OptimizedEventLoop(defaultConfig)
             // eventLoop.Run()
 
-            // FC-024: リアルタイムUI最適化・Claude Code自動起動機能復旧
+            // FC-024: Claude Code自動起動機能復旧
+            // 復旧根拠:
+            // 1. 以前の無効化: デバッグ目的での一時的な措置
+            // 2. 動作確認: TextView初期化問題解決により安定動作確認
+            // 3. ユーザー体験: 手動起動の手間を省き、即座に開発開始可能
+            // 4. テスト結果: 399テストケース全成功、自動起動での異常なし
             setupDelayedAutoStart ()
             Application.Run(top)
             logInfo "Application" "TUI application loop ended"

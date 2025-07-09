@@ -580,6 +580,232 @@ type IntegratedDevFlowManager() =
                   (Deployment, false)
                   (Monitoring, false) ]
 
+    /// フェーズ1: プランニング・設計検証
+    member private this.ExecutePlanningPhase (projectPath: string) (branchName: string) : bool =
+        logInfo "IntegratedDevFlowManager" "=== Phase 1: プランニング・設計検証 ==="
+
+        let gitStatus = gitManager.GetRepositoryStatus projectPath
+        let branchCreated = gitManager.CreateAndSwitchBranch projectPath branchName
+        gitStatus.Success && branchCreated
+
+    /// フェーズ2: 開発環境セットアップ
+    member private this.ExecuteDevelopmentSetup(projectPath: string) : bool =
+        logInfo "IntegratedDevFlowManager" "=== Phase 2: 開発環境セットアップ ==="
+        this.SetupDevelopmentEnvironment projectPath "dotnet"
+
+    /// フェーズ3: コード品質検証
+    member private this.ExecuteQualityCheck(projectPath: string) : bool =
+        logInfo "IntegratedDevFlowManager" "=== Phase 3: コード品質検証 ==="
+
+        try
+            // リンター実行
+            let lintPsi =
+                ProcessHelper.createProcessStartInfo "dotnet" "format --verify-no-changes" (Some projectPath)
+
+            use lintProc = Process.Start(lintPsi)
+            let lintSuccess = lintProc.WaitForExit(getBuildTimeout ()) && lintProc.ExitCode = 0
+
+            // 静的解析
+            let analyzePsi =
+                ProcessHelper.createProcessStartInfo "dotnet" "build --verbosity normal" (Some projectPath)
+
+            use analyzeProc = Process.Start(analyzePsi)
+
+            let analyzeSuccess =
+                analyzeProc.WaitForExit(getBuildTimeout ()) && analyzeProc.ExitCode = 0
+
+            lintSuccess && analyzeSuccess
+        with _ ->
+            false
+
+    /// フェーズ4: 自動テスト実行
+    member private this.ExecuteAutomatedTesting(projectPath: string) : bool =
+        logInfo "IntegratedDevFlowManager" "=== Phase 4: 自動テスト実行 ==="
+
+        try
+            // Unit テスト
+            let unitTestPsi =
+                ProcessHelper.createProcessStartInfo
+                    (getDotnetCommand ())
+                    "test --filter TestCategory=Unit"
+                    (Some projectPath)
+
+            use unitTestProc = Process.Start(unitTestPsi)
+
+            let unitTestSuccess =
+                unitTestProc.WaitForExit(getTestTimeout ()) && unitTestProc.ExitCode = 0
+
+            // Integration テスト
+            let integrationTestPsi =
+                ProcessHelper.createProcessStartInfo
+                    (getDotnetCommand ())
+                    "test --filter TestCategory=Integration"
+                    (Some projectPath)
+
+            use integrationTestProc = Process.Start(integrationTestPsi)
+
+            let integrationTestSuccess =
+                integrationTestProc.WaitForExit(getTestTimeout () * 2)
+                && integrationTestProc.ExitCode = 0
+
+            unitTestSuccess && integrationTestSuccess
+        with _ ->
+            false
+
+    /// フェーズ5: セキュリティ検証
+    member private this.ExecuteSecurityValidation(projectPath: string) : bool =
+        logInfo "IntegratedDevFlowManager" "=== Phase 5: セキュリティ検証 ==="
+
+        try
+            // 依存関係脆弱性チェック
+            let securityPsi =
+                ProcessHelper.createProcessStartInfo "dotnet" "list package --vulnerable" (Some projectPath)
+
+            use securityProc = Process.Start(securityPsi)
+
+            let securitySuccess =
+                securityProc.WaitForExit(getBuildTimeout ()) && securityProc.ExitCode = 0
+
+            securitySuccess
+        with _ ->
+            true // セキュリティツール未使用環境でも成功とする
+
+    /// フェーズ6: ビルド・アーティファクト生成
+    member private this.ExecuteBuildAndPackaging(projectPath: string) : bool =
+        logInfo "IntegratedDevFlowManager" "=== Phase 6: ビルド・アーティファクト生成 ==="
+
+        try
+            let buildPsi =
+                ProcessHelper.createProcessStartInfo
+                    (getDotnetCommand ())
+                    "build --configuration Release"
+                    (Some projectPath)
+
+            use buildProc = Process.Start(buildPsi)
+
+            let buildSuccess =
+                buildProc.WaitForExit(getBuildTimeout ()) && buildProc.ExitCode = 0
+
+            // パッケージ化
+            let outputPath = Path.Combine(projectPath, "publish")
+            Directory.CreateDirectory(outputPath) |> ignore
+
+            let publishPsi =
+                ProcessHelper.createProcessStartInfo
+                    (getDotnetCommand ())
+                    $"publish --configuration Release --output {outputPath}"
+                    (Some projectPath)
+
+            use publishProc = Process.Start(publishPsi)
+
+            let publishSuccess =
+                publishProc.WaitForExit(getDeployTimeout ()) && publishProc.ExitCode = 0
+
+            buildSuccess && publishSuccess
+        with _ ->
+            false
+
+    /// フェーズ7: コンテナ化・イメージビルド
+    member private this.ExecuteContainerization (projectPath: string) (deployTarget: string) : bool =
+        logInfo "IntegratedDevFlowManager" "=== Phase 7: コンテナ化・イメージビルド ==="
+
+        try
+            // Docker イメージビルド
+            let dockerBuildPsi =
+                ProcessHelper.createProcessStartInfo
+                    (getDockerCommand ())
+                    $"build -t fcode-app:{deployTarget} ."
+                    (Some projectPath)
+
+            use dockerBuildProc = Process.Start(dockerBuildPsi)
+
+            let dockerBuildSuccess =
+                dockerBuildProc.WaitForExit(getDeployTimeout ()) && dockerBuildProc.ExitCode = 0
+
+            dockerBuildSuccess
+        with _ ->
+            true // Docker未使用環境でも成功とする
+
+    /// フェーズ8: デプロイ実行
+    member private this.ExecuteDeployment (projectPath: string) (deployTarget: string) : bool =
+        logInfo "IntegratedDevFlowManager" "=== Phase 8: デプロイ実行 ==="
+
+        try
+            match deployTarget with
+            | "kubernetes" ->
+                let manifestPath = Path.Combine(projectPath, "k8s", "deployment.yaml")
+                k8sManager.ApplyManifest manifestPath
+            | "docker" ->
+                let dockerRunPsi =
+                    ProcessHelper.createProcessStartInfo
+                        (getDockerCommand ())
+                        $"run -d -p 8080:80 fcode-app:{deployTarget}"
+                        None
+
+                use dockerRunProc = Process.Start(dockerRunPsi)
+                dockerRunProc.WaitForExit(getDeployTimeout ()) && dockerRunProc.ExitCode = 0
+            | _ -> true // その他のデプロイターゲットでも成功とする
+        with _ ->
+            false
+
+    /// フェーズ9: 包括的監視・ヘルスチェック
+    member private this.ExecuteMonitoring() : bool =
+        logInfo "IntegratedDevFlowManager" "=== Phase 9: 包括的監視・ヘルスチェック ==="
+
+        try
+            // アプリケーションヘルスチェック
+            let healthEndpoints =
+                [ "http://localhost:8080/health"
+                  "http://localhost:8080/ready"
+                  "http://localhost:3000/health" ]
+
+            let healthResults = monitoringManager.PerformHealthCheck healthEndpoints
+
+            // メトリクス収集
+            let prometheusMetrics = monitoringManager.GetPrometheusMetrics()
+
+            // インフラ状態確認
+            let dockerStatus = dockerManager.GetContainerStatus()
+            let k8sStatus = k8sManager.GetClusterStatus()
+
+            // 総合判定
+            let healthOk = healthResults |> List.exists snd || healthResults.IsEmpty
+            let metricsOk = prometheusMetrics.IsSome || true
+            let infraOk = dockerStatus.IsSome || k8sStatus.IsSome || true
+
+            healthOk && metricsOk && infraOk
+        with _ ->
+            false
+
+    /// フェーズ10: 結果レポート・メンテナンス
+    member private this.ExecuteMaintenanceAndReporting
+        (projectPath: string)
+        (commitMessage: string)
+        (branchName: string)
+        (deployTarget: string)
+        : bool =
+        logInfo "IntegratedDevFlowManager" "=== Phase 10: 結果レポート・メンテナンス ==="
+
+        try
+            // デプロイログ出力
+            let logPath = Path.Combine(projectPath, "deploy.log")
+
+            let logContent =
+                $"DevOps Workflow executed at {DateTime.Now}\nCommit: {commitMessage}\nBranch: {branchName}\nTarget: {deployTarget}\n"
+
+            File.WriteAllText(logPath, logContent)
+
+            // 古いビルドアーティファクト削除
+            let publishPath = Path.Combine(projectPath, "publish")
+
+            if Directory.Exists(publishPath) then
+                let files = Directory.GetFiles(publishPath, "*.old")
+                files |> Array.iter File.Delete
+
+            true
+        with _ ->
+            false
+
     /// 包括的DevOpsワークフロー実行
     member this.ExecuteFullDevOpsWorkflow
         (projectPath: string)
@@ -590,225 +816,19 @@ type IntegratedDevFlowManager() =
         try
             logInfo "IntegratedDevFlowManager" "=== 包括的DevOpsワークフロー開始 ==="
 
-            // 1. プランニング・設計検証
-            logInfo "IntegratedDevFlowManager" "=== Phase 1: プランニング・設計検証 ==="
-
-            let planningResult =
-                let gitStatus = gitManager.GetRepositoryStatus projectPath
-                let branchCreated = gitManager.CreateAndSwitchBranch projectPath branchName
-                gitStatus.Success && branchCreated
-
-            // 2. 開発環境セットアップ
-            logInfo "IntegratedDevFlowManager" "=== Phase 2: 開発環境セットアップ ==="
-            let developmentResult = this.SetupDevelopmentEnvironment projectPath "dotnet"
-
-            // 3. コード品質検証
-            logInfo "IntegratedDevFlowManager" "=== Phase 3: コード品質検証 ==="
-
-            let qualityResult =
-                try
-                    // リンター実行
-                    let lintPsi =
-                        ProcessHelper.createProcessStartInfo "dotnet" "format --verify-no-changes" (Some projectPath)
-
-                    use lintProc = Process.Start(lintPsi)
-                    let lintSuccess = lintProc.WaitForExit(getBuildTimeout ()) && lintProc.ExitCode = 0
-
-                    // 静的解析
-                    let analyzePsi =
-                        ProcessHelper.createProcessStartInfo "dotnet" "build --verbosity normal" (Some projectPath)
-
-                    use analyzeProc = Process.Start(analyzePsi)
-
-                    let analyzeSuccess =
-                        analyzeProc.WaitForExit(getBuildTimeout ()) && analyzeProc.ExitCode = 0
-
-                    lintSuccess && analyzeSuccess
-                with _ ->
-                    false
-
-            // 4. 自動テスト実行
-            logInfo "IntegratedDevFlowManager" "=== Phase 4: 自動テスト実行 ==="
-
-            let testingResult =
-                try
-                    // Unit テスト
-                    let unitTestPsi =
-                        ProcessHelper.createProcessStartInfo
-                            (getDotnetCommand ())
-                            "test --filter TestCategory=Unit"
-                            (Some projectPath)
-
-                    use unitTestProc = Process.Start(unitTestPsi)
-
-                    let unitTestSuccess =
-                        unitTestProc.WaitForExit(getTestTimeout ()) && unitTestProc.ExitCode = 0
-
-                    // Integration テスト
-                    let integrationTestPsi =
-                        ProcessHelper.createProcessStartInfo
-                            (getDotnetCommand ())
-                            "test --filter TestCategory=Integration"
-                            (Some projectPath)
-
-                    use integrationTestProc = Process.Start(integrationTestPsi)
-
-                    let integrationTestSuccess =
-                        integrationTestProc.WaitForExit(getTestTimeout () * 2)
-                        && integrationTestProc.ExitCode = 0
-
-                    unitTestSuccess && integrationTestSuccess
-                with _ ->
-                    false
-
-            // 5. セキュリティ検証
-            logInfo "IntegratedDevFlowManager" "=== Phase 5: セキュリティ検証 ==="
-
-            let securityResult =
-                try
-                    // 依存関係脆弱性チェック
-                    let securityPsi =
-                        ProcessHelper.createProcessStartInfo "dotnet" "list package --vulnerable" (Some projectPath)
-
-                    use securityProc = Process.Start(securityPsi)
-
-                    let securitySuccess =
-                        securityProc.WaitForExit(getBuildTimeout ()) && securityProc.ExitCode = 0
-
-                    securitySuccess
-                with _ ->
-                    true // セキュリティツール未使用環境でも成功とする
-
-            // 6. ビルド・アーティファクト生成
-            logInfo "IntegratedDevFlowManager" "=== Phase 6: ビルド・アーティファクト生成 ==="
-
-            let buildingResult =
-                try
-                    let buildPsi =
-                        ProcessHelper.createProcessStartInfo
-                            (getDotnetCommand ())
-                            "build --configuration Release"
-                            (Some projectPath)
-
-                    use buildProc = Process.Start(buildPsi)
-
-                    let buildSuccess =
-                        buildProc.WaitForExit(getBuildTimeout ()) && buildProc.ExitCode = 0
-
-                    // パッケージ化
-                    let outputPath = Path.Combine(projectPath, "publish")
-                    Directory.CreateDirectory(outputPath) |> ignore
-
-                    let publishPsi =
-                        ProcessHelper.createProcessStartInfo
-                            (getDotnetCommand ())
-                            $"publish --configuration Release --output {outputPath}"
-                            (Some projectPath)
-
-                    use publishProc = Process.Start(publishPsi)
-
-                    let publishSuccess =
-                        publishProc.WaitForExit(getDeployTimeout ()) && publishProc.ExitCode = 0
-
-                    buildSuccess && publishSuccess
-                with _ ->
-                    false
-
-            // 7. コンテナ化・イメージビルド
-            logInfo "IntegratedDevFlowManager" "=== Phase 7: コンテナ化・イメージビルド ==="
-
-            let containerResult =
-                try
-                    // Docker イメージビルド
-                    let dockerBuildPsi =
-                        ProcessHelper.createProcessStartInfo
-                            (getDockerCommand ())
-                            $"build -t fcode-app:{deployTarget} ."
-                            (Some projectPath)
-
-                    use dockerBuildProc = Process.Start(dockerBuildPsi)
-
-                    let dockerBuildSuccess =
-                        dockerBuildProc.WaitForExit(getDeployTimeout ()) && dockerBuildProc.ExitCode = 0
-
-                    dockerBuildSuccess
-                with _ ->
-                    true // Docker未使用環境でも成功とする
-
-            // 8. デプロイ実行
-            logInfo "IntegratedDevFlowManager" "=== Phase 8: デプロイ実行 ==="
-
-            let deploymentResult =
-                try
-                    match deployTarget with
-                    | "kubernetes" ->
-                        let manifestPath = Path.Combine(projectPath, "k8s", "deployment.yaml")
-                        k8sManager.ApplyManifest manifestPath
-                    | "docker" ->
-                        let dockerRunPsi =
-                            ProcessHelper.createProcessStartInfo
-                                (getDockerCommand ())
-                                $"run -d -p 8080:80 fcode-app:{deployTarget}"
-                                None
-
-                        use dockerRunProc = Process.Start(dockerRunPsi)
-                        dockerRunProc.WaitForExit(getDeployTimeout ()) && dockerRunProc.ExitCode = 0
-                    | _ -> true // その他のデプロイターゲットでも成功とする
-                with _ ->
-                    false
-
-            // 9. 包括的監視・ヘルスチェック
-            logInfo "IntegratedDevFlowManager" "=== Phase 9: 包括的監視・ヘルスチェック ==="
-
-            let monitoringResult =
-                try
-                    // アプリケーションヘルスチェック
-                    let healthEndpoints =
-                        [ "http://localhost:8080/health"
-                          "http://localhost:8080/ready"
-                          "http://localhost:3000/health" ]
-
-                    let healthResults = monitoringManager.PerformHealthCheck healthEndpoints
-
-                    // メトリクス収集
-                    let prometheusMetrics = monitoringManager.GetPrometheusMetrics()
-
-                    // インフラ状態確認
-                    let dockerStatus = dockerManager.GetContainerStatus()
-                    let k8sStatus = k8sManager.GetClusterStatus()
-
-                    // 総合判定
-                    let healthOk = healthResults |> List.exists snd || healthResults.IsEmpty
-                    let metricsOk = prometheusMetrics.IsSome || true
-                    let infraOk = dockerStatus.IsSome || k8sStatus.IsSome || true
-
-                    healthOk && metricsOk && infraOk
-                with _ ->
-                    false
-
-            // 10. 結果レポート・メンテナンス
-            logInfo "IntegratedDevFlowManager" "=== Phase 10: 結果レポート・メンテナンス ==="
+            // 各フェーズを順次実行
+            let planningResult = this.ExecutePlanningPhase projectPath branchName
+            let developmentResult = this.ExecuteDevelopmentSetup projectPath
+            let qualityResult = this.ExecuteQualityCheck projectPath
+            let testingResult = this.ExecuteAutomatedTesting projectPath
+            let securityResult = this.ExecuteSecurityValidation projectPath
+            let buildingResult = this.ExecuteBuildAndPackaging projectPath
+            let containerResult = this.ExecuteContainerization projectPath deployTarget
+            let deploymentResult = this.ExecuteDeployment projectPath deployTarget
+            let monitoringResult = this.ExecuteMonitoring()
 
             let maintenanceResult =
-                try
-                    // デプロイログ出力
-                    let logPath = Path.Combine(projectPath, "deploy.log")
-
-                    let logContent =
-                        $"DevOps Workflow executed at {DateTime.Now}\nCommit: {commitMessage}\nBranch: {branchName}\nTarget: {deployTarget}\n"
-
-                    File.WriteAllText(logPath, logContent)
-
-                    // 古いビルドアーティファクト削除
-                    let publishPath = Path.Combine(projectPath, "publish")
-
-                    if Directory.Exists(publishPath) then
-                        let files = Directory.GetFiles(publishPath, "*.old")
-                        files |> Array.iter File.Delete
-
-                    true
-                with _ ->
-                    false
+                this.ExecuteMaintenanceAndReporting projectPath commitMessage branchName deployTarget
 
             // 最終結果集計
             let results =

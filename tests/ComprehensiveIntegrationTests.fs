@@ -9,6 +9,7 @@ open FCode.ProgressDashboard
 open FCode.EscalationNotificationUI
 open FCode.DecisionTimelineView
 open FCode.AgentMessaging
+open FCode.Tests.SOLIDDesignTests.ResultAssert
 
 // ===============================================
 // 包括的統合テストスイート
@@ -31,23 +32,13 @@ type ComprehensiveIntegrationTestSuite() =
             let initResult =
                 activityManager.AddSystemActivity("system", SystemMessage, "System integration test started")
 
-            Assert.That(
-                initResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false, Is.True
-            )
+            assertIsOk initResult
 
             // 2. 進捗メトリクス作成
             let metricResult =
                 progressManager.CreateMetric(TaskCompletion, "Integration Test Progress", 25.0, 100.0, "%")
 
-            Assert.That(
-                metricResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false, Is.True
-            )
+            assertIsOk metricResult
 
             // 3. エスカレーション通知作成
             let escalationId =
@@ -103,27 +94,19 @@ type ComprehensiveIntegrationTestSuite() =
                   MessageType = MessageType.Progress
                   Priority = MessagePriority.Normal
                   Timestamp = DateTime.Now
+                  ExpiresAt = None
+                  CorrelationId = None
                   Metadata = Map.ofList [ ("metric_type", "task_completion"); ("metric_value", "75.0"); ("unit", "%") ] }
 
             // 1. 活動として処理
             let activityResult = activityManager.AddActivityFromMessage(testMessage)
 
-            Assert.That(
-                activityResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false, Is.True
-            )
+            assertIsOk activityResult
 
             // 2. 進捗データとして処理
             let progressResult = progressManager.ProcessProgressMessage(testMessage)
 
-            Assert.That(
-                progressResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false, Is.True
-            )
+            assertIsOk progressResult
 
             // 結果検証
             Assert.AreEqual(1, activityManager.GetActivityCount())
@@ -143,34 +126,19 @@ type ComprehensiveIntegrationTestSuite() =
             let validResult =
                 activityManager.AddSystemActivity("test-agent", SystemMessage, "Valid operation")
 
-            Assert.That(
-                validResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false, Is.True
-            )
+            assertIsOk validResult
 
             // 2. 無効なメトリクス作成（エラーケース）
             let invalidResult =
                 progressManager.CreateMetric(TaskCompletion, "", -1.0, 100.0, "")
 
-            Assert.That(
-                invalidResult
-                |> function
-                    | Result.Error _ -> true
-                    | _ -> false, Is.True
-            )
+            assertIsError invalidResult
 
             // 3. システム回復確認
             let recoveryResult =
                 progressManager.CreateMetric(TaskCompletion, "Recovery Test", 50.0, 100.0, "%")
 
-            Assert.That(
-                recoveryResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false, Is.True
-            )
+            assertIsOk recoveryResult
 
             // 結果検証
             Assert.AreEqual(1, activityManager.GetActivityCount())

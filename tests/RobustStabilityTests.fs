@@ -10,6 +10,17 @@ open FCode.EscalationNotificationUI
 open FCode.DecisionTimelineView
 
 // ===============================================
+// テストヘルパー関数
+// ===============================================
+
+/// Result型のアサーションヘルパー関数
+module ResultAssert =
+    let assertIsOk (result: Result<'T, 'E>) =
+        match result with
+        | Result.Ok _ -> ()
+        | Result.Error err -> Assert.Fail($"Expected Ok but got Error: {err}")
+
+// ===============================================
 // 堅牢性・安定性テストスイート
 // ===============================================
 
@@ -103,12 +114,7 @@ type RobustStabilityTestSuite() =
             let recoveryResult =
                 recoveryManager.AddSystemActivity("recovery-test", SystemMessage, "Recovery successful")
 
-            Assert.That(
-                recoveryResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false, Is.True
-            )
+            ResultAssert.assertIsOk recoveryResult
 
             recoveryManager.Dispose()
 

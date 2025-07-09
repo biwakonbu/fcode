@@ -8,6 +8,7 @@ open FCode.ProgressDashboard
 open FCode.EscalationNotificationUI
 open FCode.DecisionTimelineView
 open FCode.AgentMessaging
+open FCode.Tests.SOLIDDesignTests.ResultAssert
 
 // ===============================================
 // CI環境互換性テストスイート
@@ -31,12 +32,7 @@ type CICompatibilityTestSuite() =
             let result =
                 activityManager.AddSystemActivity("ci-test", SystemMessage, "CI compatibility test")
 
-            Assert.That(
-                result
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false, Is.True
-            )
+            assertIsOk result
 
             Assert.AreEqual(1, activityManager.GetActivityCount())
 
@@ -57,12 +53,7 @@ type CICompatibilityTestSuite() =
             let metricResult =
                 progressManager.CreateMetric(TaskCompletion, "CI Test Metric", 75.0, 100.0, "%")
 
-            Assert.That(
-                metricResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false, Is.True
-            )
+            assertIsOk metricResult
 
             Assert.AreEqual(1, progressManager.GetMetricCount())
 
@@ -191,7 +182,7 @@ type CIConcurrencyTestSuite() =
             let memoryIncrease = finalMemory - initialMemory
 
             // メモリリークが許容範囲内
-            Assert.AreEqual(Is.LessThan(10_000_000L, memoryIncrease)) // 10MB未満
+            Assert.That(memoryIncrease, Is.LessThan(10_000_000L)) // 10MB未満
 
         finally
             Environment.SetEnvironmentVariable("CI", originalCIValue)

@@ -1,7 +1,6 @@
 module FCode.AIModelProvider
 
 open System
-open System.Collections.Generic
 open FCode.AgentCLI
 open FCode.Logger
 
@@ -276,7 +275,7 @@ type ModelUsageStats =
 
 type MultiModelManager() =
     let selectionEngine = ModelSelectionEngine()
-    let modelUsageStats = new Dictionary<AIModelType, ModelUsageStats>()
+    let mutable modelUsageStats = Map.empty<AIModelType, ModelUsageStats>
 
     /// タスク特性自動分析
     member _.AnalyzeTaskCharacteristics (taskDescription: string) (agentCapabilities: AgentCapability list) =
@@ -342,9 +341,9 @@ type MultiModelManager() =
     /// モデル使用統計更新
     member _.UpdateUsageStats (modelType: AIModelType) (responseTime: TimeSpan) (cost: float) (success: bool) =
         let currentStats =
-            match modelUsageStats.TryGetValue(modelType) with
-            | true, stats -> stats
-            | false, _ ->
+            match modelUsageStats.TryFind(modelType) with
+            | Some stats -> stats
+            | None ->
                 { TotalRequests = 0
                   TotalCost = 0.0
                   AverageResponseTime = TimeSpan.Zero
@@ -372,21 +371,27 @@ type MultiModelManager() =
 
             float successCount / float newTotalRequests
 
-        modelUsageStats.[modelType] <-
-            { TotalRequests = newTotalRequests
-              TotalCost = newTotalCost
-              AverageResponseTime = newAvgResponseTime
-              SuccessRate = newSuccessRate
-              LastUsed = DateTime.Now }
+        modelUsageStats <-
+            modelUsageStats.Add(
+                modelType,
+                { TotalRequests = newTotalRequests
+                  TotalCost = newTotalCost
+                  AverageResponseTime = newAvgResponseTime
+                  SuccessRate = newSuccessRate
+                  LastUsed = DateTime.Now }
+            )
 
         logDebug "MultiModelManager" $"モデル使用統計更新: {modelType} (成功率: {newSuccessRate})"
 
     /// 使用統計レポート生成
     member _.GenerateUsageReport() =
-        let totalCost = modelUsageStats.Values |> Seq.sumBy (fun stats -> stats.TotalCost)
+        let totalCost =
+            modelUsageStats |> Map.toSeq |> Seq.sumBy (fun (_, stats) -> stats.TotalCost)
 
         let totalRequests =
-            modelUsageStats.Values |> Seq.sumBy (fun stats -> stats.TotalRequests)
+            modelUsageStats
+            |> Map.toSeq
+            |> Seq.sumBy (fun (_, stats) -> stats.TotalRequests)
 
         let report =
             [ "=== AIモデル使用統計レポート ==="

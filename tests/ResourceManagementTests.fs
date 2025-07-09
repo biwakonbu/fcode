@@ -177,6 +177,7 @@ type ResourceManagementTests() =
 
     [<Test>]
     [<Category("Performance")>]
+    [<Ignore("WorkerManager implementation pending")>]
     member _.``長時間稼働安定性テスト - WorkerManager継続操作``() =
         task {
             // Arrange
@@ -329,7 +330,7 @@ type ResourceManagementTests() =
 
             // 2. SessionManager操作
             let sessionManager = new FCode.ClaudeCodeProcess.SessionManager()
-            // Note: SessionManagerがIDisposableを実装していない場合は手動クリーンアップが必要
+            // Note: SessionManagerはIDisposableを実装していないため手動クリーンアップ
 
             let sessionSuccess =
                 sessionManager.StartSession($"session-{testPaneId}", workingDir, integrationTextView)

@@ -16,12 +16,12 @@ open FCode.AgentMessaging
 module ResultAssert =
     let assertIsOk (result: Result<'T, 'E>) =
         match result with
-        | Result.Ok _ -> Assert.IsTrue(true)
+        | Result.Ok _ -> ()
         | Result.Error err -> Assert.Fail($"Expected Ok but got Error: {err}")
 
     let assertIsError (result: Result<'T, 'E>) =
         match result with
-        | Result.Error _ -> Assert.IsTrue(true)
+        | Result.Error _ -> ()
         | Result.Ok value -> Assert.Fail($"Expected Error but got Ok: {value}")
 
 // ===============================================

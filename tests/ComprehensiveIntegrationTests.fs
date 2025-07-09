@@ -126,34 +126,19 @@ type ComprehensiveIntegrationTestSuite() =
             let validResult =
                 activityManager.AddSystemActivity("test-agent", SystemMessage, "Valid operation")
 
-            Assert.That(
-                validResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false
-            )
+            assertIsOk validResult
 
             // 2. 無効なメトリクス作成（エラーケース）
             let invalidResult =
                 progressManager.CreateMetric(TaskCompletion, "", -1.0, 100.0, "")
 
-            Assert.That(
-                invalidResult
-                |> function
-                    | Result.Error _ -> true
-                    | _ -> false
-            )
+            assertIsError invalidResult
 
             // 3. システム回復確認
             let recoveryResult =
                 progressManager.CreateMetric(TaskCompletion, "Recovery Test", 50.0, 100.0, "%")
 
-            Assert.That(
-                recoveryResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false
-            )
+            assertIsOk recoveryResult
 
             // 結果検証
             Assert.AreEqual(1, activityManager.GetActivityCount())

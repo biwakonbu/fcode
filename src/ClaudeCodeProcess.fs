@@ -643,4 +643,4 @@ type SessionManager() =
         sessions <- Map.empty
 
 // Global session manager instance
-let sessionManager = SessionManager()
+let sessionManager = new SessionManager()

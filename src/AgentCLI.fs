@@ -184,9 +184,28 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
 
         member _.ParseOutput(rawOutput: string) =
             try
-                // JSON形式チェック
-                if config.OutputFormat = "json" && rawOutput.Trim().StartsWith("{") then
-                    let jsonDoc = JsonDocument.Parse(rawOutput)
+                // 入力検証: null・空・制御文字チェック
+                if String.IsNullOrWhiteSpace(rawOutput) then
+                    raise (ArgumentException("Output is null or empty"))
+
+                let cleanOutput = rawOutput.Trim()
+
+                // 制御文字・エスケープシーケンスをクリーンアップ
+                let sanitizedOutput =
+                    System.Text.RegularExpressions.Regex.Replace(
+                        cleanOutput,
+                        @"[\x00-\x1F\x7F]|\u001b\[[0-9;]*[mK]|\u001b\[\?[0-9;]*[hl]",
+                        ""
+                    )
+
+                // JSON形式チェック（より厳密な検証）
+                if
+                    config.OutputFormat = "json"
+                    && sanitizedOutput.StartsWith("{")
+                    && sanitizedOutput.EndsWith("}")
+                    && sanitizedOutput.Length > 2
+                then
+                    let jsonDoc = JsonDocument.Parse(sanitizedOutput)
                     let root = jsonDoc.RootElement
 
                     { Status =
@@ -203,7 +222,7 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
                       Content =
                         match root.TryGetProperty("content") with
                         | (true, contentProp) -> contentProp.GetString()
-                        | _ -> rawOutput
+                        | _ -> sanitizedOutput
                       Metadata = Map.empty.Add("format", "json")
                       Timestamp = DateTime.Now
                       SourceAgent = config.Name
@@ -211,11 +230,11 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
                 else
                     // プレーンテキスト解析
                     { Status =
-                        if rawOutput.Contains("error") || rawOutput.Contains("Error") then
+                        if sanitizedOutput.Contains("error") || sanitizedOutput.Contains("Error") then
                             Error
                         else
                             Success
-                      Content = rawOutput.Trim()
+                      Content = sanitizedOutput
                       Metadata = Map.empty.Add("format", "text")
                       Timestamp = DateTime.Now
                       SourceAgent = config.Name

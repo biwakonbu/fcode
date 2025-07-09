@@ -155,8 +155,8 @@ type ModelSelectionEngine() =
 
           { ModelType = CodeLlama
             MaxTokens = 16000
-            CostPerInputToken = 0.0
-            CostPerOutputToken = 0.0
+            CostPerInputToken = 0.0001
+            CostPerOutputToken = 0.0003
             ResponseSpeed = Fast
             CodeGeneration = 0.95
             Reasoning = 0.7

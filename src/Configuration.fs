@@ -144,15 +144,20 @@ module DefaultConfig =
           UIUpdateIntervalMs = 500 }
 
     let systemConfig =
+        let homeDir =
+            match Environment.GetEnvironmentVariable("HOME") with
+            | null -> Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+            | home -> home
+
         { GitCommand = "git"
           DockerCommand = "docker"
           DotnetCommand = "dotnet"
           WhichCommand = "which"
           ClaudeCommand =
-            [ "/home/biwakonbu/.local/share/nvm/v20.12.0/bin/claude"
-                  "/usr/local/bin/claude"
-                  "/home/biwakonbu/.local/bin/claude"
-                  "claude" ] }
+            [ Path.Combine(homeDir, ".local/share/nvm/v20.12.0/bin/claude")
+              "/usr/local/bin/claude"
+              Path.Combine(homeDir, ".local/bin/claude")
+              "claude" ] }
 
     let applicationConfig =
         { ProcessTimeouts = processTimeouts

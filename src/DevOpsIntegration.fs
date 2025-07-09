@@ -415,12 +415,29 @@ type MonitoringIntegrationManager() =
 // ===============================================
 
 /// 統合開発フロー管理システム
-type IntegratedDevFlowManager() =
-    let gitManager = GitIntegrationManager()
-    let dockerManager = DockerIntegrationManager()
-    let cicdManager = CICDIntegrationManager()
-    let k8sManager = KubernetesIntegrationManager()
-    let monitoringManager = MonitoringIntegrationManager()
+type IntegratedDevFlowManager
+    (
+        gitManager: GitIntegrationManager,
+        dockerManager: DockerIntegrationManager,
+        cicdManager: CICDIntegrationManager,
+        k8sManager: KubernetesIntegrationManager,
+        monitoringManager: MonitoringIntegrationManager
+    ) =
+    let gitManager = gitManager
+    let dockerManager = dockerManager
+    let cicdManager = cicdManager
+    let k8sManager = k8sManager
+    let monitoringManager = monitoringManager
+
+    /// デフォルトコンストラクタ（既存コードとの互換性）
+    new() =
+        IntegratedDevFlowManager(
+            GitIntegrationManager(),
+            DockerIntegrationManager(),
+            CICDIntegrationManager(),
+            KubernetesIntegrationManager(),
+            MonitoringIntegrationManager()
+        )
 
     /// 開発環境セットアップ
     member this.SetupDevelopmentEnvironment (projectPath: string) (projectType: string) =

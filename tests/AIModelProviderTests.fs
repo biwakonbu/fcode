@@ -171,6 +171,94 @@ type AIModelProviderTests() =
 
     [<Test>]
     [<Category("Unit")>]
+    member _.``MultiModelManagerタスク特性緊急度別分析テスト``() =
+        let manager = MultiModelManager()
+
+        // 同じタスクを異なる緊急度で分析
+        let taskDescription = "重要なセキュリティ脆弱性の修正とテスト実装"
+        let capabilities = [ CodeGeneration; Testing; QualityAssurance ]
+
+        // 各緊急度でのモデル推奨を取得
+        let immediateRecommendation =
+            manager.RecommendModel taskDescription capabilities Immediate
+
+        let urgentRecommendation =
+            manager.RecommendModel taskDescription capabilities Urgent
+
+        let normalRecommendation =
+            manager.RecommendModel taskDescription capabilities Normal
+
+        let lowPriorityRecommendation =
+            manager.RecommendModel taskDescription capabilities LowPriority
+
+        // 全ての緊急度でモデル推奨が成功することを確認
+        Assert.IsTrue(immediateRecommendation.IsSome, "Immediate緊急度でモデル推奨が失敗")
+        Assert.IsTrue(urgentRecommendation.IsSome, "Urgent緊急度でモデル推奨が失敗")
+        Assert.IsTrue(normalRecommendation.IsSome, "Normal緊急度でモデル推奨が失敗")
+        Assert.IsTrue(lowPriorityRecommendation.IsSome, "LowPriority緊急度でモデル推奨が失敗")
+
+        let immediate = immediateRecommendation.Value
+        let urgent = urgentRecommendation.Value
+        let normal = normalRecommendation.Value
+        let lowPriority = lowPriorityRecommendation.Value
+
+        // 緊急度が高いほど応答時間が短いモデルが選ばれる傾向を確認
+        Assert.LessOrEqual(immediate.EstimatedTime, urgent.EstimatedTime, "Immediate > Urgent: 応答時間が適切でない")
+        Assert.LessOrEqual(urgent.EstimatedTime, normal.EstimatedTime, "Urgent > Normal: 応答時間が適切でない")
+
+        // 緊急度が低いほどコスト効率が考慮される傾向を確認
+        Assert.LessOrEqual(lowPriority.EstimatedCost, normal.EstimatedCost, "LowPriority > Normal: コスト効率が適切でない")
+
+        // 信頼度が全て妥当な範囲内であることを確認
+        Assert.Greater(immediate.Confidence, 0.3, "Immediate信頼度が低すぎます")
+        Assert.Greater(urgent.Confidence, 0.3, "Urgent信頼度が低すぎます")
+        Assert.Greater(normal.Confidence, 0.3, "Normal信頼度が低すぎます")
+        Assert.Greater(lowPriority.Confidence, 0.3, "LowPriority信頼度が低すぎます")
+
+        // 代替モデルが提案されることを確認
+        Assert.IsNotEmpty(immediate.AlternativeModels, "Immediateで代替モデルが提案されていません")
+        Assert.IsNotEmpty(urgent.AlternativeModels, "Urgentで代替モデルが提案されていません")
+        Assert.IsNotEmpty(normal.AlternativeModels, "Normalで代替モデルが提案されていません")
+        Assert.IsNotEmpty(lowPriority.AlternativeModels, "LowPriorityで代替モデルが提案されていません")
+
+    [<Test>]
+    [<Category("Unit")>]
+    member _.``MultiModelManagerタスク特性緊急度別詳細分析テスト``() =
+        let manager = MultiModelManager()
+
+        // 異なるタスクタイプと緊急度の組み合わせをテスト
+        let testCases =
+            [ ("緊急バグ修正: システムダウン中", [ CodeGeneration; Debugging ], Immediate)
+              ("パフォーマンス最適化の実装", [ CodeGeneration; ArchitectureDesign ], Urgent)
+              ("新機能の設計検討", [ ArchitectureDesign; Documentation ], Normal)
+              ("ドキュメント整備", [ Documentation ], LowPriority) ]
+
+        let recommendations =
+            testCases
+            |> List.map (fun (description, capabilities, urgency) ->
+                let recommendation = manager.RecommendModel description capabilities urgency
+                (description, urgency, recommendation))
+
+        // 全ての組み合わせで適切なモデルが推奨されることを確認
+        recommendations
+        |> List.iter (fun (description, urgency, recommendation) ->
+            Assert.IsTrue(recommendation.IsSome, $"推奨失敗: {description} (緊急度: {urgency})")
+
+            let result = recommendation.Value
+            Assert.IsNotNull(result.SelectedModel, $"選択モデルが空: {description}")
+            Assert.IsNotEmpty(result.SelectionReason, $"選択理由が空: {description}")
+            Assert.Greater(result.Confidence, 0.0, $"信頼度が無効: {description}")
+
+            // 緊急度に応じた応答時間の妥当性をチェック
+            match urgency with
+            | Immediate -> Assert.Less(result.EstimatedTime.TotalSeconds, 10.0, $"Immediate応答時間が長すぎます: {description}")
+            | Urgent -> Assert.Less(result.EstimatedTime.TotalSeconds, 15.0, $"Urgent応答時間が長すぎます: {description}")
+            | Normal -> Assert.Less(result.EstimatedTime.TotalSeconds, 30.0, $"Normal応答時間が長すぎます: {description}")
+            | LowPriority -> () // LowPriorityは応答時間制限なし
+        )
+
+    [<Test>]
+    [<Category("Unit")>]
     member _.``MultiModelManagerモデル推奨テスト``() =
         let manager = MultiModelManager()
 

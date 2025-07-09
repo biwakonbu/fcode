@@ -100,7 +100,9 @@ type GitIntegrationManager() =
             use proc = Process.Start(psi)
 
             if not (proc.WaitForExit(5000)) then
+                // セキュリティ: Process Resource管理強化
                 proc.Kill()
+                proc.WaitForExit(1000) |> ignore // 確実な終了待機
                 logError "GitIntegrationManager" "Git status check timed out"
 
             stopwatch.Stop()
@@ -115,33 +117,57 @@ type GitIntegrationManager() =
               Success = proc.ExitCode = 0
               Timestamp = DateTime.Now }
         with ex ->
-            logError "GitIntegrationManager" $"Git状態確認エラー: {ex.Message}"
+            // セキュリティ: Information Disclosure対策
+            logError "GitIntegrationManager" "Git status check failed"
+            logDebug "GitIntegrationManager" $"Git状態確認エラー詳細: {ex.Message}"
 
             { Command = gitCommand
               ExitCode = -1
               StandardOutput = ""
-              StandardError = ex.Message
+              StandardError = "Git operation failed"
               Duration = TimeSpan.Zero
               Success = false
               Timestamp = DateTime.Now }
 
     /// ブランチ作成・切り替え
     member _.CreateAndSwitchBranch (repoPath: string) (branchName: string) =
+        // セキュリティ: Command Injection対策
+        let validateBranchName (name: string) =
+            if String.IsNullOrWhiteSpace(name) then
+                raise (ArgumentException("Branch name cannot be empty"))
+
+            let dangerousChars =
+                [ "../"; "..\\"; ";"; "|"; "&"; "`"; "$"; "'"; "\""; "\n"; "\r"; "\t" ]
+
+            if dangerousChars |> List.exists name.Contains then
+                raise (ArgumentException("Invalid characters in branch name"))
+
+            if name.Length > 100 then
+                raise (ArgumentException("Branch name too long"))
+
+            name.Trim()
+
         try
+            let safeBranchName = validateBranchName branchName
+
             let psi =
-                ProcessHelper.createProcessStartInfo "git" $"checkout -b {branchName}" (Some repoPath)
+                ProcessHelper.createProcessStartInfo "git" $"checkout -b {safeBranchName}" (Some repoPath)
 
             use proc = Process.Start(psi)
 
             if not (proc.WaitForExit(10000)) then
+                // セキュリティ: Process Resource管理強化
                 proc.Kill()
+                proc.WaitForExit(1000) |> ignore // 確実な終了待機
                 logError "GitIntegrationManager" "Git branch creation timed out"
 
             let success = proc.ExitCode = 0
             logInfo "GitIntegrationManager" $"ブランチ作成・切り替え: {branchName} (成功: {success})"
             success
         with ex ->
-            logError "GitIntegrationManager" $"ブランチ作成エラー: {branchName} - {ex.Message}"
+            // セキュリティ: Information Disclosure対策
+            logError "GitIntegrationManager" $"ブランチ作成エラー: {branchName}"
+            logDebug "GitIntegrationManager" $"ブランチ作成エラー詳細: {ex.Message}"
             false
 
 // ===============================================
@@ -263,12 +289,23 @@ type IntegratedDevFlowManager() =
 
     /// 開発環境セットアップ
     member this.SetupDevelopmentEnvironment (projectPath: string) (projectType: string) =
+        // セキュリティ: Path Traversal対策
+        let validateAndNormalizePath (basePath: string) (relativePath: string) =
+            let fullPath = Path.Combine(basePath, relativePath)
+            let normalizedPath = Path.GetFullPath(fullPath)
+            let normalizedBase = Path.GetFullPath(basePath)
+
+            if not (normalizedPath.StartsWith(normalizedBase)) then
+                raise (ArgumentException($"Path traversal detected: {relativePath}"))
+
+            normalizedPath
+
         try
             // GitHub Actions ワークフロー生成
             let workflow =
                 cicdManager.GenerateGitHubActionsWorkflow projectType "dotnet test" "dotnet build"
 
-            let workflowPath = Path.Combine(projectPath, ".github", "workflows", "ci.yml")
+            let workflowPath = validateAndNormalizePath projectPath ".github/workflows/ci.yml"
 
             Directory.CreateDirectory(Path.GetDirectoryName(workflowPath)) |> ignore
             File.WriteAllText(workflowPath, workflow)
@@ -279,13 +316,15 @@ type IntegratedDevFlowManager() =
                     [ ("app", "fcode-app:latest", [ (8080, 80) ])
                       ("database", "postgres:13", [ (5432, 5432) ]) ]
 
-            let composePath = Path.Combine(projectPath, "docker-compose.yml")
+            let composePath = validateAndNormalizePath projectPath "docker-compose.yml"
             File.WriteAllText(composePath, dockerCompose)
 
             logInfo "IntegratedDevFlowManager" "開発環境セットアップ完了"
             true
         with ex ->
-            logError "IntegratedDevFlowManager" $"開発環境セットアップエラー: {ex.Message}"
+            // セキュリティ: Information Disclosure対策
+            logError "IntegratedDevFlowManager" "開発環境セットアップエラー"
+            logDebug "IntegratedDevFlowManager" $"開発環境セットアップエラー詳細: {ex.Message}"
             false
 
     /// 統合デプロイフロー実行
@@ -306,7 +345,9 @@ type IntegratedDevFlowManager() =
                   (Monitoring, true) ]
 
         with ex ->
-            logError "IntegratedDevFlowManager" $"統合デプロイフロー実行エラー: {ex.Message}"
+            // セキュリティ: Information Disclosure対策
+            logError "IntegratedDevFlowManager" "統合デプロイフロー実行エラー"
+            logDebug "IntegratedDevFlowManager" $"統合デプロイフロー実行エラー詳細: {ex.Message}"
 
             Map.ofList
                 [ (Planning, false)

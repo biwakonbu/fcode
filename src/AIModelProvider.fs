@@ -201,8 +201,13 @@ type ModelSelectionEngine() =
             else
                 1.0 - (float task.ExpectedTokens / float model.MaxTokens * 0.2)
 
-        // 重み付き総合スコア
-        capabilityScore * 0.5 + speedScore * speedWeight + contextScore * 0.3
+        // 重み付き総合スコア（正規化済み）
+        // 固定重み: capability(0.5) + context(0.3) = 0.8
+        // 残りの0.2をspeedWeight範囲(0.05～0.3)に正規化
+        let maxSpeedWeight = 0.3
+        let normalizedSpeedWeight = (speedWeight / maxSpeedWeight) * 0.2 // 0.2の範囲内に正規化
+
+        capabilityScore * 0.5 + speedScore * normalizedSpeedWeight + contextScore * 0.3
 
     /// コスト効率計算
     member _.CalculateCostEfficiency (model: AIModelCharacteristics) (task: TaskCharacteristics) =

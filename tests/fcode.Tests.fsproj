@@ -6,9 +6,18 @@
     <IsPackable>false</IsPackable>
     <GenerateProgramFile>false</GenerateProgramFile>
     <IsTestProject>true</IsTestProject>
+    
+    <!-- CI環境でのテスト安定性向上設定 -->
+    <VSTestCollectCodeCoverage>false</VSTestCollectCodeCoverage>
+    <VSTestUseMSBuildOutput>false</VSTestUseMSBuildOutput>
+    
+    <!-- テストタイムアウト設定（CI環境用） -->
+    <VSTestTimeout>120000</VSTestTimeout>
+    <VSTestLogger>trx</VSTestLogger>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="CITestHelper.fs"/>
     <Compile Include="TestHelpers.fs"/>
     <Compile Include="MockFrameViewTests.fs"/>
     <Compile Include="ConfigurationManagerTests.fs"/>

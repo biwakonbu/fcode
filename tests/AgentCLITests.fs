@@ -401,7 +401,7 @@ type AgentCLIErrorHandlingTests() =
 
     [<Test>]
     [<Category("Unit")>]
-    member _.``CustomScriptCLI不正JSON解析でエラーハンドリング``() =
+    member _.``CustomScriptCLI不正JSON解析でプレーンテキスト処理``() =
         let config =
             { Name = "JSON Script"
               CliPath = "test.py"
@@ -414,9 +414,38 @@ type AgentCLIErrorHandlingTests() =
 
         let scriptCLI = CustomScriptCLI(config) :> IAgentCLI
 
+        // 不正JSONは形式チェックでプレーンテキストとして処理される
         let invalidJson = "{ invalid json"
         let parsedOutput = scriptCLI.ParseOutput(invalidJson)
 
+        // プレーンテキストとして正常処理される
+        Assert.AreEqual(Success, parsedOutput.Status)
+        Assert.AreEqual("{ invalid json", parsedOutput.Content)
+        Assert.IsTrue(parsedOutput.Metadata.ContainsKey("format"))
+        Assert.AreEqual("text", parsedOutput.Metadata.["format"])
+
+    [<Test>]
+    [<Category("Unit")>]
+    member _.``CustomScriptCLI真のJSON解析エラーでエラーハンドリング``() =
+        let config =
+            { Name = "JSON Script"
+              CliPath = "test.py"
+              DefaultArgs = []
+              OutputFormat = "json"
+              Timeout = TimeSpan.FromSeconds(1.0)
+              MaxRetries = 1
+              SupportedCapabilities = [ Testing ]
+              EnvironmentVariables = Map.empty }
+
+        let scriptCLI = CustomScriptCLI(config) :> IAgentCLI
+
+        // 真のJSON解析エラー（形式は正しいが内容が不正）
+        let malformedJson =
+            """{"status": "success", "content": "test", invalid_key_without_quotes: "value"}"""
+
+        let parsedOutput = scriptCLI.ParseOutput(malformedJson)
+
+        // JSON解析エラーでError status
         Assert.AreEqual(Error, parsedOutput.Status)
         Assert.IsTrue(parsedOutput.Content.Contains("Parse error"))
         Assert.IsTrue(parsedOutput.Metadata.ContainsKey("error_type"))

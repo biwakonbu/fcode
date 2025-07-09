@@ -191,7 +191,20 @@ module SessionPersistenceManager =
                 Error $"ペイン状態ファイルが見つかりません: {paneId}"
             else
                 let stateJson = File.ReadAllText(stateFile)
-                let mutable paneState = JsonSerializer.Deserialize<PaneState>(stateJson)
+
+                // JSON内容の事前検証
+                if String.IsNullOrWhiteSpace(stateJson) then
+                    raise (ArgumentException("State file is empty or invalid"))
+
+                // 不正な制御文字を除去
+                let cleanStateJson =
+                    System.Text.RegularExpressions.Regex.Replace(stateJson.Trim(), @"[\x00-\x08\x0E-\x1F\x7F]", "")
+
+                // JSON形式の基本検証
+                if not (cleanStateJson.StartsWith("{") && cleanStateJson.EndsWith("}")) then
+                    raise (JsonException("Invalid JSON format in state file"))
+
+                let mutable paneState = JsonSerializer.Deserialize<PaneState>(cleanStateJson)
 
                 // 会話履歴の読み込み
                 if File.Exists(historyFile) then

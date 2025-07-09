@@ -95,14 +95,29 @@ let shutdownTerminalGui () =
             () // Not initialized or already shutdown
 
 // CI安全なFrameView配列作成（KeyBindingsTests対応）
+// CI環境では実際のFrameViewを作成せず、テスト専用実装を返す
+type CIMockFrameView(title: string) =
+    inherit View()
+
+    let mutable colorScheme = FCode.ColorSchemes.devScheme
+    let mutable title = title
+
+    member this.Title
+        with get () = title
+        and set (value) = title <- value
+
+    override this.ColorScheme
+        with get () = colorScheme
+        and set (value) = colorScheme <- value
+
 let createMockFrameViews (count: int) =
     if isCI () then
-        // CI環境：MockFrameViewを使用（Terminal.Gui初期化不要）
-        Array.init count (fun i -> new FrameView($"mock-pane{i}"))
+        // CI環境：Terminal.Gui初期化を回避してMockFrameViewを使用
+        Array.init count (fun i -> new CIMockFrameView($"mock-pane{i}") :> View)
     else
         // 開発環境：実際のTerminal.Gui FrameViewを使用
         initializeTerminalGui ()
-        Array.init count (fun i -> new FrameView($"pane{i}"))
+        Array.init count (fun i -> new FrameView($"pane{i}") :> View)
 
 // MockFrameViewの配列作成（テスト専用）
 let createMockFrameViewArray (count: int) (prefix: string) =

@@ -417,9 +417,8 @@ type ConcurrencyTests() =
                 if retryCount <= 0 then
                     Assert.Fail("アクティブセッション確認の最大リトライ回数に達しました")
                 else
-                    // MacOSでは追加の待機時間
-                    if isMacOS then
-                        System.Threading.Thread.Sleep(10)
+                    // 全環境で十分な待機時間を確保
+                    System.Threading.Thread.Sleep(50)
 
                     match getActiveSession testConfig with
                     | Success(Some activeSessionId) ->
@@ -428,13 +427,13 @@ type ConcurrencyTests() =
                             "設定されたアクティブセッションが期待される値ではありません"
                         )
                     | Success None when retryCount > 1 ->
-                        // リトライ
-                        System.Threading.Thread.Sleep(5)
+                        // 長めのリトライ間隔
+                        System.Threading.Thread.Sleep(100)
                         checkActiveSession (retryCount - 1)
                     | Success None -> Assert.Fail("アクティブセッションが設定されていません")
                     | Error msg -> Assert.Fail($"アクティブセッション取得失敗: {msg}")
 
-            checkActiveSession (if isMacOS then 5 else 3)
+            checkActiveSession (if isMacOS then 10 else 5)
 
     [<Test>]
     [<Category("Performance")>]

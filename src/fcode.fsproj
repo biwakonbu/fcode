@@ -88,6 +88,10 @@
     <Compile Include="InputValidation.fs" />
     <Compile Include="PerformanceOptimizer.fs" />
     <Compile Include="SimpleMemoryMonitor.fs" />
+    <!-- FC-022 Specialist Agent Integration -->
+    <Compile Include="SpecialistAgentManager.fs" />
+    <Compile Include="AIModelProvider.fs" />
+    <Compile Include="DevOpsIntegration.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

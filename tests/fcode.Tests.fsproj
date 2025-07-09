@@ -82,6 +82,10 @@
     <Compile Include="ComprehensiveIntegrationTests.fs"/>
     <Compile Include="CICompatibilityTests.fs"/>
     <Compile Include="RobustStabilityTests.fs"/>
+    <!-- FC-022 Specialist Agent Integration Tests -->
+    <Compile Include="SpecialistAgentManagerTests.fs"/>
+    <Compile Include="AIModelProviderTests.fs"/>
+    <Compile Include="DevOpsIntegrationTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

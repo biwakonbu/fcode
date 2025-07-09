@@ -60,6 +60,20 @@ type DevToolResult =
       Timestamp: DateTime }
 
 // ===============================================
+// プロセス共通ヘルパー
+// ===============================================
+
+/// ProcessStartInfo作成ヘルパー
+module private ProcessHelper =
+    let createProcessStartInfo (command: string) (arguments: string) (workingDirectory: string option) =
+        let psi = ProcessStartInfo(command, arguments)
+        workingDirectory |> Option.iter (fun dir -> psi.WorkingDirectory <- dir)
+        psi.UseShellExecute <- false
+        psi.RedirectStandardOutput <- true
+        psi.RedirectStandardError <- true
+        psi
+
+// ===============================================
 // Git統合マネージャー
 // ===============================================
 
@@ -78,11 +92,10 @@ type GitIntegrationManager() =
               RequiredPermissions = [ "read" ] }
 
         try
-            let psi = ProcessStartInfo("git", "status --porcelain")
-            psi.WorkingDirectory <- repoPath
-            psi.UseShellExecute <- false
-            psi.RedirectStandardOutput <- true
-            psi.RedirectStandardError <- true
+            let stopwatch = Diagnostics.Stopwatch.StartNew()
+
+            let psi =
+                ProcessHelper.createProcessStartInfo "git" "status --porcelain" (Some repoPath)
 
             use proc = Process.Start(psi)
 
@@ -90,6 +103,7 @@ type GitIntegrationManager() =
                 proc.Kill()
                 logError "GitIntegrationManager" "Git status check timed out"
 
+            stopwatch.Stop()
             let output = proc.StandardOutput.ReadToEnd()
             let errors = proc.StandardError.ReadToEnd()
 
@@ -97,7 +111,7 @@ type GitIntegrationManager() =
               ExitCode = proc.ExitCode
               StandardOutput = output
               StandardError = errors
-              Duration = TimeSpan.FromMilliseconds(float proc.TotalProcessorTime.TotalMilliseconds)
+              Duration = stopwatch.Elapsed
               Success = proc.ExitCode = 0
               Timestamp = DateTime.Now }
         with ex ->
@@ -114,11 +128,8 @@ type GitIntegrationManager() =
     /// ブランチ作成・切り替え
     member _.CreateAndSwitchBranch (repoPath: string) (branchName: string) =
         try
-            let psi = ProcessStartInfo("git", $"checkout -b {branchName}")
-            psi.WorkingDirectory <- repoPath
-            psi.UseShellExecute <- false
-            psi.RedirectStandardOutput <- true
-            psi.RedirectStandardError <- true
+            let psi =
+                ProcessHelper.createProcessStartInfo "git" $"checkout -b {branchName}" (Some repoPath)
 
             use proc = Process.Start(psi)
 
@@ -140,15 +151,14 @@ type GitIntegrationManager() =
 /// Docker操作専門マネージャー
 type DockerIntegrationManager() =
 
+    // Docker PS フォーマット定数
+    let dockerPsFormat =
+        "ps --format \"table {{.ID}}\\t{{.Image}}\\t{{.Status}}\\t{{.Names}}\""
+
     /// Dockerコンテナ状態確認
     member _.GetContainerStatus() =
         try
-            let psi =
-                ProcessStartInfo("docker", "ps --format \"table {{.ID}}\\t{{.Image}}\\t{{.Status}}\\t{{.Names}}\"")
-
-            psi.UseShellExecute <- false
-            psi.RedirectStandardOutput <- true
-            psi.RedirectStandardError <- true
+            let psi = ProcessHelper.createProcessStartInfo "docker" dockerPsFormat None
 
             use proc = Process.Start(psi)
 
@@ -280,22 +290,28 @@ type IntegratedDevFlowManager() =
 
     /// 統合デプロイフロー実行
     member this.ExecuteFullDeploymentFlow (projectPath: string) (commitMessage: string) (branchName: string) =
-        let results = new Dictionary<DevFlowStage, bool>()
-
         try
             // Planning段階: Git状態確認
             logInfo "IntegratedDevFlowManager" "=== 計画段階: Git状態確認 ==="
             let gitStatus = gitManager.GetRepositoryStatus projectPath
-            results.[Planning] <- gitStatus.Success
+            let planningResult = gitStatus.Success
 
             // TODO: 簡略化実装 - 実際のDevelopment/Testing/Building/Deployment/Monitoring実装を追加
-            results.[Development] <- true
-            results.[Testing] <- true
-            results.[Building] <- true
-            results.[Deployment] <- true
-            results.[Monitoring] <- true
+            Map.ofList
+                [ (Planning, planningResult)
+                  (Development, true)
+                  (Testing, true)
+                  (Building, true)
+                  (Deployment, true)
+                  (Monitoring, true) ]
 
         with ex ->
             logError "IntegratedDevFlowManager" $"統合デプロイフロー実行エラー: {ex.Message}"
 
-        results |> Seq.map (fun kvp -> kvp.Key, kvp.Value) |> Map.ofSeq
+            Map.ofList
+                [ (Planning, false)
+                  (Development, false)
+                  (Testing, false)
+                  (Building, false)
+                  (Deployment, false)
+                  (Monitoring, false) ]

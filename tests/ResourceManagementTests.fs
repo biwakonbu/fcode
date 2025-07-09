@@ -318,6 +318,8 @@ type ResourceManagementTests() =
             do! Task.Delay(500)
 
             // 2. SessionManager操作
+            let sessionManager = new FCode.ClaudeCodeProcess.SessionManager()
+
             let sessionSuccess =
                 sessionManager.StartSession($"session-{testPaneId}", workingDir, integrationTextView)
 
@@ -333,7 +335,7 @@ type ResourceManagementTests() =
                 do! Task.Delay(50)
 
             // 4. クリーンアップ
-            let _ = true // sessionManager.StopSession($"session-{testPaneId}") // 一時的に無効化
+            let sessionStopSuccess = sessionManager.StopSession($"session-{testPaneId}")
             let _ = true // workerManager.StopWorker(testPaneId) // 一時的に無効化
 
             // 最終リソース状態測定

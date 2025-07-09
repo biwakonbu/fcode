@@ -85,7 +85,10 @@ type GitIntegrationManager() =
             psi.RedirectStandardError <- true
 
             use proc = Process.Start(psi)
-            proc.WaitForExit(5000) |> ignore
+
+            if not (proc.WaitForExit(5000)) then
+                proc.Kill()
+                logError "GitIntegrationManager" "Git status check timed out"
 
             let output = proc.StandardOutput.ReadToEnd()
             let errors = proc.StandardError.ReadToEnd()
@@ -118,7 +121,10 @@ type GitIntegrationManager() =
             psi.RedirectStandardError <- true
 
             use proc = Process.Start(psi)
-            proc.WaitForExit(10000) |> ignore
+
+            if not (proc.WaitForExit(10000)) then
+                proc.Kill()
+                logError "GitIntegrationManager" "Git branch creation timed out"
 
             let success = proc.ExitCode = 0
             logInfo "GitIntegrationManager" $"ブランチ作成・切り替え: {branchName} (成功: {success})"
@@ -145,7 +151,10 @@ type DockerIntegrationManager() =
             psi.RedirectStandardError <- true
 
             use proc = Process.Start(psi)
-            proc.WaitForExit(10000) |> ignore
+
+            if not (proc.WaitForExit(10000)) then
+                proc.Kill()
+                logError "DockerIntegrationManager" "Docker container status check timed out"
 
             let output = proc.StandardOutput.ReadToEnd()
             logInfo "DockerIntegrationManager" "Dockerコンテナ状態確認完了"
@@ -163,36 +172,42 @@ type CICDIntegrationManager() =
 
     /// GitHub Actions ワークフロー生成
     member _.GenerateGitHubActionsWorkflow (projectType: string) (testCommand: string) (buildCommand: string) =
-        let workflow =
-            "name: CI/CD Pipeline\n\n"
-            + "on:\n"
-            + "  push:\n"
-            + "    branches: [ main, develop ]\n"
-            + "  pull_request:\n"
-            + "    branches: [ main ]\n\n"
-            + "jobs:\n"
-            + "  test:\n"
-            + "    runs-on: ubuntu-latest\n"
-            + "    steps:\n"
-            + "    - uses: actions/checkout@v3\n"
-            + "    - name: Setup .NET\n"
-            + "      uses: actions/setup-dotnet@v3\n"
-            + "      with:\n"
-            + "        dotnet-version: '8.0.x'\n"
-            + "    - name: Restore dependencies\n"
-            + "      run: dotnet restore\n"
-            + $"    - name: Run tests\n"
-            + $"      run: {testCommand}\n"
-            + $"    - name: Build\n"
-            + $"      run: {buildCommand}\n\n"
-            + "  deploy:\n"
-            + "    needs: test\n"
-            + "    runs-on: ubuntu-latest\n"
-            + "    if: github.ref == 'refs/heads/main'\n"
-            + "    steps:\n"
-            + "    - uses: actions/checkout@v3\n"
-            + "    - name: Deploy to production\n"
-            + "      run: echo \"Deployment step here\"\n"
+        // TODO: 構造化アプローチでYAML生成改善 - 文字列連結からYAMLライブラリへ移行検討
+        let workflowParts =
+            [ "name: CI/CD Pipeline"
+              ""
+              "on:"
+              "  push:"
+              "    branches: [ main, develop ]"
+              "  pull_request:"
+              "    branches: [ main ]"
+              ""
+              "jobs:"
+              "  test:"
+              "    runs-on: ubuntu-latest"
+              "    steps:"
+              "    - uses: actions/checkout@v3"
+              "    - name: Setup .NET"
+              "      uses: actions/setup-dotnet@v3"
+              "      with:"
+              "        dotnet-version: '8.0.x'"
+              "    - name: Restore dependencies"
+              "      run: dotnet restore"
+              $"    - name: Run tests"
+              $"      run: {testCommand}"
+              $"    - name: Build"
+              $"      run: {buildCommand}"
+              ""
+              "  deploy:"
+              "    needs: test"
+              "    runs-on: ubuntu-latest"
+              "    if: github.ref == 'refs/heads/main'"
+              "    steps:"
+              "    - uses: actions/checkout@v3"
+              "    - name: Deploy to production"
+              "      run: echo \"Deployment step here\"" ]
+
+        let workflow = String.concat "\n" workflowParts
 
         logInfo "CICDIntegrationManager" "GitHub Actions ワークフロー生成完了"
         workflow
@@ -273,7 +288,7 @@ type IntegratedDevFlowManager() =
             let gitStatus = gitManager.GetRepositoryStatus projectPath
             results.[Planning] <- gitStatus.Success
 
-            // 他の段階は簡略化
+            // TODO: 簡略化実装 - 実際のDevelopment/Testing/Building/Deployment/Monitoring実装を追加
             results.[Development] <- true
             results.[Testing] <- true
             results.[Building] <- true

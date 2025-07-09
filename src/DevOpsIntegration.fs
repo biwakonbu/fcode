@@ -1,11 +1,8 @@
 module FCode.DevOpsIntegration
 
 open System
-open System.Collections.Generic
 open System.Diagnostics
 open System.IO
-open System.Text.Json
-open FCode.AgentCLI
 open FCode.Logger
 
 // ===============================================

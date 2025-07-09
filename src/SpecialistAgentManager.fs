@@ -2,7 +2,6 @@ module FCode.SpecialistAgentManager
 
 open System
 open System.Collections.Generic
-open System.Text.Json
 open FCode.AgentCLI
 open FCode.Logger
 

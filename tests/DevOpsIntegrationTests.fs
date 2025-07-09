@@ -85,7 +85,25 @@ type DevOpsIntegrationTests() =
                 let branchName = "feature/test-branch"
                 let success = gitManager.CreateAndSwitchBranch tempDir branchName
 
-                // ブランチ作成の成功は Git の状態に依存するため、例外が発生しないことを確認
+                // ブランチ作成結果を検証
+                Assert.IsTrue(success, "ブランチ作成が成功すること")
+
+                // 実際にブランチが作成されたことを検証
+                let branchCheckPsi =
+                    System.Diagnostics.ProcessStartInfo("git", $"-C {tempDir} branch --show-current")
+
+                branchCheckPsi.UseShellExecute <- false
+                branchCheckPsi.RedirectStandardOutput <- true
+                let branchCheckResult = System.Diagnostics.Process.Start(branchCheckPsi)
+                branchCheckResult.WaitForExit()
+
+                if branchCheckResult.ExitCode = 0 then
+                    let currentBranch = branchCheckResult.StandardOutput.ReadToEnd().Trim()
+                    Assert.AreEqual(branchName, currentBranch, "正しいブランチに切り替わっていること")
+                else
+                    Assert.Fail("ブランチ確認コマンドが失敗しました")
+
+                // 例外が発生しないことを確認
                 Assert.DoesNotThrow(fun () -> gitManager.CreateAndSwitchBranch tempDir branchName |> ignore)
             else
                 Assert.Inconclusive("初期コミット作成に失敗しました")
@@ -100,8 +118,23 @@ type DevOpsIntegrationTests() =
         // Docker が利用可能かどうかに関係なく、メソッドが例外を投げないことを確認
         Assert.DoesNotThrow(fun () ->
             let result = dockerManager.GetContainerStatus()
-            // 結果はDockerの利用可能性に依存するが、None または Some(string) が返される
-            Assert.IsTrue(result.IsNone || result.IsSome))
+
+            // 結果の具体的な検証
+            match result with
+            | Some output ->
+                // Dockerが利用可能な場合、ヘッダーやテーブル形式の出力を期待
+                Assert.IsNotNull(output, "Docker出力がnullではないこと")
+
+                Assert.IsTrue(
+                    output.Contains("ID")
+                    || output.Contains("IMAGE")
+                    || output.Contains("NAMES")
+                    || output.Trim().Length = 0,
+                    "Docker PSフォーマットまたは空の結果"
+                )
+            | None ->
+                // Dockerが利用不可な場合、Noneが返されることを確認
+                Assert.Pass("Dockerが利用不可のためNoneが返されました"))
 
     [<Test>]
     [<Category("Unit")>]

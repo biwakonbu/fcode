@@ -2,8 +2,6 @@ module FCode.AIModelProvider
 
 open System
 open System.Collections.Generic
-open System.Text.Json
-open System.Net.Http
 open FCode.AgentCLI
 open FCode.Logger
 

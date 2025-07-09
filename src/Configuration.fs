@@ -17,7 +17,15 @@ type ApplicationConfig =
       // セキュリティ設定
       SecurityConfig: SecurityConfiguration
       // AI モデル設定
-      AIModelConfig: AIModelConfiguration }
+      AIModelConfig: AIModelConfiguration
+      // UI設定
+      UIConfig: UIConfiguration
+      // バッファ設定
+      BufferConfig: BufferConfiguration
+      // リトライ設定
+      RetryConfig: RetryConfiguration
+      // システムコマンド設定
+      SystemConfig: SystemConfiguration }
 
 /// プロセスタイムアウト設定
 and ProcessTimeoutConfig =
@@ -48,6 +56,38 @@ and AIModelConfiguration =
       MaxTokens: int
       CostThreshold: float
       TimeoutThreshold: TimeSpan }
+
+/// UI設定
+and UIConfiguration =
+    { ConversationWidth: int
+      ConversationHeight: int
+      DevRowHeight: int
+      QaRowHeight: int
+      UpdateIntervalMs: int
+      ShortSleepMs: int
+      StandardSleepMs: int }
+
+/// バッファ設定
+and BufferConfiguration =
+    { MaxBufferedLines: int
+      MaxBufferSize: int
+      UpdateThresholdMs: int }
+
+/// リトライ設定
+and RetryConfiguration =
+    { InitialDelayMs: int
+      MaxDelayMs: int
+      BackoffMultiplier: float
+      MaxRetryAttempts: int
+      UIUpdateIntervalMs: int }
+
+/// システムコマンド設定
+and SystemConfiguration =
+    { GitCommand: string
+      DockerCommand: string
+      DotnetCommand: string
+      WhichCommand: string
+      ClaudeCommand: string list }
 
 // ===============================================
 // デフォルト設定定義
@@ -82,11 +122,47 @@ module DefaultConfig =
           CostThreshold = 1.0
           TimeoutThreshold = TimeSpan.FromMinutes(2.0) }
 
+    let uiConfig =
+        { ConversationWidth = 60
+          ConversationHeight = 24
+          DevRowHeight = 8
+          QaRowHeight = 8
+          UpdateIntervalMs = 500
+          ShortSleepMs = 10
+          StandardSleepMs = 100 }
+
+    let bufferConfig =
+        { MaxBufferedLines = 5
+          MaxBufferSize = 50000
+          UpdateThresholdMs = 50 }
+
+    let retryConfig =
+        { InitialDelayMs = 1000
+          MaxDelayMs = 30000
+          BackoffMultiplier = 2.0
+          MaxRetryAttempts = 5
+          UIUpdateIntervalMs = 500 }
+
+    let systemConfig =
+        { GitCommand = "git"
+          DockerCommand = "docker"
+          DotnetCommand = "dotnet"
+          WhichCommand = "which"
+          ClaudeCommand =
+            [ "/home/biwakonbu/.local/share/nvm/v20.12.0/bin/claude"
+                  "/usr/local/bin/claude"
+                  "/home/biwakonbu/.local/bin/claude"
+                  "claude" ] }
+
     let applicationConfig =
         { ProcessTimeouts = processTimeouts
           PortConfig = portConfig
           SecurityConfig = securityConfig
-          AIModelConfig = aiModelConfig }
+          AIModelConfig = aiModelConfig
+          UIConfig = uiConfig
+          BufferConfig = bufferConfig
+          RetryConfig = retryConfig
+          SystemConfig = systemConfig }
 
 // ===============================================
 // 設定管理マネージャー
@@ -209,3 +285,67 @@ module Config =
 
     let getTimeoutThreshold () =
         ConfigurationManager.Current.AIModelConfig.TimeoutThreshold
+
+    /// UI設定取得
+    let getConversationWidth () =
+        ConfigurationManager.Current.UIConfig.ConversationWidth
+
+    let getConversationHeight () =
+        ConfigurationManager.Current.UIConfig.ConversationHeight
+
+    let getDevRowHeight () =
+        ConfigurationManager.Current.UIConfig.DevRowHeight
+
+    let getQaRowHeight () =
+        ConfigurationManager.Current.UIConfig.QaRowHeight
+
+    let getUIUpdateIntervalMs () =
+        ConfigurationManager.Current.UIConfig.UpdateIntervalMs
+
+    let getShortSleepMs () =
+        ConfigurationManager.Current.UIConfig.ShortSleepMs
+
+    let getStandardSleepMs () =
+        ConfigurationManager.Current.UIConfig.StandardSleepMs
+
+    /// バッファ設定取得
+    let getMaxBufferedLines () =
+        ConfigurationManager.Current.BufferConfig.MaxBufferedLines
+
+    let getMaxBufferSize () =
+        ConfigurationManager.Current.BufferConfig.MaxBufferSize
+
+    let getUpdateThresholdMs () =
+        ConfigurationManager.Current.BufferConfig.UpdateThresholdMs
+
+    /// リトライ設定取得
+    let getInitialDelayMs () =
+        ConfigurationManager.Current.RetryConfig.InitialDelayMs
+
+    let getMaxDelayMs () =
+        ConfigurationManager.Current.RetryConfig.MaxDelayMs
+
+    let getBackoffMultiplier () =
+        ConfigurationManager.Current.RetryConfig.BackoffMultiplier
+
+    let getMaxRetryAttempts () =
+        ConfigurationManager.Current.RetryConfig.MaxRetryAttempts
+
+    let getRetryUIUpdateIntervalMs () =
+        ConfigurationManager.Current.RetryConfig.UIUpdateIntervalMs
+
+    /// システムコマンド設定取得
+    let getGitCommand () =
+        ConfigurationManager.Current.SystemConfig.GitCommand
+
+    let getDockerCommand () =
+        ConfigurationManager.Current.SystemConfig.DockerCommand
+
+    let getDotnetCommand () =
+        ConfigurationManager.Current.SystemConfig.DotnetCommand
+
+    let getWhichCommand () =
+        ConfigurationManager.Current.SystemConfig.WhichCommand
+
+    let getClaudeCommandCandidates () =
+        ConfigurationManager.Current.SystemConfig.ClaudeCommand

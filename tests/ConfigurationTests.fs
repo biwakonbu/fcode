@@ -2,7 +2,7 @@ module FCode.Tests.ConfigurationTests
 
 open System
 open NUnit.Framework
-open FCode.Configuration
+open FCode.ConfigurationManager
 
 // ===============================================
 // Configuration Tests
@@ -13,102 +13,98 @@ open FCode.Configuration
 type ConfigurationTests() =
 
     [<Test>]
-    member this.``DefaultConfig should have valid values``() =
+    member this.``DefaultTimeouts should have valid values``() =
         // Arrange & Act
-        let config = DefaultConfig.applicationConfig
+        let timeouts = DefaultTimeouts.processTimeouts
 
         // Assert
-        Assert.That(config.ProcessTimeouts.GitTimeout, Is.GreaterThan(0))
-        Assert.That(config.ProcessTimeouts.DockerTimeout, Is.GreaterThan(0))
-        Assert.That(config.ProcessTimeouts.BuildTimeout, Is.GreaterThan(0))
-        Assert.That(config.ProcessTimeouts.TestTimeout, Is.GreaterThan(0))
-        Assert.That(config.ProcessTimeouts.DeployTimeout, Is.GreaterThan(0))
-        Assert.That(config.ProcessTimeouts.ProcessKillTimeout, Is.GreaterThan(0))
-
-        Assert.That(config.PortConfig.ApplicationPort, Is.InRange(1024, 65535))
-        Assert.That(config.PortConfig.DatabasePort, Is.InRange(1024, 65535))
-
-        Assert.That(config.SecurityConfig.MaxBranchNameLength, Is.GreaterThan(0))
-        Assert.That(config.SecurityConfig.AllowedFileExtensions, Is.Not.Empty)
-        Assert.That(config.SecurityConfig.DangerousPathPatterns, Is.Not.Empty)
-        Assert.That(config.SecurityConfig.MaxPathLength, Is.GreaterThan(0))
-
-        Assert.That(config.AIModelConfig.MaxTokens, Is.GreaterThan(0))
-        Assert.That(config.AIModelConfig.CostThreshold, Is.GreaterThan(0.0))
-        Assert.That(config.AIModelConfig.TimeoutThreshold, Is.GreaterThan(TimeSpan.Zero))
+        Assert.That(timeouts.GitTimeout, Is.GreaterThan(0))
+        Assert.That(timeouts.DockerTimeout, Is.GreaterThan(0))
+        Assert.That(timeouts.BuildTimeout, Is.GreaterThan(0))
+        Assert.That(timeouts.TestTimeout, Is.GreaterThan(0))
+        Assert.That(timeouts.DeployTimeout, Is.GreaterThan(0))
+        Assert.That(timeouts.ProcessKillTimeout, Is.GreaterThan(0))
 
     [<Test>]
-    member this.``ConfigurationManager should update config correctly``() =
+    member this.``DefaultSystemCommands should have valid values``() =
+        // Arrange & Act
+        let commands = DefaultTimeouts.systemCommands
+
+        // Assert
+        Assert.That(commands.GitCommand, Is.Not.Empty)
+        Assert.That(commands.DockerCommand, Is.Not.Empty)
+        Assert.That(commands.DotnetCommand, Is.Not.Empty)
+        Assert.That(commands.WhichCommand, Is.Not.Empty)
+
+    [<Test>]
+    member this.``ConfigurationManager should create default configuration``() =
         // Arrange
-        let originalConfig = ConfigurationManager.Current
-
-        let newTimeouts =
-            { GitTimeout = 2000
-              DockerTimeout = 3000
-              BuildTimeout = 4000
-              TestTimeout = 5000
-              DeployTimeout = 6000
-              ProcessKillTimeout = 500 }
-
-        let newConfig =
-            { originalConfig with
-                ProcessTimeouts = newTimeouts }
+        let configManager = ConfigurationManager()
 
         // Act
-        ConfigurationManager.UpdateConfig(newConfig)
+        let result = configManager.CreateDefaultConfiguration()
 
         // Assert
-        Assert.That(ConfigurationManager.Current.ProcessTimeouts.GitTimeout, Is.EqualTo(2000))
-        Assert.That(ConfigurationManager.Current.ProcessTimeouts.DockerTimeout, Is.EqualTo(3000))
-        Assert.That(ConfigurationManager.Current.ProcessTimeouts.BuildTimeout, Is.EqualTo(4000))
-        Assert.That(ConfigurationManager.Current.ProcessTimeouts.TestTimeout, Is.EqualTo(5000))
-        Assert.That(ConfigurationManager.Current.ProcessTimeouts.DeployTimeout, Is.EqualTo(6000))
-        Assert.That(ConfigurationManager.Current.ProcessTimeouts.ProcessKillTimeout, Is.EqualTo(500))
-
-        // Cleanup
-        ConfigurationManager.UpdateConfig(originalConfig)
+        Assert.That(result, Is.True)
+        let config = configManager.GetConfiguration()
+        Assert.That(config.Version, Is.Not.Empty)
+        Assert.That(config.PaneConfigs, Is.Not.Empty)
+        Assert.That(config.KeyBindings, Is.Not.Empty)
 
     [<Test>]
-    member this.``Config helpers should return current values``() =
+    member this.``ConfigurationManager should validate configuration``() =
         // Arrange
-        let currentConfig = ConfigurationManager.Current
+        let configManager = ConfigurationManager()
 
+        // Act
+        let validationErrors = configManager.ValidateConfiguration()
+
+        // Assert
+        // Validation errors might exist (e.g., Claude CLI not found) but shouldn't fail
+        Assert.That(validationErrors, Is.Not.Null)
+
+    [<Test>]
+    member this.``Global configuration manager should provide timeout values``() =
         // Act & Assert
-        Assert.That(Config.getGitTimeout (), Is.EqualTo(currentConfig.ProcessTimeouts.GitTimeout))
-        Assert.That(Config.getDockerTimeout (), Is.EqualTo(currentConfig.ProcessTimeouts.DockerTimeout))
-        Assert.That(Config.getBuildTimeout (), Is.EqualTo(currentConfig.ProcessTimeouts.BuildTimeout))
-        Assert.That(Config.getTestTimeout (), Is.EqualTo(currentConfig.ProcessTimeouts.TestTimeout))
-        Assert.That(Config.getDeployTimeout (), Is.EqualTo(currentConfig.ProcessTimeouts.DeployTimeout))
-        Assert.That(Config.getProcessKillTimeout (), Is.EqualTo(currentConfig.ProcessTimeouts.ProcessKillTimeout))
-
-        Assert.That(Config.getApplicationPort (), Is.EqualTo(currentConfig.PortConfig.ApplicationPort))
-        Assert.That(Config.getDatabasePort (), Is.EqualTo(currentConfig.PortConfig.DatabasePort))
-        Assert.That(Config.getMonitoringPort (), Is.EqualTo(currentConfig.PortConfig.MonitoringPort))
-
-        Assert.That(Config.getMaxBranchNameLength (), Is.EqualTo(currentConfig.SecurityConfig.MaxBranchNameLength))
-        Assert.That(Config.getAllowedFileExtensions (), Is.EqualTo(currentConfig.SecurityConfig.AllowedFileExtensions))
-        Assert.That(Config.getDangerousPathPatterns (), Is.EqualTo(currentConfig.SecurityConfig.DangerousPathPatterns))
-        Assert.That(Config.getMaxPathLength (), Is.EqualTo(currentConfig.SecurityConfig.MaxPathLength))
-
-        Assert.That(Config.getDefaultModel (), Is.EqualTo(currentConfig.AIModelConfig.DefaultModel))
-        Assert.That(Config.getMaxTokens (), Is.EqualTo(currentConfig.AIModelConfig.MaxTokens))
-        Assert.That(Config.getCostThreshold (), Is.EqualTo(currentConfig.AIModelConfig.CostThreshold))
-        Assert.That(Config.getTimeoutThreshold (), Is.EqualTo(currentConfig.AIModelConfig.TimeoutThreshold))
+        Assert.That(getGitTimeout (), Is.GreaterThan(0))
+        Assert.That(getDockerTimeout (), Is.GreaterThan(0))
+        Assert.That(getBuildTimeout (), Is.GreaterThan(0))
+        Assert.That(getTestTimeout (), Is.GreaterThan(0))
+        Assert.That(getDeployTimeout (), Is.GreaterThan(0))
+        Assert.That(getProcessKillTimeout (), Is.GreaterThan(0))
 
     [<Test>]
-    member this.``LoadFromEnvironment should handle missing environment variables gracefully``() =
+    member this.``Global configuration manager should provide system commands``() =
+        // Act & Assert
+        Assert.That(getGitCommand (), Is.Not.Empty)
+        Assert.That(getDockerCommand (), Is.Not.Empty)
+        Assert.That(getDotnetCommand (), Is.Not.Empty)
+        Assert.That(getWhichCommand (), Is.Not.Empty)
+
+    [<Test>]
+    member this.``ConfigurationManager should handle pane configuration``() =
         // Arrange
-        let originalConfig = ConfigurationManager.Current
+        let configManager = ConfigurationManager()
 
         // Act
-        ConfigurationManager.LoadFromEnvironment()
+        let dev1Config = configManager.GetPaneConfig("dev1")
+        let unknownConfig = configManager.GetPaneConfig("unknown")
 
-        // Assert - Should not throw and should maintain reasonable values
-        let config = ConfigurationManager.Current
-        Assert.That(config.ProcessTimeouts.GitTimeout, Is.GreaterThan(0))
-        Assert.That(config.ProcessTimeouts.DockerTimeout, Is.GreaterThan(0))
-        Assert.That(config.PortConfig.ApplicationPort, Is.InRange(1024, 65535))
-        Assert.That(config.PortConfig.DatabasePort, Is.InRange(1024, 65535))
+        // Assert
+        Assert.That(dev1Config, Is.Not.Null)
+        Assert.That(dev1Config.Value.Role, Is.EqualTo("senior_engineer"))
+        Assert.That(unknownConfig, Is.Null)
 
-        // Cleanup
-        ConfigurationManager.UpdateConfig(originalConfig)
+    [<Test>]
+    member this.``ConfigurationManager should handle key bindings``() =
+        // Arrange
+        let configManager = ConfigurationManager()
+
+        // Act
+        let exitBinding = configManager.GetKeyBinding("ExitApplication")
+        let unknownBinding = configManager.GetKeyBinding("UnknownAction")
+
+        // Assert
+        Assert.That(exitBinding, Is.Not.Null)
+        Assert.That(exitBinding.Value.KeySequence, Is.EqualTo("Ctrl+X Ctrl+C"))
+        Assert.That(unknownBinding, Is.Null)

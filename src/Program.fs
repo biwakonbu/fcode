@@ -16,6 +16,7 @@ open FCode.ProgressDashboard
 open FCode.RealtimeUIIntegration
 open FCode.FullWorkflowCoordinator
 open FCode.SimpleMemoryMonitor
+open FCode.ConfigurationManager
 
 [<EntryPoint>]
 let main argv =
@@ -51,12 +52,12 @@ let main argv =
 
             // --- Conversation Pane (FIXED LAYOUT) -------------------------------------------------
             logDebug "UI" "Creating conversation pane"
-            let conversationWidth = 60 // columns
+            let conversationWidth = 60
             let convo = new FrameView("会話")
             convo.X <- 0
             convo.Y <- 0
             convo.Width <- conversationWidth
-            convo.Height <- 24 // 固定高
+            convo.Height <- 24
             convo.CanFocus <- true // フォーカス可能にする（key-event-focus.md対応）
 
             // Border-less style for the conversation pane (フラット表示)
@@ -147,8 +148,8 @@ let main argv =
 
             // Row heights (percentage of right-hand container)
             // FIXED LAYOUT for debugging - replacing dynamic Dim.Percent
-            let devRowHeight = 8 // 固定値
-            let qaRowHeight = 8 // 固定値
+            let devRowHeight = 8
+            let qaRowHeight = 8
 
             // ------------------------------------------------------------------
             // Top row – dev1 dev2 dev3

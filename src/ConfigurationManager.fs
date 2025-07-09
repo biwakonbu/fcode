@@ -34,6 +34,38 @@ type ResourceConfig =
     { MaxActiveConnections: int option
       MonitoringIntervalMs: int option }
 
+/// プロセスタイムアウト設定
+type ProcessTimeoutConfig =
+    { GitTimeout: int
+      DockerTimeout: int
+      BuildTimeout: int
+      TestTimeout: int
+      DeployTimeout: int
+      ProcessKillTimeout: int }
+
+/// システムコマンド設定
+type SystemCommandConfig =
+    { GitCommand: string
+      DockerCommand: string
+      DotnetCommand: string
+      WhichCommand: string }
+
+/// デフォルト設定値
+module DefaultTimeouts =
+    let processTimeouts =
+        { GitTimeout = 5000
+          DockerTimeout = 10000
+          BuildTimeout = 60000
+          TestTimeout = 30000
+          DeployTimeout = 90000
+          ProcessKillTimeout = 1000 }
+
+    let systemCommands =
+        { GitCommand = "git"
+          DockerCommand = "docker"
+          DotnetCommand = "dotnet"
+          WhichCommand = "which" }
+
 type AgentIntegrationConfigData =
     { Name: string
       CliPath: string
@@ -307,6 +339,10 @@ type ConfigurationManager() =
 
         logDebug "ConfigurationManager" $"Key binding updated for {action}: {keySequence}"
 
+    // プロセスタイムアウト設定取得
+    member _.GetProcessTimeouts() = DefaultTimeouts.processTimeouts
+    member _.GetSystemCommands() = DefaultTimeouts.systemCommands
+
     // 環境変数からの設定オーバーライド
     member _.LoadEnvironmentOverrides() =
         try
@@ -400,3 +436,39 @@ let initializeConfiguration () =
         logWarning "ConfigurationManager" $"Configuration validation errors: {errorMessage}"
     else
         logInfo "ConfigurationManager" "Configuration validation passed"
+
+// ===============================================
+// 設定値アクセス関数
+// ===============================================
+
+/// プロセスタイムアウト設定取得
+let getGitTimeout () =
+    globalConfigurationManager.GetProcessTimeouts().GitTimeout
+
+let getDockerTimeout () =
+    globalConfigurationManager.GetProcessTimeouts().DockerTimeout
+
+let getBuildTimeout () =
+    globalConfigurationManager.GetProcessTimeouts().BuildTimeout
+
+let getTestTimeout () =
+    globalConfigurationManager.GetProcessTimeouts().TestTimeout
+
+let getDeployTimeout () =
+    globalConfigurationManager.GetProcessTimeouts().DeployTimeout
+
+let getProcessKillTimeout () =
+    globalConfigurationManager.GetProcessTimeouts().ProcessKillTimeout
+
+/// システムコマンド設定取得
+let getGitCommand () =
+    globalConfigurationManager.GetSystemCommands().GitCommand
+
+let getDockerCommand () =
+    globalConfigurationManager.GetSystemCommands().DockerCommand
+
+let getDotnetCommand () =
+    globalConfigurationManager.GetSystemCommands().DotnetCommand
+
+let getWhichCommand () =
+    globalConfigurationManager.GetSystemCommands().WhichCommand

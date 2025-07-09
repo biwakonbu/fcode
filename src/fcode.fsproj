@@ -8,7 +8,7 @@
     <Compile Include="SecurityUtils.fs" />
     <Compile Include="Logger.fs" />
     <Compile Include="UISecurityManager.fs" />
-    <Compile Include="Configuration.fs" />
+    <!-- <Compile Include="Configuration.fs" /> -->
     <Compile Include="PrototypeMessages.fs" />
     <Compile Include="UIAbstractions.fs" />
     <Compile Include="FCodeError.fs" />

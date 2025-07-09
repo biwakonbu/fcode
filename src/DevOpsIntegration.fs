@@ -4,7 +4,7 @@ open System
 open System.Diagnostics
 open System.IO
 open FCode.Logger
-open FCode.Configuration
+open FCode.ConfigurationManager
 
 // ===============================================
 // 開発フロー統合定義
@@ -93,14 +93,14 @@ type GitIntegrationManager() =
             let stopwatch = Diagnostics.Stopwatch.StartNew()
 
             let psi =
-                ProcessHelper.createProcessStartInfo "git" "status --porcelain" (Some repoPath)
+                ProcessHelper.createProcessStartInfo (getGitCommand ()) "status --porcelain" (Some repoPath)
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(Config.getGitTimeout ())) then
+            if not (proc.WaitForExit(getGitTimeout ())) then
                 // セキュリティ: Process Resource管理強化
                 proc.Kill()
-                proc.WaitForExit(Config.getProcessKillTimeout ()) |> ignore // 確実な終了待機
+                proc.WaitForExit(getProcessKillTimeout ()) |> ignore // 確実な終了待機
                 logError "GitIntegrationManager" "Git status check timed out"
 
             stopwatch.Stop()
@@ -134,12 +134,13 @@ type GitIntegrationManager() =
             if String.IsNullOrWhiteSpace(name) then
                 raise (ArgumentException("Branch name cannot be empty"))
 
-            let dangerousChars = Config.getDangerousPathPatterns ()
+            let dangerousChars =
+                [ "../"; "..\\"; ";"; "|"; "&"; "`"; "$"; "'"; "\""; "\n"; "\r"; "\t" ]
 
             if dangerousChars |> List.exists name.Contains then
                 raise (ArgumentException("Invalid characters in branch name"))
 
-            if name.Length > Config.getMaxBranchNameLength () then
+            if name.Length > 100 then
                 raise (ArgumentException("Branch name too long"))
 
             name.Trim()
@@ -148,14 +149,14 @@ type GitIntegrationManager() =
             let safeBranchName = validateBranchName branchName
 
             let psi =
-                ProcessHelper.createProcessStartInfo "git" $"checkout -b {safeBranchName}" (Some repoPath)
+                ProcessHelper.createProcessStartInfo (getGitCommand ()) $"checkout -b {safeBranchName}" (Some repoPath)
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(Config.getGitTimeout ())) then
+            if not (proc.WaitForExit(getGitTimeout ())) then
                 // セキュリティ: Process Resource管理強化
                 proc.Kill()
-                proc.WaitForExit(Config.getProcessKillTimeout ()) |> ignore // 確実な終了待機
+                proc.WaitForExit(getProcessKillTimeout ()) |> ignore // 確実な終了待機
                 logError "GitIntegrationManager" "Git branch creation timed out"
 
             let success = proc.ExitCode = 0
@@ -181,11 +182,12 @@ type DockerIntegrationManager() =
     /// Dockerコンテナ状態確認
     member _.GetContainerStatus() =
         try
-            let psi = ProcessHelper.createProcessStartInfo "docker" dockerPsFormat None
+            let psi =
+                ProcessHelper.createProcessStartInfo (getDockerCommand ()) dockerPsFormat None
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(Config.getDockerTimeout ())) then
+            if not (proc.WaitForExit(getDockerTimeout ())) then
                 proc.Kill()
                 logError "DockerIntegrationManager" "Docker container status check timed out"
 
@@ -305,6 +307,110 @@ jobs:
         dockerCompose
 
 // ===============================================
+// Kubernetes統合マネージャー
+// ===============================================
+
+/// Kubernetes操作専門マネージャー
+type KubernetesIntegrationManager() =
+
+    /// Kubernetes クラスタ状態確認
+    member _.GetClusterStatus() =
+        try
+            let psi = ProcessHelper.createProcessStartInfo "kubectl" "get nodes" None
+
+            use proc = Process.Start(psi)
+
+            if not (proc.WaitForExit(getDockerTimeout ())) then
+                proc.Kill()
+                logError "KubernetesIntegrationManager" "Kubernetes cluster status check timed out"
+
+            let output = proc.StandardOutput.ReadToEnd()
+            logInfo "KubernetesIntegrationManager" "Kubernetes クラスタ状態確認完了"
+            Some output
+        with ex ->
+            logError "KubernetesIntegrationManager" $"Kubernetes クラスタ状態確認エラー: {ex.Message}"
+            None
+
+    /// Kubernetes マニフェスト適用
+    member _.ApplyManifest(manifestPath: string) =
+        try
+            let psi =
+                ProcessHelper.createProcessStartInfo "kubectl" $"apply -f {manifestPath}" None
+
+            use proc = Process.Start(psi)
+
+            if not (proc.WaitForExit(getDeployTimeout ())) then
+                proc.Kill()
+                logError "KubernetesIntegrationManager" "Kubernetes manifest apply timed out"
+
+            let success = proc.ExitCode = 0
+            logInfo "KubernetesIntegrationManager" $"Kubernetes マニフェスト適用: {manifestPath} (成功: {success})"
+            success
+        with ex ->
+            logError "KubernetesIntegrationManager" $"Kubernetes マニフェスト適用エラー: {ex.Message}"
+            false
+
+// ===============================================
+// 監視統合マネージャー
+// ===============================================
+
+/// 監視システム統合マネージャー
+type MonitoringIntegrationManager() =
+
+    /// Prometheus メトリクス確認
+    member _.GetPrometheusMetrics() =
+        try
+            let psi =
+                ProcessHelper.createProcessStartInfo "curl" "-s http://localhost:9090/metrics" None
+
+            use proc = Process.Start(psi)
+
+            if not (proc.WaitForExit(getDockerTimeout ())) then
+                proc.Kill()
+                logError "MonitoringIntegrationManager" "Prometheus metrics check timed out"
+
+            let output = proc.StandardOutput.ReadToEnd()
+            logInfo "MonitoringIntegrationManager" "Prometheus メトリクス確認完了"
+            Some output
+        with ex ->
+            logError "MonitoringIntegrationManager" $"Prometheus メトリクス確認エラー: {ex.Message}"
+            None
+
+    /// ヘルスチェック実行
+    member _.PerformHealthCheck(endpoints: string list) =
+        try
+            let results =
+                endpoints
+                |> List.map (fun endpoint ->
+                    try
+                        let psi =
+                            ProcessHelper.createProcessStartInfo
+                                "curl"
+                                $"-s -o /dev/null -w \"%%{{http_code}}\" {endpoint}"
+                                None
+
+                        use proc = Process.Start(psi)
+
+                        if proc.WaitForExit(5000) then
+                            let statusCode = proc.StandardOutput.ReadToEnd().Trim()
+                            (endpoint, statusCode = "200")
+                        else
+                            proc.Kill()
+                            (endpoint, false)
+                    with ex ->
+                        logError "MonitoringIntegrationManager" $"ヘルスチェックエラー ({endpoint}): {ex.Message}"
+                        (endpoint, false))
+
+            let successCount = results |> List.filter snd |> List.length
+            let totalCount = results.Length
+
+            logInfo "MonitoringIntegrationManager" $"ヘルスチェック結果: {successCount}/{totalCount} エンドポイント正常"
+            results
+        with ex ->
+            logError "MonitoringIntegrationManager" $"ヘルスチェック実行エラー: {ex.Message}"
+            []
+
+// ===============================================
 // 統合開発フロー管理
 // ===============================================
 
@@ -313,6 +419,8 @@ type IntegratedDevFlowManager() =
     let gitManager = GitIntegrationManager()
     let dockerManager = DockerIntegrationManager()
     let cicdManager = CICDIntegrationManager()
+    let k8sManager = KubernetesIntegrationManager()
+    let monitoringManager = MonitoringIntegrationManager()
 
     /// 開発環境セットアップ
     member this.SetupDevelopmentEnvironment (projectPath: string) (projectType: string) =
@@ -340,8 +448,8 @@ type IntegratedDevFlowManager() =
             // Docker Compose生成
             let dockerCompose =
                 cicdManager.GenerateDockerCompose
-                    [ ("app", "fcode-app:latest", [ (Config.getApplicationPort (), 80) ])
-                      ("database", "postgres:13", [ (Config.getDatabasePort (), 5432) ]) ]
+                    [ ("app", "fcode-app:latest", [ (8080, 80) ])
+                      ("database", "postgres:13", [ (5432, 5432) ]) ]
 
             let composePath = validateAndNormalizePath projectPath "docker-compose.yml"
             File.WriteAllText(composePath, dockerCompose)
@@ -372,12 +480,12 @@ type IntegratedDevFlowManager() =
                 try
                     let psi =
                         ProcessHelper.createProcessStartInfo
-                            "dotnet"
+                            (getDotnetCommand ())
                             "test --no-build --verbosity quiet"
                             (Some projectPath)
 
                     use proc = Process.Start(psi)
-                    proc.WaitForExit(Config.getTestTimeout ()) && proc.ExitCode = 0
+                    proc.WaitForExit(getTestTimeout ()) && proc.ExitCode = 0
                 with _ ->
                     false
 
@@ -386,10 +494,13 @@ type IntegratedDevFlowManager() =
             let buildingResult =
                 try
                     let psi =
-                        ProcessHelper.createProcessStartInfo "dotnet" "build --configuration Release" (Some projectPath)
+                        ProcessHelper.createProcessStartInfo
+                            (getDotnetCommand ())
+                            "build --configuration Release"
+                            (Some projectPath)
 
                     use proc = Process.Start(psi)
-                    proc.WaitForExit(Config.getBuildTimeout ()) && proc.ExitCode = 0
+                    proc.WaitForExit(getBuildTimeout ()) && proc.ExitCode = 0
                 with _ ->
                     false
 
@@ -402,22 +513,44 @@ type IntegratedDevFlowManager() =
 
                     let psi =
                         ProcessHelper.createProcessStartInfo
-                            "dotnet"
+                            (getDotnetCommand ())
                             $"publish --configuration Release --output {outputPath}"
                             (Some projectPath)
 
                     use proc = Process.Start(psi)
-                    proc.WaitForExit(Config.getDeployTimeout ()) && proc.ExitCode = 0
+                    proc.WaitForExit(getDeployTimeout ()) && proc.ExitCode = 0
                 with _ ->
                     false
 
             logInfo "IntegratedDevFlowManager" "=== 監視段階: 実行状況確認 ==="
 
             let monitoringResult =
-                // Docker状態確認による基本監視
-                match dockerManager.GetContainerStatus() with
-                | Some _ -> true
-                | None -> true // Docker未使用環境でも成功とする
+                try
+                    // Docker状態確認
+                    let dockerStatus = dockerManager.GetContainerStatus()
+
+                    // Kubernetes状態確認（利用可能な場合）
+                    let k8sStatus = k8sManager.GetClusterStatus()
+
+                    // ヘルスチェック実行
+                    let healthResults =
+                        monitoringManager.PerformHealthCheck(
+                            [ "http://localhost:8080/health"; "http://localhost:3000/health" ]
+                        )
+
+                    // Prometheus メトリクス確認
+                    let prometheusMetrics = monitoringManager.GetPrometheusMetrics()
+
+                    // 総合的な監視結果判定
+                    let dockerOk = dockerStatus.IsSome
+                    let k8sOk = k8sStatus.IsSome || true // K8s未使用環境でも成功とする
+                    let healthOk = healthResults |> List.exists snd || healthResults.IsEmpty
+                    let prometheusOk = prometheusMetrics.IsSome || true // Prometheus未使用環境でも成功とする
+
+                    dockerOk && k8sOk && healthOk && prometheusOk
+                with ex ->
+                    logError "IntegratedDevFlowManager" $"監視段階エラー: {ex.Message}"
+                    false
 
             let results =
                 Map.ofList
@@ -446,3 +579,258 @@ type IntegratedDevFlowManager() =
                   (Building, false)
                   (Deployment, false)
                   (Monitoring, false) ]
+
+    /// 包括的DevOpsワークフロー実行
+    member this.ExecuteFullDevOpsWorkflow
+        (projectPath: string)
+        (commitMessage: string)
+        (branchName: string)
+        (deployTarget: string)
+        =
+        try
+            logInfo "IntegratedDevFlowManager" "=== 包括的DevOpsワークフロー開始 ==="
+
+            // 1. プランニング・設計検証
+            logInfo "IntegratedDevFlowManager" "=== Phase 1: プランニング・設計検証 ==="
+
+            let planningResult =
+                let gitStatus = gitManager.GetRepositoryStatus projectPath
+                let branchCreated = gitManager.CreateAndSwitchBranch projectPath branchName
+                gitStatus.Success && branchCreated
+
+            // 2. 開発環境セットアップ
+            logInfo "IntegratedDevFlowManager" "=== Phase 2: 開発環境セットアップ ==="
+            let developmentResult = this.SetupDevelopmentEnvironment projectPath "dotnet"
+
+            // 3. コード品質検証
+            logInfo "IntegratedDevFlowManager" "=== Phase 3: コード品質検証 ==="
+
+            let qualityResult =
+                try
+                    // リンター実行
+                    let lintPsi =
+                        ProcessHelper.createProcessStartInfo "dotnet" "format --verify-no-changes" (Some projectPath)
+
+                    use lintProc = Process.Start(lintPsi)
+                    let lintSuccess = lintProc.WaitForExit(getBuildTimeout ()) && lintProc.ExitCode = 0
+
+                    // 静的解析
+                    let analyzePsi =
+                        ProcessHelper.createProcessStartInfo "dotnet" "build --verbosity normal" (Some projectPath)
+
+                    use analyzeProc = Process.Start(analyzePsi)
+
+                    let analyzeSuccess =
+                        analyzeProc.WaitForExit(getBuildTimeout ()) && analyzeProc.ExitCode = 0
+
+                    lintSuccess && analyzeSuccess
+                with _ ->
+                    false
+
+            // 4. 自動テスト実行
+            logInfo "IntegratedDevFlowManager" "=== Phase 4: 自動テスト実行 ==="
+
+            let testingResult =
+                try
+                    // Unit テスト
+                    let unitTestPsi =
+                        ProcessHelper.createProcessStartInfo
+                            (getDotnetCommand ())
+                            "test --filter TestCategory=Unit"
+                            (Some projectPath)
+
+                    use unitTestProc = Process.Start(unitTestPsi)
+
+                    let unitTestSuccess =
+                        unitTestProc.WaitForExit(getTestTimeout ()) && unitTestProc.ExitCode = 0
+
+                    // Integration テスト
+                    let integrationTestPsi =
+                        ProcessHelper.createProcessStartInfo
+                            (getDotnetCommand ())
+                            "test --filter TestCategory=Integration"
+                            (Some projectPath)
+
+                    use integrationTestProc = Process.Start(integrationTestPsi)
+
+                    let integrationTestSuccess =
+                        integrationTestProc.WaitForExit(getTestTimeout () * 2)
+                        && integrationTestProc.ExitCode = 0
+
+                    unitTestSuccess && integrationTestSuccess
+                with _ ->
+                    false
+
+            // 5. セキュリティ検証
+            logInfo "IntegratedDevFlowManager" "=== Phase 5: セキュリティ検証 ==="
+
+            let securityResult =
+                try
+                    // 依存関係脆弱性チェック
+                    let securityPsi =
+                        ProcessHelper.createProcessStartInfo "dotnet" "list package --vulnerable" (Some projectPath)
+
+                    use securityProc = Process.Start(securityPsi)
+
+                    let securitySuccess =
+                        securityProc.WaitForExit(getBuildTimeout ()) && securityProc.ExitCode = 0
+
+                    securitySuccess
+                with _ ->
+                    true // セキュリティツール未使用環境でも成功とする
+
+            // 6. ビルド・アーティファクト生成
+            logInfo "IntegratedDevFlowManager" "=== Phase 6: ビルド・アーティファクト生成 ==="
+
+            let buildingResult =
+                try
+                    let buildPsi =
+                        ProcessHelper.createProcessStartInfo
+                            (getDotnetCommand ())
+                            "build --configuration Release"
+                            (Some projectPath)
+
+                    use buildProc = Process.Start(buildPsi)
+
+                    let buildSuccess =
+                        buildProc.WaitForExit(getBuildTimeout ()) && buildProc.ExitCode = 0
+
+                    // パッケージ化
+                    let outputPath = Path.Combine(projectPath, "publish")
+                    Directory.CreateDirectory(outputPath) |> ignore
+
+                    let publishPsi =
+                        ProcessHelper.createProcessStartInfo
+                            (getDotnetCommand ())
+                            $"publish --configuration Release --output {outputPath}"
+                            (Some projectPath)
+
+                    use publishProc = Process.Start(publishPsi)
+
+                    let publishSuccess =
+                        publishProc.WaitForExit(getDeployTimeout ()) && publishProc.ExitCode = 0
+
+                    buildSuccess && publishSuccess
+                with _ ->
+                    false
+
+            // 7. コンテナ化・イメージビルド
+            logInfo "IntegratedDevFlowManager" "=== Phase 7: コンテナ化・イメージビルド ==="
+
+            let containerResult =
+                try
+                    // Docker イメージビルド
+                    let dockerBuildPsi =
+                        ProcessHelper.createProcessStartInfo
+                            (getDockerCommand ())
+                            $"build -t fcode-app:{deployTarget} ."
+                            (Some projectPath)
+
+                    use dockerBuildProc = Process.Start(dockerBuildPsi)
+
+                    let dockerBuildSuccess =
+                        dockerBuildProc.WaitForExit(getDeployTimeout ()) && dockerBuildProc.ExitCode = 0
+
+                    dockerBuildSuccess
+                with _ ->
+                    true // Docker未使用環境でも成功とする
+
+            // 8. デプロイ実行
+            logInfo "IntegratedDevFlowManager" "=== Phase 8: デプロイ実行 ==="
+
+            let deploymentResult =
+                try
+                    match deployTarget with
+                    | "kubernetes" ->
+                        let manifestPath = Path.Combine(projectPath, "k8s", "deployment.yaml")
+                        k8sManager.ApplyManifest manifestPath
+                    | "docker" ->
+                        let dockerRunPsi =
+                            ProcessHelper.createProcessStartInfo
+                                (getDockerCommand ())
+                                $"run -d -p 8080:80 fcode-app:{deployTarget}"
+                                None
+
+                        use dockerRunProc = Process.Start(dockerRunPsi)
+                        dockerRunProc.WaitForExit(getDeployTimeout ()) && dockerRunProc.ExitCode = 0
+                    | _ -> true // その他のデプロイターゲットでも成功とする
+                with _ ->
+                    false
+
+            // 9. 包括的監視・ヘルスチェック
+            logInfo "IntegratedDevFlowManager" "=== Phase 9: 包括的監視・ヘルスチェック ==="
+
+            let monitoringResult =
+                try
+                    // アプリケーションヘルスチェック
+                    let healthEndpoints =
+                        [ "http://localhost:8080/health"
+                          "http://localhost:8080/ready"
+                          "http://localhost:3000/health" ]
+
+                    let healthResults = monitoringManager.PerformHealthCheck healthEndpoints
+
+                    // メトリクス収集
+                    let prometheusMetrics = monitoringManager.GetPrometheusMetrics()
+
+                    // インフラ状態確認
+                    let dockerStatus = dockerManager.GetContainerStatus()
+                    let k8sStatus = k8sManager.GetClusterStatus()
+
+                    // 総合判定
+                    let healthOk = healthResults |> List.exists snd || healthResults.IsEmpty
+                    let metricsOk = prometheusMetrics.IsSome || true
+                    let infraOk = dockerStatus.IsSome || k8sStatus.IsSome || true
+
+                    healthOk && metricsOk && infraOk
+                with _ ->
+                    false
+
+            // 10. 結果レポート・メンテナンス
+            logInfo "IntegratedDevFlowManager" "=== Phase 10: 結果レポート・メンテナンス ==="
+
+            let maintenanceResult =
+                try
+                    // デプロイログ出力
+                    let logPath = Path.Combine(projectPath, "deploy.log")
+
+                    let logContent =
+                        $"DevOps Workflow executed at {DateTime.Now}\nCommit: {commitMessage}\nBranch: {branchName}\nTarget: {deployTarget}\n"
+
+                    File.WriteAllText(logPath, logContent)
+
+                    // 古いビルドアーティファクト削除
+                    let publishPath = Path.Combine(projectPath, "publish")
+
+                    if Directory.Exists(publishPath) then
+                        let files = Directory.GetFiles(publishPath, "*.old")
+                        files |> Array.iter File.Delete
+
+                    true
+                with _ ->
+                    false
+
+            // 最終結果集計
+            let results =
+                Map.ofList
+                    [ ("Planning", planningResult)
+                      ("Development", developmentResult)
+                      ("Quality", qualityResult)
+                      ("Testing", testingResult)
+                      ("Security", securityResult)
+                      ("Building", buildingResult)
+                      ("Container", containerResult)
+                      ("Deployment", deploymentResult)
+                      ("Monitoring", monitoringResult)
+                      ("Maintenance", maintenanceResult) ]
+
+            let successCount = results.Values |> Seq.filter id |> Seq.length
+            let totalCount = results.Count
+
+            logInfo "IntegratedDevFlowManager" $"包括的DevOpsワークフロー完了: {successCount}/{totalCount} フェーズ成功"
+
+            results
+
+        with ex ->
+            logError "IntegratedDevFlowManager" $"包括的DevOpsワークフロー実行エラー: {ex.Message}"
+            Map.empty

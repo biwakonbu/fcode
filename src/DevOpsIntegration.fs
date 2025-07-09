@@ -4,6 +4,7 @@ open System
 open System.Diagnostics
 open System.IO
 open FCode.Logger
+open FCode.Configuration
 
 // ===============================================
 // 開発フロー統合定義
@@ -96,10 +97,10 @@ type GitIntegrationManager() =
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(5000)) then
+            if not (proc.WaitForExit(Config.getGitTimeout ())) then
                 // セキュリティ: Process Resource管理強化
                 proc.Kill()
-                proc.WaitForExit(1000) |> ignore // 確実な終了待機
+                proc.WaitForExit(Config.getProcessKillTimeout ()) |> ignore // 確実な終了待機
                 logError "GitIntegrationManager" "Git status check timed out"
 
             stopwatch.Stop()
@@ -133,13 +134,12 @@ type GitIntegrationManager() =
             if String.IsNullOrWhiteSpace(name) then
                 raise (ArgumentException("Branch name cannot be empty"))
 
-            let dangerousChars =
-                [ "../"; "..\\"; ";"; "|"; "&"; "`"; "$"; "'"; "\""; "\n"; "\r"; "\t" ]
+            let dangerousChars = Config.getDangerousPathPatterns ()
 
             if dangerousChars |> List.exists name.Contains then
                 raise (ArgumentException("Invalid characters in branch name"))
 
-            if name.Length > 100 then
+            if name.Length > Config.getMaxBranchNameLength () then
                 raise (ArgumentException("Branch name too long"))
 
             name.Trim()
@@ -152,10 +152,10 @@ type GitIntegrationManager() =
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(10000)) then
+            if not (proc.WaitForExit(Config.getGitTimeout ())) then
                 // セキュリティ: Process Resource管理強化
                 proc.Kill()
-                proc.WaitForExit(1000) |> ignore // 確実な終了待機
+                proc.WaitForExit(Config.getProcessKillTimeout ()) |> ignore // 確実な終了待機
                 logError "GitIntegrationManager" "Git branch creation timed out"
 
             let success = proc.ExitCode = 0
@@ -185,7 +185,7 @@ type DockerIntegrationManager() =
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(10000)) then
+            if not (proc.WaitForExit(Config.getDockerTimeout ())) then
                 proc.Kill()
                 logError "DockerIntegrationManager" "Docker container status check timed out"
 
@@ -340,8 +340,8 @@ type IntegratedDevFlowManager() =
             // Docker Compose生成
             let dockerCompose =
                 cicdManager.GenerateDockerCompose
-                    [ ("app", "fcode-app:latest", [ (8080, 80) ])
-                      ("database", "postgres:13", [ (5432, 5432) ]) ]
+                    [ ("app", "fcode-app:latest", [ (Config.getApplicationPort (), 80) ])
+                      ("database", "postgres:13", [ (Config.getDatabasePort (), 5432) ]) ]
 
             let composePath = validateAndNormalizePath projectPath "docker-compose.yml"
             File.WriteAllText(composePath, dockerCompose)
@@ -377,7 +377,7 @@ type IntegratedDevFlowManager() =
                             (Some projectPath)
 
                     use proc = Process.Start(psi)
-                    proc.WaitForExit(30000) && proc.ExitCode = 0
+                    proc.WaitForExit(Config.getTestTimeout ()) && proc.ExitCode = 0
                 with _ ->
                     false
 
@@ -389,7 +389,7 @@ type IntegratedDevFlowManager() =
                         ProcessHelper.createProcessStartInfo "dotnet" "build --configuration Release" (Some projectPath)
 
                     use proc = Process.Start(psi)
-                    proc.WaitForExit(60000) && proc.ExitCode = 0
+                    proc.WaitForExit(Config.getBuildTimeout ()) && proc.ExitCode = 0
                 with _ ->
                     false
 
@@ -407,7 +407,7 @@ type IntegratedDevFlowManager() =
                             (Some projectPath)
 
                     use proc = Process.Start(psi)
-                    proc.WaitForExit(90000) && proc.ExitCode = 0
+                    proc.WaitForExit(Config.getDeployTimeout ()) && proc.ExitCode = 0
                 with _ ->
                     false
 

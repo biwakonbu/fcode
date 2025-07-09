@@ -103,12 +103,9 @@ type RobustStabilityTestSuite() =
             let recoveryResult =
                 recoveryManager.AddSystemActivity("recovery-test", SystemMessage, "Recovery successful")
 
-            Assert.That(
-                recoveryResult
-                |> function
-                    | Result.Ok _ -> true
-                    | _ -> false
-            )
+            match recoveryResult with
+            | Result.Ok _ -> Assert.Pass()
+            | Result.Error _ -> Assert.Fail("Recovery operation failed")
 
             recoveryManager.Dispose()
 

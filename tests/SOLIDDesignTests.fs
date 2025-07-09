@@ -221,19 +221,9 @@ type SOLIDDesignTestSuite() =
         let progressResult = progressManager.ClearAllData()
 
         // Assert - すべてのResult型は同じ型シグネチャ
-        Assert.That(
-            activityResult
-            |> function
-                | Result.Ok _ -> true
-                | _ -> false
-        )
+        ResultAssert.assertIsOk activityResult
 
-        Assert.That(
-            progressResult
-            |> function
-                | Result.Ok _ -> true
-                | _ -> false
-        )
+        ResultAssert.assertIsOk progressResult
 
         // Cleanup
         activityManager.Dispose()
@@ -258,12 +248,7 @@ type SOLIDDesignTestSuite() =
         let activityResult = activityManager.ClearActivities()
         escalationManager.ClearNotificationHistory()
 
-        Assert.That(
-            activityResult
-            |> function
-                | Result.Ok _ -> true
-                | _ -> false
-        )
+        ResultAssert.assertIsOk activityResult
 
         // Cleanup
         activityManager.Dispose()
@@ -318,12 +303,7 @@ type SOLIDDesignTestSuite() =
         let result = addActivityFromMessage testMessage
 
         // Assert
-        Assert.That(
-            result
-            |> function
-                | Result.Ok _ -> true
-                | _ -> false
-        )
+        ResultAssert.assertIsOk result
 
         Assert.AreEqual(1, originalManager.GetActivityCount())
 
@@ -342,12 +322,7 @@ type SOLIDDesignTestSuite() =
             manager.AddSystemActivity("system", ActivityType.SystemMessage, "System initialization complete")
 
         // Assert - ストレージの具体的な実装に依存しない
-        Assert.That(
-            systemActivityResult
-            |> function
-                | Result.Ok _ -> true
-                | _ -> false
-        )
+        ResultAssert.assertIsOk systemActivityResult
 
         // 内部ストレージの実装変更があっても外部インターフェースは変わらない
         let activities = manager.GetAllActivities()
@@ -396,22 +371,12 @@ type SOLIDQualityMetricsTestSuite() =
             progressManager.CreateMetric(TaskCompletion, "Test Metric", 50.0, 100.0, "%")
 
         // Assert - すべて独立して正常動作
-        Assert.That(
-            activityResult
-            |> function
-                | Result.Ok _ -> true
-                | _ -> false
-        )
+        ResultAssert.assertIsOk activityResult
 
         Assert.IsFalse(String.IsNullOrEmpty(escalationId))
         Assert.IsFalse(String.IsNullOrEmpty(decisionId))
 
-        Assert.That(
-            metricResult
-            |> function
-                | Result.Ok _ -> true
-                | _ -> false
-        )
+        ResultAssert.assertIsOk metricResult
 
         // Cleanup
         activityManager.Dispose()
@@ -433,22 +398,12 @@ type SOLIDQualityMetricsTestSuite() =
         let clearResult = manager.ClearActivities()
 
         // Assert - すべての活動管理機能が一箇所で提供
-        Assert.That(
-            addResult
-            |> function
-                | Result.Ok _ -> true
-                | _ -> false
-        )
+        ResultAssert.assertIsOk addResult
 
         Assert.IsNotNull(activities)
         Assert.AreEqual(1, count)
 
-        Assert.That(
-            clearResult
-            |> function
-                | Result.Ok _ -> true
-                | _ -> false
-        )
+        ResultAssert.assertIsOk clearResult
 
         Assert.AreEqual(0, manager.GetActivityCount())
 
@@ -468,12 +423,7 @@ type SOLIDQualityMetricsTestSuite() =
             addSystemActivity "test-agent" ActivityType.Testing "Unit test execution"
 
         // Assert - モックされたインスタンスでテスト実行
-        Assert.That(
-            testResult
-            |> function
-                | Result.Ok _ -> true
-                | _ -> false
-        )
+        ResultAssert.assertIsOk testResult
 
         Assert.AreEqual(1, testManager.GetActivityCount())
 

@@ -17,11 +17,19 @@ EOF
     
     # メトリクス行を生成（制御文字を除去）
     for metric in "${metrics[@]}"; do
-        # パイプで区切られた値を分割し、制御文字を除去
+        # パイプで区切られた値を分割（内部スペースを保持）
         IFS='|' read -ra VALUES <<< "$metric"
-        local name="${VALUES[0]// /}"
-        local before="${VALUES[1]// /}"
-        local after="${VALUES[2]// /}"
+        local name="${VALUES[0]}"
+        local before="${VALUES[1]}"
+        local after="${VALUES[2]}"
+        
+        # 先頭・末尾のスペースのみ除去
+        name="${name#"${name%%[![:space:]]*}"}"
+        name="${name%"${name##*[![:space:]]}"}"
+        before="${before#"${before%%[![:space:]]*}"}"
+        before="${before%"${before##*[![:space:]]}"}"
+        after="${after#"${after%%[![:space:]]*}"}"
+        after="${after%"${after##*[![:space:]]}"}"
         
         # 制御文字・リダイレクト記号を除去
         name=$(echo "$name" | sed 's/[<>]//g' | sed 's/\/dev\/null//g')
@@ -51,9 +59,17 @@ EOF
     
     for metric in "${metrics[@]}"; do
         IFS='|' read -ra VALUES <<< "$metric"
-        local name="${VALUES[0]// /}"
-        local before="${VALUES[1]// /}"
-        local after="${VALUES[2]// /}"
+        local name="${VALUES[0]}"
+        local before="${VALUES[1]}"
+        local after="${VALUES[2]}"
+        
+        # 先頭・末尾のスペースのみ除去
+        name="${name#"${name%%[![:space:]]*}"}"
+        name="${name%"${name##*[![:space:]]}"}"
+        before="${before#"${before%%[![:space:]]*}"}"
+        before="${before%"${before##*[![:space:]]}"}"
+        after="${after#"${after%%[![:space:]]*}"}"
+        after="${after%"${after##*[![:space:]]}"}"
         
         # 制御文字・HTML特殊文字をエスケープ
         name=$(echo "$name" | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g' | sed 's/\/dev\/null//g')

@@ -207,21 +207,23 @@ module SessionPersistenceManager =
                 // JsonSanitizerによる安全なJSON解析
                 let paneStateResult = JsonSanitizer.tryParseJson<PaneState> cleanStateJson
 
-                let mutable paneState =
+                let basePaneState =
                     match paneStateResult with
                     | Result.Ok state -> state
                     | Result.Error errorMsg -> raise (JsonException($"JSON parse failed: {errorMsg}"))
 
-                // 会話履歴の読み込み
-                if File.Exists(historyFile) then
-                    let compressedData = File.ReadAllBytes(historyFile)
-                    let history = decompressHistory compressedData
+                // 会話履歴の読み込み（関数型アプローチ）
+                let finalPaneState =
+                    if File.Exists(historyFile) then
+                        let compressedData = File.ReadAllBytes(historyFile)
+                        let history = decompressHistory compressedData
 
-                    paneState <-
-                        { paneState with
+                        { basePaneState with
                             ConversationHistory = history }
+                    else
+                        basePaneState
 
-                Success paneState
+                Success finalPaneState
         with ex ->
             Error $"ペイン状態読み込み失敗 ({paneId}): {ex.Message}"
 
@@ -374,20 +376,26 @@ module SessionPersistenceManager =
             let sessions = listSessions config
             let oldSessions = sessions |> List.filter (fun s -> s.LastActivity < cutoffTime)
 
-            let mutable deletedCount = 0
+            // 関数型アプローチでセッション削除
+            let deleteResults =
+                oldSessions
+                |> List.map (fun session ->
+                    try
+                        let sessionDir =
+                            Path.Combine(config.StorageDirectory, "sessions", session.SessionId)
 
-            for session in oldSessions do
-                try
-                    let sessionDir =
-                        Path.Combine(config.StorageDirectory, "sessions", session.SessionId)
+                        if Directory.Exists(sessionDir) then
+                            Directory.Delete(sessionDir, true)
+                            Logger.logInfo "SessionPersistence" $"古いセッションを削除: {session.SessionId}"
+                            true // 削除成功
+                        else
+                            false // ディレクトリが存在しない
+                    with ex ->
+                        Logger.logWarning "SessionPersistence" $"セッション削除失敗 ({session.SessionId}): {ex.Message}"
+                        false // 削除失敗
+                )
 
-                    if Directory.Exists(sessionDir) then
-                        Directory.Delete(sessionDir, true)
-                        deletedCount <- deletedCount + 1
-                        Logger.logInfo "SessionPersistence" $"古いセッションを削除: {session.SessionId}"
-                with ex ->
-                    Logger.logWarning "SessionPersistence" $"セッション削除失敗 ({session.SessionId}): {ex.Message}"
-
+            let deletedCount = deleteResults |> List.filter id |> List.length
             Success deletedCount
         with ex ->
             Logger.logError "SessionPersistence" $"セッションクリーンアップ失敗: {ex.Message}"

@@ -96,9 +96,17 @@
     <Compile Include="ModelSwitchingStrategyTests.fs"/>
     <Compile Include="AgentIntegrationTests.fs"/>
     <Compile Include="WorkflowExecutionTests.fs"/>
-    <Compile Include="AISwitchingPerformanceTests.fs"/>
     <Compile Include="AIModelProviderTests.fs"/>
     <Compile Include="DevOpsIntegrationTests.fs"/>
+  </ItemGroup>
+
+  <!-- Performance tests - only included when RunPerformanceTests is true -->
+  <ItemGroup Condition="'$(RunPerformanceTests)' == 'true'">
+    <Compile Include="AISwitchingPerformanceTests.fs"/>
+  </ItemGroup>
+
+  <!-- Program.fs must be last -->
+  <ItemGroup>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

@@ -85,6 +85,11 @@
     <!-- FC-022 Specialist Agent Integration Tests -->
     <Compile Include="ConfigurationTests.fs"/>
     <Compile Include="SpecialistAgentManagerTests.fs"/>
+    <Compile Include="WorkflowOrchestratorTests.fs"/>
+    <Compile Include="ModelSwitchingStrategyTests.fs"/>
+    <Compile Include="AgentIntegrationTests.fs"/>
+    <Compile Include="WorkflowExecutionTests.fs"/>
+    <Compile Include="AISwitchingPerformanceTests.fs"/>
     <Compile Include="AIModelProviderTests.fs"/>
     <Compile Include="DevOpsIntegrationTests.fs"/>
     <Compile Include="Program.fs"/>

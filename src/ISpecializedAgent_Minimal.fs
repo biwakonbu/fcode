@@ -90,14 +90,14 @@ module AgentIntegrationUtils =
         | API -> "API設計・実装"
         | TestAutomation -> "テスト自動化・品質保証"
         | DevOps -> "DevOps・CI/CD・インフラ"
-        | AgentSpecialization.Security -> "セキュリティ・脆弱性対策"
+        | Security -> "セキュリティ・脆弱性対策"
         | Performance -> "パフォーマンス・最適化"
         | Frontend -> "フロントエンド・UI/UX"
         | Backend -> "バックエンド・アーキテクチャ"
         | DataScience -> "データサイエンス・機械学習"
         | Mobile -> "モバイル開発"
         | CloudInfra -> "クラウドインフラ・アーキテクチャ"
-        | AgentSpecialization.Documentation -> "ドキュメント・技術文書"
+        | Documentation -> "ドキュメント・技術文書"
 
     /// 状態名取得
     let getStateName (state: AgentState) =

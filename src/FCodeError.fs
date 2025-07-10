@@ -99,6 +99,15 @@ type FCodeError =
               TechnicalDetails = message
               RecoveryHint = Some "入力内容を確認してください" }
 
+/// セキュリティユーティリティ
+module SecurityUtils =
+    /// ログメッセージの安全化
+    let sanitizeLogMessage (message: string) =
+        if String.IsNullOrEmpty(message) then
+            "Empty message"
+        else
+            message.Replace("\n", "\\n").Replace("\r", "\\r")
+
 /// エラーハンドリングユーティリティ
 module ErrorHandling =
 

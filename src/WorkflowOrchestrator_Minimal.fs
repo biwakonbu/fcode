@@ -6,6 +6,7 @@ open FCode.Logger
 open FCode.FCodeError
 open FCode.ISpecializedAgent
 open FCode.AIModelProvider
+open FCode.DevOpsIntegration
 
 // ===============================================
 // ワークフロー統合定義 (最小実装)
@@ -14,16 +15,26 @@ open FCode.AIModelProvider
 /// ワークフロー段階
 type WorkflowStage =
     | Planning
+    | Analysis
+    | Design
     | Implementation
     | Testing
-    | WorkflowCompleted
+    | Review
+    | Integration
+    | Deployment
+    | Monitoring
+    | Maintenance
 
 /// タスクステータス
 type TaskStatus =
     | Pending
+    | Ready
     | InProgress
-    | TaskCompleted
+    | Paused
+    | Completed
     | Failed
+    | Cancelled
+    | Blocked
 
 /// ワークフロータスク
 type WorkflowTask =
@@ -31,6 +42,8 @@ type WorkflowTask =
       Name: string
       Stage: WorkflowStage
       Status: TaskStatus
+      EstimatedDuration: TimeSpan
+      Priority: int
       CreatedAt: DateTime }
 
 /// ワークフロー実行コンテキスト
@@ -38,10 +51,13 @@ type WorkflowExecutionContext =
     { ExecutionId: string
       ProjectPath: string
       UserId: string
-      StartTime: DateTime }
+      StartTime: DateTime
+      Timeout: TimeSpan }
 
 /// ワークフロー統合オーケストレーター (最小実装)
-type WorkflowOrchestrator(agentManager: ISpecializedAgentManager, modelProvider: MultiModelManager) =
+type WorkflowOrchestrator
+    (agentManager: ISpecializedAgentManager, modelProvider: MultiModelManager, devOpsManager: IntegratedDevFlowManager)
+    =
     let mutable activeTasks = Map.empty<string, WorkflowTask>
 
     /// ワークフロー実行開始
@@ -55,7 +71,9 @@ type WorkflowOrchestrator(agentManager: ISpecializedAgentManager, modelProvider:
                     { TaskId = Guid.NewGuid().ToString()
                       Name = $"Workflow {workflowId}"
                       Stage = Planning
-                      Status = Pending
+                      Status = Ready
+                      EstimatedDuration = TimeSpan.FromHours(1.0)
+                      Priority = 5
                       CreatedAt = DateTime.Now }
 
                 activeTasks <- activeTasks.Add(basicTask.TaskId, basicTask)
@@ -64,7 +82,7 @@ type WorkflowOrchestrator(agentManager: ISpecializedAgentManager, modelProvider:
                 return Ok(basicTask.TaskId)
             with ex ->
                 logError "WorkflowOrchestrator" $"ワークフロー開始エラー: {ex.Message}"
-                return Result.Error(SystemError($"ワークフロー開始失敗: {ex.Message}"))
+                return Error(FCode.FCodeError.ProcessingError($"ワークフロー開始失敗: {ex.Message}"))
         }
 
     /// タスク実行
@@ -82,10 +100,7 @@ type WorkflowOrchestrator(agentManager: ISpecializedAgentManager, modelProvider:
                     // 簡易実行シミュレーション
                     do! Async.Sleep(1000)
 
-                    let completedTask =
-                        { updatedTask with
-                            Status = TaskCompleted }
-
+                    let completedTask = { updatedTask with Status = Completed }
                     activeTasks <- activeTasks.Add(taskId, completedTask)
 
                     logInfo "WorkflowOrchestrator" $"タスク実行完了: {task.Name}"
@@ -93,10 +108,10 @@ type WorkflowOrchestrator(agentManager: ISpecializedAgentManager, modelProvider:
                 | None ->
                     let error = $"タスクが見つかりません: {taskId}"
                     logWarning "WorkflowOrchestrator" error
-                    return Result.Error(ValidationError(error))
+                    return Error(FCode.FCodeError.NotFoundError(error))
             with ex ->
                 logError "WorkflowOrchestrator" $"タスク実行エラー: {ex.Message}"
-                return Result.Error(SystemError($"タスク実行失敗: {ex.Message}"))
+                return Error(FCode.FCodeError.ProcessingError($"タスク実行失敗: {ex.Message}"))
         }
 
     /// ワークフロー状態取得
@@ -104,7 +119,7 @@ type WorkflowOrchestrator(agentManager: ISpecializedAgentManager, modelProvider:
         async {
             try
                 let tasks = activeTasks |> Map.toList |> List.map snd
-                let completedTasks = tasks |> List.filter (fun t -> t.Status = TaskCompleted)
+                let completedTasks = tasks |> List.filter (fun t -> t.Status = Completed)
 
                 let progress =
                     if tasks.IsEmpty then
@@ -116,7 +131,7 @@ type WorkflowOrchestrator(agentManager: ISpecializedAgentManager, modelProvider:
                 return Ok(progress)
             with ex ->
                 logError "WorkflowOrchestrator" $"状態取得エラー: {ex.Message}"
-                return Result.Error(SystemError($"状態取得失敗: {ex.Message}"))
+                return Error(FCode.FCodeError.ProcessingError($"状態取得失敗: {ex.Message}"))
         }
 
 /// ワークフローユーティリティ
@@ -126,14 +141,24 @@ module WorkflowUtils =
     let getStageName (stage: WorkflowStage) =
         match stage with
         | Planning -> "計画・設計"
+        | Analysis -> "分析・要件定義"
+        | Design -> "設計・アーキテクチャ"
         | Implementation -> "実装・開発"
         | Testing -> "テスト・品質保証"
-        | WorkflowCompleted -> "完了"
+        | Review -> "レビュー・検証"
+        | Integration -> "統合・結合"
+        | Deployment -> "デプロイ・リリース"
+        | Monitoring -> "監視・運用"
+        | Maintenance -> "メンテナンス・改善"
 
     /// タスク状態名取得
     let getStatusName (status: TaskStatus) =
         match status with
         | Pending -> "待機中"
+        | Ready -> "実行可能"
         | InProgress -> "実行中"
-        | TaskCompleted -> "完了"
+        | Paused -> "一時停止"
+        | Completed -> "完了"
         | Failed -> "失敗"
+        | Cancelled -> "キャンセル"
+        | Blocked -> "ブロック中"

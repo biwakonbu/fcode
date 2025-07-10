@@ -97,6 +97,8 @@
     <Compile Include="WorkflowOrchestrator.fs" />
     <Compile Include="SpecialistAgentManager.fs" />
     <Compile Include="DevOpsIntegration.fs" />
+    <!-- Issue #94: TUI Internal API (基本型定義のみ実装) -->
+    <Compile Include="TUIInternalAPI.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

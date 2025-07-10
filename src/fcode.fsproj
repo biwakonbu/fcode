@@ -90,8 +90,11 @@
     <Compile Include="PerformanceOptimizer.fs" />
     <Compile Include="SimpleMemoryMonitor.fs" />
     <!-- FC-022 Specialist Agent Integration -->
+    <Compile Include="ISpecializedAgent.fs" />
     <Compile Include="SpecialistAgentManager.fs" />
     <Compile Include="AIModelProvider.fs" />
+    <Compile Include="ModelSwitchingStrategy.fs" />
+    <Compile Include="WorkflowOrchestrator.fs" />
     <Compile Include="DevOpsIntegration.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

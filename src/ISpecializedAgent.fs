@@ -32,8 +32,8 @@ type AgentCapability =
     | Testing
     | Debugging
     | Optimization
-    | Security
-    | Documentation
+    | SecurityAnalysis
+    | DocumentationWriting
     | Monitoring
     | Deployment
     | Consultation

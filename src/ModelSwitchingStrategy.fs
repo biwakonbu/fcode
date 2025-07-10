@@ -1,6 +1,7 @@
 module FCode.ModelSwitchingStrategy
 
 open System
+open System.Threading
 open FCode.Logger
 open FCode.FCodeError
 open FCode.AIModelProvider
@@ -20,9 +21,10 @@ type SwitchingConfiguration =
 /// モデル切り替えエンジン (最小実装)
 type ModelSwitchingEngine(configuration: SwitchingConfiguration) =
     let mutable currentModel = Claude3Sonnet
+    let lockObj = obj ()
 
-    /// 現在のモデル取得
-    member _.CurrentModel = currentModel
+    /// 現在のモデル取得（スレッドセーフ）
+    member _.CurrentModel = lock lockObj (fun () -> currentModel)
 
     /// 最適モデル推奨 (スタブ実装)
     member _.RecommendModelSwitch(taskDescription: string) =
@@ -30,8 +32,8 @@ type ModelSwitchingEngine(configuration: SwitchingConfiguration) =
             try
                 logInfo "ModelSwitchingEngine" $"モデル推奨評価: {taskDescription}"
 
-                // 簡易実装: 基本的に現在のモデルを推奨
-                let recommendedModel = currentModel
+                // 簡易実装: 基本的に現在のモデルを推奨（スレッドセーフ）
+                let recommendedModel = lock lockObj (fun () -> currentModel)
 
                 return Ok(recommendedModel)
             with ex ->

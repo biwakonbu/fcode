@@ -6,6 +6,7 @@ open System.Text.Json
 open System.Threading.Tasks
 open System.IO.Compression
 open FCode.SecurityUtils
+open fcode
 
 /// セッション永続化機能を提供するモジュール
 module SessionPersistenceManager =
@@ -196,15 +197,20 @@ module SessionPersistenceManager =
                 if String.IsNullOrWhiteSpace(stateJson) then
                     raise (ArgumentException("State file is empty or invalid"))
 
-                // 不正な制御文字を除去
-                let cleanStateJson =
-                    System.Text.RegularExpressions.Regex.Replace(stateJson.Trim(), @"[\x00-\x08\x0E-\x1F\x7F]", "")
+                // JsonSanitizerによる制御文字・エスケープシーケンス完全除去
+                let cleanStateJson = JsonSanitizer.sanitizeForJson stateJson
 
-                // JSON形式の基本検証
-                if not (cleanStateJson.StartsWith("{") && cleanStateJson.EndsWith("}")) then
-                    raise (JsonException("Invalid JSON format in state file"))
+                // JsonSanitizerによる事前検証
+                if not (JsonSanitizer.isValidJsonCandidate cleanStateJson) then
+                    raise (JsonException("Invalid JSON format in state file after sanitization"))
 
-                let mutable paneState = JsonSerializer.Deserialize<PaneState>(cleanStateJson)
+                // JsonSanitizerによる安全なJSON解析
+                let paneStateResult = JsonSanitizer.tryParseJson<PaneState> cleanStateJson
+
+                let mutable paneState =
+                    match paneStateResult with
+                    | Result.Ok state -> state
+                    | Result.Error errorMsg -> raise (JsonException($"JSON parse failed: {errorMsg}"))
 
                 // 会話履歴の読み込み
                 if File.Exists(historyFile) then

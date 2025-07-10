@@ -6,6 +6,7 @@ open System.IO
 open System.Text.Json
 open FCode.Logger
 open FCode.AgentConfiguration
+open fcode
 
 // ===============================================
 // エージェント能力・出力定義
@@ -188,53 +189,63 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
                 if String.IsNullOrWhiteSpace(rawOutput) then
                     raise (ArgumentException("Output is null or empty"))
 
-                let cleanOutput = rawOutput.Trim()
+                // JsonSanitizerを使用した制御文字・エスケープシーケンス完全除去
+                let sanitizedOutput = JsonSanitizer.sanitizeForJson rawOutput
 
-                // 制御文字・エスケープシーケンスをクリーンアップ
-                let sanitizedOutput =
-                    System.Text.RegularExpressions.Regex.Replace(
-                        cleanOutput,
-                        @"[\x00-\x1F\x7F]|\u001b\[[0-9;]*[mK]|\u001b\[\?[0-9;]*[hl]",
-                        ""
-                    )
-
-                // JSON形式チェック（より厳密な検証）
+                // JSON形式チェック（JsonSanitizerの事前検証を利用）
                 if
                     config.OutputFormat = "json"
-                    && sanitizedOutput.StartsWith("{")
-                    && sanitizedOutput.EndsWith("}")
-                    && sanitizedOutput.Length > 2
+                    && JsonSanitizer.isValidJsonCandidate sanitizedOutput
                 then
-                    let jsonDoc = JsonDocument.Parse(sanitizedOutput)
-                    let root = jsonDoc.RootElement
+                    // JsonSanitizerによる安全なJSON解析
+                    match
+                        JsonSanitizer.tryParseJsonWithLogging<JsonDocument> sanitizedOutput (logDebug "CustomScriptCLI")
+                    with
+                    | Result.Ok jsonDoc ->
+                        let root = jsonDoc.RootElement
+
+                        { Status =
+                            match root.TryGetProperty("status") with
+                            | (true, statusProp) ->
+                                match statusProp.GetString() with
+                                | "success" -> AgentStatus.Success
+                                | "error" -> AgentStatus.Error
+                                | "in_progress" -> AgentStatus.InProgress
+                                | "timeout" -> AgentStatus.Timeout
+                                | "cancelled" -> AgentStatus.Cancelled
+                                | _ -> AgentStatus.Success
+                            | _ -> AgentStatus.Success
+                          Content =
+                            match root.TryGetProperty("content") with
+                            | (true, contentProp) -> contentProp.GetString()
+                            | _ -> sanitizedOutput
+                          Metadata = Map.empty.Add("format", "json")
+                          Timestamp = DateTime.Now
+                          SourceAgent = config.Name
+                          Capabilities = config.SupportedCapabilities }
+                    | Result.Error errorMsg ->
+                        logError "CustomScriptCLI" $"JSON parse failed: {errorMsg}"
+                        // JSON解析失敗時はプレーンテキストとして処理
+                        { Status =
+                            if sanitizedOutput.Contains("error") || sanitizedOutput.Contains("Error") then
+                                AgentStatus.Error
+                            else
+                                AgentStatus.Success
+                          Content = JsonSanitizer.sanitizeForPlainText sanitizedOutput
+                          Metadata = Map.empty.Add("format", "text").Add("json_parse_error", errorMsg)
+                          Timestamp = DateTime.Now
+                          SourceAgent = config.Name
+                          Capabilities = config.SupportedCapabilities }
+                else
+                    // プレーンテキスト解析（JsonSanitizerによる軽量サニタイズ）
+                    let plainTextContent = JsonSanitizer.sanitizeForPlainText sanitizedOutput
 
                     { Status =
-                        match root.TryGetProperty("status") with
-                        | (true, statusProp) ->
-                            match statusProp.GetString() with
-                            | "success" -> Success
-                            | "error" -> Error
-                            | "in_progress" -> InProgress
-                            | "timeout" -> Timeout
-                            | "cancelled" -> Cancelled
-                            | _ -> Success
-                        | _ -> Success
-                      Content =
-                        match root.TryGetProperty("content") with
-                        | (true, contentProp) -> contentProp.GetString()
-                        | _ -> sanitizedOutput
-                      Metadata = Map.empty.Add("format", "json")
-                      Timestamp = DateTime.Now
-                      SourceAgent = config.Name
-                      Capabilities = config.SupportedCapabilities }
-                else
-                    // プレーンテキスト解析
-                    { Status =
-                        if sanitizedOutput.Contains("error") || sanitizedOutput.Contains("Error") then
-                            Error
+                        if plainTextContent.Contains("error") || plainTextContent.Contains("Error") then
+                            AgentStatus.Error
                         else
-                            Success
-                      Content = sanitizedOutput
+                            AgentStatus.Success
+                      Content = plainTextContent
                       Metadata = Map.empty.Add("format", "text")
                       Timestamp = DateTime.Now
                       SourceAgent = config.Name

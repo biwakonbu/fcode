@@ -637,12 +637,37 @@ type SessionManager() =
         sessions |> Map.filter (fun _ session -> session.IsActive) |> Map.count
 
     member this.CleanupAllSessions() : unit =
-        sessions
-        |> Map.iter (fun paneId _ ->
-            let success = this.StopSession(paneId)
+        let cleanupResults =
+            sessions
+            |> Map.toList
+            |> List.map (fun (paneId, session) ->
+                try
+                    let success = this.StopSession(paneId)
 
-            if not success then
-                logError "SessionManager" $"Failed to cleanup session {paneId}" |> ignore)
+                    if success then
+                        logDebug "SessionManager" $"Session cleanup successful: {paneId}"
+                        (paneId, true, None)
+                    else
+                        logWarning "SessionManager" $"Session cleanup failed (graceful failure): {paneId}"
+                        (paneId, false, Some "StopSession returned false")
+                with ex ->
+                    logWarning "SessionManager" $"Session cleanup exception (non-critical): {paneId} - {ex.Message}"
+                    (paneId, false, Some ex.Message))
+
+        // 結果サマリーをログ出力
+        let totalSessions = cleanupResults.Length
+
+        let successfulCleanups =
+            cleanupResults |> List.filter (fun (_, success, _) -> success) |> List.length
+
+        let failedCleanups = totalSessions - successfulCleanups
+
+        if failedCleanups > 0 then
+            logInfo
+                "SessionManager"
+                $"Session cleanup completed: {successfulCleanups}/{totalSessions} successful, {failedCleanups} warnings"
+        else
+            logInfo "SessionManager" $"All sessions cleaned up successfully: {totalSessions}/{totalSessions}"
 
         sessions <- Map.empty
 

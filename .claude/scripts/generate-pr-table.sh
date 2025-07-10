@@ -12,7 +12,6 @@ clean_markdown() {
 escape_html() {
     echo "$1" | sed -E 's/</\&lt;/g; s/>/\&gt;/g; s/\/dev\/null//g'
 }
-
 generate_effect_table() {
     local title="$1"
     shift
@@ -103,8 +102,8 @@ sanitize_pr_text() {
     # 制御文字・リダイレクト記号を除去
     echo "$input" | \
         sed -E 's#< *\/dev\/null *##g' | \
-        perl -pe 's/>>>.*?<<<//g' | \
-        perl -pe 's/<<<.*?>>>//g' | \
+        sed 's/>>>.*<<<//g' | \
+        sed 's/<<<.*>>>//g' | \
         tr -d '\000-\010\013\014\016-\037\177' | \
         sed 's/\$(\([^)]*\))//g' | \
         sed 's/`[^`]*`//g'

@@ -11,13 +11,20 @@
     <VSTestCollectCodeCoverage>false</VSTestCollectCodeCoverage>
     <VSTestUseMSBuildOutput>false</VSTestUseMSBuildOutput>
     
-    <!-- テストタイムアウト設定（CI環境用） -->
-    <VSTestTimeout>120000</VSTestTimeout>
+    <!-- テストタイムアウト設定（FC-027で最適化） -->
+    <VSTestTimeout>60000</VSTestTimeout>   <!-- 2分→1分短縮 -->
     <VSTestLogger>trx</VSTestLogger>
+    <VSTestParallel>false</VSTestParallel>  <!-- 並行実行無効でハング回避 -->
+    
+    <!-- Terminal.Gui CI対応（FC-027） -->
+    <DefineConstants>CI_ENVIRONMENT</DefineConstants>
+    <DebugType>portable</DebugType>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="CITestHelper.fs"/>
+    <Compile Include="MockUI.fs"/>
     <Compile Include="TestHelpers.fs"/>
     <Compile Include="MockFrameViewTests.fs"/>
     <Compile Include="ConfigurationManagerTests.fs"/>

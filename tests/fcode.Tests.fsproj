@@ -98,6 +98,8 @@
     <Compile Include="WorkflowExecutionTests.fs"/>
     <Compile Include="AIModelProviderTests.fs"/>
     <Compile Include="DevOpsIntegrationTests.fs"/>
+    <!-- Issue #94: TUI Internal API Tests (将来実装) -->
+    <Compile Include="TUIInternalAPITests.fs"/>
   </ItemGroup>
 
   <!-- Performance tests - only included when RunPerformanceTests is true -->

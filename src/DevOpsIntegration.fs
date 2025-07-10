@@ -102,7 +102,10 @@ type GitIntegrationManager() =
             let stopwatch = Diagnostics.Stopwatch.StartNew()
 
             let psi =
-                ProcessHelper.createProcessStartInfo (getGitCommand ()) "status --porcelain" (Some repoPath)
+                ProcessHelper.createProcessStartInfoWithArgs
+                    (getGitCommand ())
+                    [ "status"; "--porcelain" ]
+                    (Some repoPath)
 
             use proc = Process.Start(psi)
 

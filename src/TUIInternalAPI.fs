@@ -262,30 +262,34 @@ type SimpleSessionManager() =
                     return Result.Error(SystemError($"セッション削除失敗: {ex.Message}"))
             }
 
-/// 簡易コマンドディスパッチャー実装
+/// 簡易コマンドディスパッチャー実装 - スレッドセーフ
 type SimpleCommandDispatcher() =
     let mutable commands =
         Map.empty<string, string -> Async<Result<string, FCodeError>>>
+
+    let commandsLock = obj ()
 
     interface ICommandDispatcher with
         member _.DispatchCommand(command, args) =
             async {
                 try
-                    match commands.TryFind(command) with
-                    | Some handler ->
+                    let handler = lock commandsLock (fun () -> commands.TryFind(command))
+
+                    match handler with
+                    | Some handlerFunc ->
                         logDebug "SimpleCommandDispatcher" $"Dispatching command: {command} {args}"
-                        return! handler (args)
+                        return! handlerFunc (args)
                     | None -> return Result.Error(SystemError($"コマンドが見つかりません: {command}"))
                 with ex ->
                     return Result.Error(SystemError($"コマンド実行失敗: {ex.Message}"))
             }
 
         member _.RegisterCommand(command, handler) =
-            commands <- commands.Add(command, handler)
+            lock commandsLock (fun () -> commands <- commands.Add(command, handler))
             logInfo "SimpleCommandDispatcher" $"Command registered: {command}"
 
         member _.UnregisterCommand(command: string) =
-            commands <- commands.Remove(command)
+            lock commandsLock (fun () -> commands <- commands.Remove(command))
             logInfo "SimpleCommandDispatcher" $"Command unregistered: {command}"
 
 // ===============================================

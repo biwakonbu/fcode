@@ -71,6 +71,15 @@ module private ProcessHelper =
         psi.RedirectStandardError <- true
         psi
 
+    let createProcessStartInfoWithArgs (command: string) (argumentList: string list) (workingDirectory: string option) =
+        let psi = ProcessStartInfo(command)
+        argumentList |> List.iter (fun arg -> psi.ArgumentList.Add(arg))
+        workingDirectory |> Option.iter (fun dir -> psi.WorkingDirectory <- dir)
+        psi.UseShellExecute <- false
+        psi.RedirectStandardOutput <- true
+        psi.RedirectStandardError <- true
+        psi
+
 // ===============================================
 // Git統合マネージャー
 // ===============================================
@@ -149,7 +158,10 @@ type GitIntegrationManager() =
             let safeBranchName = validateBranchName branchName
 
             let psi =
-                ProcessHelper.createProcessStartInfo (getGitCommand ()) $"checkout -b {safeBranchName}" (Some repoPath)
+                ProcessHelper.createProcessStartInfoWithArgs
+                    (getGitCommand ())
+                    [ "checkout"; "-b"; safeBranchName ]
+                    (Some repoPath)
 
             use proc = Process.Start(psi)
 
@@ -333,9 +345,44 @@ type KubernetesIntegrationManager() =
 
     /// Kubernetes マニフェスト適用
     member _.ApplyManifest(manifestPath: string) =
+        // セキュリティ: Path Injection対策
+        let validateManifestPath (path: string) =
+            if String.IsNullOrWhiteSpace(path) then
+                raise (ArgumentException("Manifest path cannot be empty"))
+
+            let dangerousChars =
+                [ ";"
+                  "|"
+                  "&"
+                  "`"
+                  "$"
+                  "'"
+                  "\""
+                  "\n"
+                  "\r"
+                  "\t"
+                  "$("
+                  "&&"
+                  "||"
+                  ">"
+                  "<"
+                  ">>"
+                  "<<" ]
+
+            if dangerousChars |> List.exists path.Contains then
+                raise (ArgumentException("Invalid characters in manifest path"))
+
+            if not (Path.IsPathFullyQualified(path)) && not (Path.IsPathRooted(path)) then
+                if path.Contains("..") then
+                    raise (ArgumentException("Path traversal detected in manifest path"))
+
+            path.Trim()
+
         try
+            let validatedPath = validateManifestPath manifestPath
+
             let psi =
-                ProcessHelper.createProcessStartInfo "kubectl" $"apply -f {manifestPath}" None
+                ProcessHelper.createProcessStartInfoWithArgs "kubectl" [ "apply"; "-f"; validatedPath ] None
 
             use proc = Process.Start(psi)
 
@@ -344,7 +391,7 @@ type KubernetesIntegrationManager() =
                 logError "KubernetesIntegrationManager" "Kubernetes manifest apply timed out"
 
             let success = proc.ExitCode = 0
-            logInfo "KubernetesIntegrationManager" $"Kubernetes マニフェスト適用: {manifestPath} (成功: {success})"
+            logInfo "KubernetesIntegrationManager" $"Kubernetes マニフェスト適用: {validatedPath} (成功: {success})"
             success
         with ex ->
             logError "KubernetesIntegrationManager" $"Kubernetes マニフェスト適用エラー: {ex.Message}"
@@ -529,9 +576,9 @@ type IntegratedDevFlowManager
                     Directory.CreateDirectory(outputPath) |> ignore
 
                     let psi =
-                        ProcessHelper.createProcessStartInfo
+                        ProcessHelper.createProcessStartInfoWithArgs
                             (getDotnetCommand ())
-                            $"publish --configuration Release --output {outputPath}"
+                            [ "publish"; "--configuration"; "Release"; "--output"; outputPath ]
                             (Some projectPath)
 
                     use proc = Process.Start(psi)
@@ -708,9 +755,9 @@ type IntegratedDevFlowManager
             Directory.CreateDirectory(outputPath) |> ignore
 
             let publishPsi =
-                ProcessHelper.createProcessStartInfo
+                ProcessHelper.createProcessStartInfoWithArgs
                     (getDotnetCommand ())
-                    $"publish --configuration Release --output {outputPath}"
+                    [ "publish"; "--configuration"; "Release"; "--output"; outputPath ]
                     (Some projectPath)
 
             use publishProc = Process.Start(publishPsi)
@@ -729,9 +776,9 @@ type IntegratedDevFlowManager
         try
             // Docker イメージビルド
             let dockerBuildPsi =
-                ProcessHelper.createProcessStartInfo
+                ProcessHelper.createProcessStartInfoWithArgs
                     (getDockerCommand ())
-                    $"build -t fcode-app:{deployTarget} ."
+                    [ "build"; "-t"; $"fcode-app:{deployTarget}"; "." ]
                     (Some projectPath)
 
             use dockerBuildProc = Process.Start(dockerBuildPsi)
@@ -754,9 +801,9 @@ type IntegratedDevFlowManager
                 k8sManager.ApplyManifest manifestPath
             | "docker" ->
                 let dockerRunPsi =
-                    ProcessHelper.createProcessStartInfo
+                    ProcessHelper.createProcessStartInfoWithArgs
                         (getDockerCommand ())
-                        $"run -d -p 8080:80 fcode-app:{deployTarget}"
+                        [ "run"; "-d"; "-p"; "8080:80"; $"fcode-app:{deployTarget}" ]
                         None
 
                 use dockerRunProc = Process.Start(dockerRunPsi)

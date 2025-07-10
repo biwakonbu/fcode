@@ -335,5 +335,22 @@ type TUIInternalAPIManager() =
                 return Result.Error(SystemError($"TUI内部API初期化失敗: {ex.Message}"))
         }
 
-/// グローバルTUI内部APIインスタンス
-let globalTUIInternalAPI = TUIInternalAPIManager()
+/// TUI内部APIファクトリー - 依存性注入対応
+module TUIInternalAPIFactory =
+    /// 新しいTUIInternalAPIManagerインスタンスを作成
+    let createInstance () = TUIInternalAPIManager()
+
+    /// テスト用のデフォルトインスタンス
+    let mutable private defaultInstance: TUIInternalAPIManager option = None
+
+    /// デフォルトインスタンスを設定
+    let setDefaultInstance (instance: TUIInternalAPIManager) = defaultInstance <- Some instance
+
+    /// デフォルトインスタンスを取得（lazy初期化）
+    let getDefaultInstance () =
+        match defaultInstance with
+        | Some instance -> instance
+        | None ->
+            let newInstance = createInstance ()
+            defaultInstance <- Some newInstance
+            newInstance

@@ -31,10 +31,14 @@ EOF
         after="${after#"${after%%[![:space:]]*}"}"
         after="${after%"${after##*[![:space:]]}"}"
         
-        # 制御文字・リダイレクト記号を除去
-        name=$(echo "$name" | sed 's/[<>]//g' | sed 's/\/dev\/null//g')
-        before=$(echo "$before" | sed 's/[<>]//g' | sed 's/\/dev\/null//g')
-        after=$(echo "$after" | sed 's/[<>]//g' | sed 's/\/dev\/null//g')
+        # 制御文字・リダイレクト記号を除去（関数化で効率化）
+        clean_markdown() {
+            echo "$1" | sed -E 's/[<>]//g; s/\/dev\/null//g'
+        }
+        
+        name=$(clean_markdown "$name")
+        before=$(clean_markdown "$before")
+        after=$(clean_markdown "$after")
         
         echo "| **$name** | $before | $after |"
     done
@@ -71,10 +75,14 @@ EOF
         after="${after#"${after%%[![:space:]]*}"}"
         after="${after%"${after##*[![:space:]]}"}"
         
-        # 制御文字・HTML特殊文字をエスケープ
-        name=$(echo "$name" | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g' | sed 's/\/dev\/null//g')
-        before=$(echo "$before" | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g' | sed 's/\/dev\/null//g')
-        after=$(echo "$after" | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g' | sed 's/\/dev\/null//g')
+        # 制御文字・HTML特殊文字をエスケープ（関数化で効率化）
+        escape_html() {
+            echo "$1" | sed -E 's/</\&lt;/g; s/>/\&gt;/g; s/\/dev\/null//g'
+        }
+        
+        name=$(escape_html "$name")
+        before=$(escape_html "$before")
+        after=$(escape_html "$after")
         
         echo "<tr>"
         echo "<td><strong>$name</strong></td>"

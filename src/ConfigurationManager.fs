@@ -48,7 +48,9 @@ type SystemCommandConfig =
     { GitCommand: string
       DockerCommand: string
       DotnetCommand: string
-      WhichCommand: string }
+      WhichCommand: string
+      KubectlCommand: string
+      CurlCommand: string }
 
 /// デフォルト設定値
 module DefaultTimeouts =
@@ -64,7 +66,9 @@ module DefaultTimeouts =
         { GitCommand = "git"
           DockerCommand = "docker"
           DotnetCommand = "dotnet"
-          WhichCommand = "which" }
+          WhichCommand = "which"
+          KubectlCommand = "kubectl"
+          CurlCommand = "curl" }
 
 type AgentIntegrationConfigData =
     { Name: string

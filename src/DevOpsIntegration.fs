@@ -359,7 +359,8 @@ type KubernetesIntegrationManager(commandConfig: SystemCommandConfig option, tim
     /// Kubernetes クラスタ状態確認
     member _.GetClusterStatus() =
         try
-            let psi = ProcessHelper.createProcessStartInfo "kubectl" "get nodes" None
+            let psi =
+                ProcessHelper.createProcessStartInfo systemCommands.KubectlCommand "get nodes" None
 
             use proc = Process.Start(psi)
 
@@ -413,11 +414,14 @@ type KubernetesIntegrationManager(commandConfig: SystemCommandConfig option, tim
             let validatedPath = validateManifestPath manifestPath
 
             let psi =
-                ProcessHelper.createProcessStartInfoWithArgs "kubectl" [ "apply"; "-f"; validatedPath ] None
+                ProcessHelper.createProcessStartInfoWithArgs
+                    systemCommands.KubectlCommand
+                    [ "apply"; "-f"; validatedPath ]
+                    None
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(getDeployTimeout ())) then
+            if not (proc.WaitForExit(processTimeouts.DeployTimeout)) then
                 proc.Kill()
                 logError "KubernetesIntegrationManager" "Kubernetes manifest apply timed out"
 
@@ -449,7 +453,7 @@ type MonitoringIntegrationManager(commandConfig: SystemCommandConfig option, tim
     member _.GetPrometheusMetrics() =
         try
             let psi =
-                ProcessHelper.createProcessStartInfo "curl" "-s http://localhost:9090/metrics" None
+                ProcessHelper.createProcessStartInfo systemCommands.CurlCommand "-s http://localhost:9090/metrics" None
 
             use proc = Process.Start(psi)
 
@@ -473,7 +477,7 @@ type MonitoringIntegrationManager(commandConfig: SystemCommandConfig option, tim
                     try
                         let psi =
                             ProcessHelper.createProcessStartInfo
-                                "curl"
+                                systemCommands.CurlCommand
                                 $"-s -o /dev/null -w \"%%{{http_code}}\" {endpoint}"
                                 None
 

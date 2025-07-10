@@ -445,10 +445,11 @@ type AgentCLIErrorHandlingTests() =
 
         let parsedOutput = scriptCLI.ParseOutput(malformedJson)
 
-        // JSON解析エラーでError status
-        Assert.AreEqual(Error, parsedOutput.Status)
-        Assert.IsTrue(parsedOutput.Content.Contains("Parse error"))
-        Assert.IsTrue(parsedOutput.Metadata.ContainsKey("error_type"))
+        // JsonSanitizerによりJSON解析が失敗した場合、プレーンテキストとして処理される
+        Assert.AreEqual(Success, parsedOutput.Status)
+        Assert.IsTrue(parsedOutput.Metadata.ContainsKey("json_parse_error"))
+        // プレーンテキストとして処理されたことを確認
+        Assert.AreEqual("text", parsedOutput.Metadata.["format"])
 
     [<Test>]
     [<Category("Unit")>]

@@ -92,9 +92,7 @@ sanitize_pr_text() {
     
     # 制御文字・リダイレクト記号を除去
     echo "$input" | \
-        sed 's/< \/dev\/null//g' | \
-        sed 's/<\/dev\/null//g' | \
-        sed 's/< *\/dev\/null *//g' | \
+        sed -E 's#< *\/dev\/null *##g' | \
         sed 's/>>>.*<<<//g' | \
         sed 's/<<<.*>>>//g' | \
         tr -d '\000-\010\013\014\016-\037\177' | \

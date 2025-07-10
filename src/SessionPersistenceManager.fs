@@ -235,7 +235,7 @@ module SessionPersistenceManager =
                   PaneCount = snapshot.PaneStates.Count
                   LastActivity = snapshot.LastSavedAt
                   SizeBytes = snapshot.TotalSize
-                  IsDetached = false // TODO: デタッチ状態の管理
+                  IsDetached = false // 現在はアタッチ状態固定。将来DetachAttachManagerと連携予定
                   CreatedAt = snapshot.CreatedAt }
 
             let metadataJson = JsonSerializer.Serialize(metadata, jsonOptions)

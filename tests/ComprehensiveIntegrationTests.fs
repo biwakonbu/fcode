@@ -173,9 +173,13 @@ type LongRunningIntegrationTestSuite() =
                     progressManager.CreateMetric(TaskCompletion, $"Metric {i}", float (i % 100), 100.0, "%")
                     |> ignore
 
+            // 実際に作成されたメトリクス数を計算（1から1000のうち10で割り切れる数）
+            let expectedMetrics =
+                [ 1..operationCount ] |> List.filter (fun i -> i % 10 = 0) |> List.length
+
             // 結果検証
             Assert.AreEqual(operationCount, activityManager.GetActivityCount())
-            Assert.AreEqual(operationCount / 10, progressManager.GetMetricCount())
+            Assert.AreEqual(expectedMetrics, progressManager.GetMetricCount())
 
         finally
             activityManager.Dispose()

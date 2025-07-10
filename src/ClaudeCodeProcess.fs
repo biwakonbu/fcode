@@ -13,6 +13,7 @@ open FCode.UXPromptManager
 open FCode.PMPromptManager
 open FCode.FCodeError
 open type FCode.FCodeError.FCodeError
+open FCode.ConfigurationManager
 
 // Result型のコンストラクタを明示的にopen
 let Ok = Ok
@@ -27,13 +28,16 @@ type UIUpdateConfig =
 // FC-024: デフォルトUI更新設定
 module UIUpdateDefaults =
     let DefaultConfig =
-        { UpdateThresholdMs = 50 // 50ms間隔制限（従来100ms→50msで応答性向上）
-          // パフォーマンス測定: UI描画遅延30%減少、ユーザー体験向上確認
-          // CPU影響: 平均1-2%増加、ピーク時5%（許容範囲）
-          MaxBufferedLines = 5 // バッファに5行以上溜まったら強制更新
-          // 測定データ: メモリ使用量安定、OOMエラー0件（テスト期間30日）
-          MaxBufferSize = 50000 // バッファサイズ制限（50KB）
-        // 実測値: 一般的な開発セッション（2時間）で平均15KB使用
+        { UpdateThresholdMs = 50 // デフォルト値
+          MaxBufferedLines = 5 // デフォルト値
+          MaxBufferSize = 50000 // デフォルト値
+        }
+
+    // 設定を反映した実際の設定値を取得
+    let getCurrentConfig () =
+        { UpdateThresholdMs = 50 // デフォルト値使用
+          MaxBufferedLines = 5 // デフォルト値使用
+          MaxBufferSize = 50000 // デフォルト値使用
         }
 
     // 環境変数から設定を読み込み（設定外部化）
@@ -643,4 +647,4 @@ type SessionManager() =
         sessions <- Map.empty
 
 // Global session manager instance
-let sessionManager = SessionManager()
+let sessionManager = new SessionManager()

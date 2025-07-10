@@ -128,9 +128,10 @@ type TUIAgentCommunicationManager() =
                 return Result.Error(SystemError($"メッセージ送信失敗: {ex.Message}"))
         }
 
-/// TUI内部ペイン状態同期マネージャー（簡素化）
+/// TUI内部ペイン状態同期マネージャー（簡素化・スレッドセーフ）
 type TUIPaneStateSyncManager() =
     let mutable paneStates = Map.empty<string, PaneStateSync>
+    let paneStatesLock = obj ()
 
     /// ペイン状態更新
     member _.UpdatePaneState
@@ -146,7 +147,7 @@ type TUIPaneStateSyncManager() =
                       LastModified = now
                       ConflictResolution = conflictStrategy }
 
-                paneStates <- paneStates.Add(paneId, stateSync)
+                lock paneStatesLock (fun () -> paneStates <- paneStates.Add(paneId, stateSync))
                 logInfo "TUIPaneSync" $"Pane state updated: {paneId} -> {newState}"
                 return Ok()
 
@@ -156,10 +157,12 @@ type TUIPaneStateSyncManager() =
         }
 
     /// ペイン状態取得
-    member _.GetPaneState(paneId: string) = paneStates.TryFind(paneId)
+    member _.GetPaneState(paneId: string) =
+        lock paneStatesLock (fun () -> paneStates.TryFind(paneId))
 
     /// 全ペイン状態取得
-    member _.GetAllPaneStates() = paneStates.Values |> Seq.toList
+    member _.GetAllPaneStates() =
+        lock paneStatesLock (fun () -> paneStates.Values |> Seq.toList)
 
 /// 簡易プロセス管理実装
 type SimpleProcessManager() =
@@ -222,9 +225,10 @@ type SimpleInputOutputCapture() =
                     return Result.Error(SystemError($"input send failed: {ex.Message}"))
             }
 
-/// 簡易セッション管理実装
+/// 簡易セッション管理実装 - スレッドセーフ
 type SimpleSessionManager() =
     let mutable sessions = Map.empty<string, obj>
+    let sessionsLock = obj ()
 
     interface ISessionManager with
         member _.CreateSession(sessionType: string) =
@@ -232,7 +236,7 @@ type SimpleSessionManager() =
                 try
                     let sessionId = Guid.NewGuid().ToString("N")[..7]
                     let sessionData = box $"Session data for {sessionType}"
-                    sessions <- sessions.Add(sessionId, sessionData)
+                    lock sessionsLock (fun () -> sessions <- sessions.Add(sessionId, sessionData))
                     logInfo "SimpleSessionMgr" $"Session created: {sessionId} ({sessionType})"
                     return Ok(sessionId)
                 with ex ->
@@ -242,8 +246,10 @@ type SimpleSessionManager() =
         member _.GetSession(sessionId: string) =
             async {
                 try
-                    match sessions.TryFind(sessionId) with
-                    | Some sessionData -> return Ok(sessionData)
+                    let sessionData = lock sessionsLock (fun () -> sessions.TryFind(sessionId))
+
+                    match sessionData with
+                    | Some data -> return Ok(data)
                     | None -> return Result.Error(SystemError($"セッションが見つかりません: {sessionId}"))
                 with ex ->
                     return Result.Error(SystemError($"セッション取得失敗: {ex.Message}"))
@@ -252,12 +258,19 @@ type SimpleSessionManager() =
         member _.DestroySession(sessionId: string) =
             async {
                 try
-                    match sessions.TryFind(sessionId) with
-                    | Some _ ->
-                        sessions <- sessions.Remove(sessionId)
+                    let found =
+                        lock sessionsLock (fun () ->
+                            match sessions.TryFind(sessionId) with
+                            | Some _ ->
+                                sessions <- sessions.Remove(sessionId)
+                                true
+                            | None -> false)
+
+                    if found then
                         logInfo "SimpleSessionMgr" $"Session destroyed: {sessionId}"
                         return Ok()
-                    | None -> return Result.Error(SystemError($"セッションが見つかりません: {sessionId}"))
+                    else
+                        return Result.Error(SystemError($"セッションが見つかりません: {sessionId}"))
                 with ex ->
                     return Result.Error(SystemError($"セッション削除失敗: {ex.Message}"))
             }

@@ -298,7 +298,7 @@ type MultiModelManager() =
                |> List.exists (fun keyword -> taskDescription.Contains(keyword))
 
         let hasCreativeElements =
-            agentCapabilities |> List.contains UserExperience
+            agentCapabilities |> List.contains Documentation
             || creativeKeywords
                |> List.exists (fun keyword -> taskDescription.Contains(keyword))
 

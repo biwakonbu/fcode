@@ -85,7 +85,16 @@ module private ProcessHelper =
 // ===============================================
 
 /// Git操作専門マネージャー
-type GitIntegrationManager() =
+type GitIntegrationManager(commandConfig: SystemCommandConfig option, timeoutConfig: ProcessTimeoutConfig option) =
+    // 依存性注入パターン: 設定の外部化
+    let systemCommands =
+        commandConfig |> Option.defaultValue DefaultTimeouts.systemCommands
+
+    let processTimeouts =
+        timeoutConfig |> Option.defaultValue DefaultTimeouts.processTimeouts
+
+    /// デフォルトコンストラクタ（既存コードとの互換性）
+    new() = GitIntegrationManager(None, None)
 
     /// Git状態確認
     member _.GetRepositoryStatus(repoPath: string) =
@@ -103,16 +112,16 @@ type GitIntegrationManager() =
 
             let psi =
                 ProcessHelper.createProcessStartInfoWithArgs
-                    (getGitCommand ())
+                    systemCommands.GitCommand
                     [ "status"; "--porcelain" ]
                     (Some repoPath)
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(getGitTimeout ())) then
+            if not (proc.WaitForExit(processTimeouts.GitTimeout)) then
                 // セキュリティ: Process Resource管理強化
                 proc.Kill()
-                proc.WaitForExit(getProcessKillTimeout ()) |> ignore // 確実な終了待機
+                proc.WaitForExit(processTimeouts.ProcessKillTimeout) |> ignore // 確実な終了待機
                 logError "GitIntegrationManager" "Git status check timed out"
 
             stopwatch.Stop()
@@ -162,16 +171,16 @@ type GitIntegrationManager() =
 
             let psi =
                 ProcessHelper.createProcessStartInfoWithArgs
-                    (getGitCommand ())
+                    systemCommands.GitCommand
                     [ "checkout"; "-b"; safeBranchName ]
                     (Some repoPath)
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(getGitTimeout ())) then
+            if not (proc.WaitForExit(processTimeouts.GitTimeout)) then
                 // セキュリティ: Process Resource管理強化
                 proc.Kill()
-                proc.WaitForExit(getProcessKillTimeout ()) |> ignore // 確実な終了待機
+                proc.WaitForExit(processTimeouts.ProcessKillTimeout) |> ignore // 確実な終了待機
                 logError "GitIntegrationManager" "Git branch creation timed out"
 
             let success = proc.ExitCode = 0
@@ -188,21 +197,30 @@ type GitIntegrationManager() =
 // ===============================================
 
 /// Docker操作専門マネージャー
-type DockerIntegrationManager() =
+type DockerIntegrationManager(commandConfig: SystemCommandConfig option, timeoutConfig: ProcessTimeoutConfig option) =
+    // 依存性注入パターン: 設定の外部化
+    let systemCommands =
+        commandConfig |> Option.defaultValue DefaultTimeouts.systemCommands
+
+    let processTimeouts =
+        timeoutConfig |> Option.defaultValue DefaultTimeouts.processTimeouts
 
     // Docker PS フォーマット定数
     let dockerPsFormat =
         "ps --format \"table {{.ID}}\\t{{.Image}}\\t{{.Status}}\\t{{.Names}}\""
 
+    /// デフォルトコンストラクタ（既存コードとの互換性）
+    new() = DockerIntegrationManager(None, None)
+
     /// Dockerコンテナ状態確認
     member _.GetContainerStatus() =
         try
             let psi =
-                ProcessHelper.createProcessStartInfo (getDockerCommand ()) dockerPsFormat None
+                ProcessHelper.createProcessStartInfo systemCommands.DockerCommand dockerPsFormat None
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(getDockerTimeout ())) then
+            if not (proc.WaitForExit(processTimeouts.DockerTimeout)) then
                 proc.Kill()
                 logError "DockerIntegrationManager" "Docker container status check timed out"
 
@@ -326,16 +344,27 @@ jobs:
 // ===============================================
 
 /// Kubernetes操作専門マネージャー
-type KubernetesIntegrationManager() =
+type KubernetesIntegrationManager(commandConfig: SystemCommandConfig option, timeoutConfig: ProcessTimeoutConfig option)
+    =
+    // 依存性注入パターン: 設定の外部化
+    let systemCommands =
+        commandConfig |> Option.defaultValue DefaultTimeouts.systemCommands
+
+    let processTimeouts =
+        timeoutConfig |> Option.defaultValue DefaultTimeouts.processTimeouts
+
+    /// デフォルトコンストラクタ（既存コードとの互換性）
+    new() = KubernetesIntegrationManager(None, None)
 
     /// Kubernetes クラスタ状態確認
     member _.GetClusterStatus() =
         try
-            let psi = ProcessHelper.createProcessStartInfo "kubectl" "get nodes" None
+            let psi =
+                ProcessHelper.createProcessStartInfo systemCommands.KubectlCommand "get nodes" None
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(getDockerTimeout ())) then
+            if not (proc.WaitForExit(processTimeouts.DockerTimeout)) then
                 proc.Kill()
                 logError "KubernetesIntegrationManager" "Kubernetes cluster status check timed out"
 
@@ -385,11 +414,14 @@ type KubernetesIntegrationManager() =
             let validatedPath = validateManifestPath manifestPath
 
             let psi =
-                ProcessHelper.createProcessStartInfoWithArgs "kubectl" [ "apply"; "-f"; validatedPath ] None
+                ProcessHelper.createProcessStartInfoWithArgs
+                    systemCommands.KubectlCommand
+                    [ "apply"; "-f"; validatedPath ]
+                    None
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(getDeployTimeout ())) then
+            if not (proc.WaitForExit(processTimeouts.DeployTimeout)) then
                 proc.Kill()
                 logError "KubernetesIntegrationManager" "Kubernetes manifest apply timed out"
 
@@ -405,17 +437,27 @@ type KubernetesIntegrationManager() =
 // ===============================================
 
 /// 監視システム統合マネージャー
-type MonitoringIntegrationManager() =
+type MonitoringIntegrationManager(commandConfig: SystemCommandConfig option, timeoutConfig: ProcessTimeoutConfig option)
+    =
+    // 依存性注入パターン: 設定の外部化
+    let systemCommands =
+        commandConfig |> Option.defaultValue DefaultTimeouts.systemCommands
+
+    let processTimeouts =
+        timeoutConfig |> Option.defaultValue DefaultTimeouts.processTimeouts
+
+    /// デフォルトコンストラクタ（既存コードとの互換性）
+    new() = MonitoringIntegrationManager(None, None)
 
     /// Prometheus メトリクス確認
     member _.GetPrometheusMetrics() =
         try
             let psi =
-                ProcessHelper.createProcessStartInfo "curl" "-s http://localhost:9090/metrics" None
+                ProcessHelper.createProcessStartInfo systemCommands.CurlCommand "-s http://localhost:9090/metrics" None
 
             use proc = Process.Start(psi)
 
-            if not (proc.WaitForExit(getDockerTimeout ())) then
+            if not (proc.WaitForExit(processTimeouts.DockerTimeout)) then
                 proc.Kill()
                 logError "MonitoringIntegrationManager" "Prometheus metrics check timed out"
 
@@ -435,7 +477,7 @@ type MonitoringIntegrationManager() =
                     try
                         let psi =
                             ProcessHelper.createProcessStartInfo
-                                "curl"
+                                systemCommands.CurlCommand
                                 $"-s -o /dev/null -w \"%%{{http_code}}\" {endpoint}"
                                 None
 
@@ -471,22 +513,35 @@ type IntegratedDevFlowManager
         dockerManager: DockerIntegrationManager,
         cicdManager: CICDIntegrationManager,
         k8sManager: KubernetesIntegrationManager,
-        monitoringManager: MonitoringIntegrationManager
+        monitoringManager: MonitoringIntegrationManager,
+        commandConfig: SystemCommandConfig option,
+        timeoutConfig: ProcessTimeoutConfig option
     ) =
     let gitManager = gitManager
     let dockerManager = dockerManager
     let cicdManager = cicdManager
     let k8sManager = k8sManager
     let monitoringManager = monitoringManager
+    // 依存性注入パターン: 設定の外部化
+    let systemCommands =
+        commandConfig |> Option.defaultValue DefaultTimeouts.systemCommands
+
+    let processTimeouts =
+        timeoutConfig |> Option.defaultValue DefaultTimeouts.processTimeouts
 
     /// デフォルトコンストラクタ（既存コードとの互換性）
     new() =
+        let defaultCommandConfig = Some DefaultTimeouts.systemCommands
+        let defaultTimeoutConfig = Some DefaultTimeouts.processTimeouts
+
         IntegratedDevFlowManager(
-            GitIntegrationManager(),
-            DockerIntegrationManager(),
+            GitIntegrationManager(defaultCommandConfig, defaultTimeoutConfig),
+            DockerIntegrationManager(defaultCommandConfig, defaultTimeoutConfig),
             CICDIntegrationManager(),
-            KubernetesIntegrationManager(),
-            MonitoringIntegrationManager()
+            KubernetesIntegrationManager(defaultCommandConfig, defaultTimeoutConfig),
+            MonitoringIntegrationManager(defaultCommandConfig, defaultTimeoutConfig),
+            defaultCommandConfig,
+            defaultTimeoutConfig
         )
 
     /// 開発環境セットアップ
@@ -547,12 +602,12 @@ type IntegratedDevFlowManager
                 try
                     let psi =
                         ProcessHelper.createProcessStartInfo
-                            (getDotnetCommand ())
+                            systemCommands.DotnetCommand
                             "test --no-build --verbosity quiet"
                             (Some projectPath)
 
                     use proc = Process.Start(psi)
-                    proc.WaitForExit(getTestTimeout ()) && proc.ExitCode = 0
+                    proc.WaitForExit(processTimeouts.TestTimeout) && proc.ExitCode = 0
                 with _ ->
                     false
 
@@ -562,12 +617,12 @@ type IntegratedDevFlowManager
                 try
                     let psi =
                         ProcessHelper.createProcessStartInfo
-                            (getDotnetCommand ())
+                            systemCommands.DotnetCommand
                             "build --configuration Release"
                             (Some projectPath)
 
                     use proc = Process.Start(psi)
-                    proc.WaitForExit(getBuildTimeout ()) && proc.ExitCode = 0
+                    proc.WaitForExit(processTimeouts.BuildTimeout) && proc.ExitCode = 0
                 with _ ->
                     false
 
@@ -580,12 +635,12 @@ type IntegratedDevFlowManager
 
                     let psi =
                         ProcessHelper.createProcessStartInfoWithArgs
-                            (getDotnetCommand ())
+                            systemCommands.DotnetCommand
                             [ "publish"; "--configuration"; "Release"; "--output"; outputPath ]
                             (Some projectPath)
 
                     use proc = Process.Start(psi)
-                    proc.WaitForExit(getDeployTimeout ()) && proc.ExitCode = 0
+                    proc.WaitForExit(processTimeouts.DeployTimeout) && proc.ExitCode = 0
                 with _ ->
                     false
 
@@ -670,7 +725,9 @@ type IntegratedDevFlowManager
                 ProcessHelper.createProcessStartInfo "dotnet" "format --verify-no-changes" (Some projectPath)
 
             use lintProc = Process.Start(lintPsi)
-            let lintSuccess = lintProc.WaitForExit(getBuildTimeout ()) && lintProc.ExitCode = 0
+
+            let lintSuccess =
+                lintProc.WaitForExit(processTimeouts.BuildTimeout) && lintProc.ExitCode = 0
 
             // 静的解析
             let analyzePsi =
@@ -679,7 +736,8 @@ type IntegratedDevFlowManager
             use analyzeProc = Process.Start(analyzePsi)
 
             let analyzeSuccess =
-                analyzeProc.WaitForExit(getBuildTimeout ()) && analyzeProc.ExitCode = 0
+                analyzeProc.WaitForExit(processTimeouts.BuildTimeout)
+                && analyzeProc.ExitCode = 0
 
             lintSuccess && analyzeSuccess
         with _ ->
@@ -693,26 +751,27 @@ type IntegratedDevFlowManager
             // Unit テスト
             let unitTestPsi =
                 ProcessHelper.createProcessStartInfo
-                    (getDotnetCommand ())
+                    systemCommands.DotnetCommand
                     "test --filter TestCategory=Unit"
                     (Some projectPath)
 
             use unitTestProc = Process.Start(unitTestPsi)
 
             let unitTestSuccess =
-                unitTestProc.WaitForExit(getTestTimeout ()) && unitTestProc.ExitCode = 0
+                unitTestProc.WaitForExit(processTimeouts.TestTimeout)
+                && unitTestProc.ExitCode = 0
 
             // Integration テスト
             let integrationTestPsi =
                 ProcessHelper.createProcessStartInfo
-                    (getDotnetCommand ())
+                    systemCommands.DotnetCommand
                     "test --filter TestCategory=Integration"
                     (Some projectPath)
 
             use integrationTestProc = Process.Start(integrationTestPsi)
 
             let integrationTestSuccess =
-                integrationTestProc.WaitForExit(getTestTimeout () * 2)
+                integrationTestProc.WaitForExit(processTimeouts.TestTimeout * 2)
                 && integrationTestProc.ExitCode = 0
 
             unitTestSuccess && integrationTestSuccess
@@ -731,7 +790,8 @@ type IntegratedDevFlowManager
             use securityProc = Process.Start(securityPsi)
 
             let securitySuccess =
-                securityProc.WaitForExit(getBuildTimeout ()) && securityProc.ExitCode = 0
+                securityProc.WaitForExit(processTimeouts.BuildTimeout)
+                && securityProc.ExitCode = 0
 
             securitySuccess
         with _ ->
@@ -744,14 +804,14 @@ type IntegratedDevFlowManager
         try
             let buildPsi =
                 ProcessHelper.createProcessStartInfo
-                    (getDotnetCommand ())
+                    systemCommands.DotnetCommand
                     "build --configuration Release"
                     (Some projectPath)
 
             use buildProc = Process.Start(buildPsi)
 
             let buildSuccess =
-                buildProc.WaitForExit(getBuildTimeout ()) && buildProc.ExitCode = 0
+                buildProc.WaitForExit(processTimeouts.BuildTimeout) && buildProc.ExitCode = 0
 
             // パッケージ化
             let outputPath = Path.Combine(projectPath, "publish")
@@ -759,14 +819,15 @@ type IntegratedDevFlowManager
 
             let publishPsi =
                 ProcessHelper.createProcessStartInfoWithArgs
-                    (getDotnetCommand ())
+                    systemCommands.DotnetCommand
                     [ "publish"; "--configuration"; "Release"; "--output"; outputPath ]
                     (Some projectPath)
 
             use publishProc = Process.Start(publishPsi)
 
             let publishSuccess =
-                publishProc.WaitForExit(getDeployTimeout ()) && publishProc.ExitCode = 0
+                publishProc.WaitForExit(processTimeouts.DeployTimeout)
+                && publishProc.ExitCode = 0
 
             buildSuccess && publishSuccess
         with _ ->
@@ -780,14 +841,15 @@ type IntegratedDevFlowManager
             // Docker イメージビルド
             let dockerBuildPsi =
                 ProcessHelper.createProcessStartInfoWithArgs
-                    (getDockerCommand ())
+                    systemCommands.DockerCommand
                     [ "build"; "-t"; $"fcode-app:{deployTarget}"; "." ]
                     (Some projectPath)
 
             use dockerBuildProc = Process.Start(dockerBuildPsi)
 
             let dockerBuildSuccess =
-                dockerBuildProc.WaitForExit(getDeployTimeout ()) && dockerBuildProc.ExitCode = 0
+                dockerBuildProc.WaitForExit(processTimeouts.DeployTimeout)
+                && dockerBuildProc.ExitCode = 0
 
             dockerBuildSuccess
         with _ ->
@@ -805,12 +867,14 @@ type IntegratedDevFlowManager
             | "docker" ->
                 let dockerRunPsi =
                     ProcessHelper.createProcessStartInfoWithArgs
-                        (getDockerCommand ())
+                        systemCommands.DockerCommand
                         [ "run"; "-d"; "-p"; "8080:80"; $"fcode-app:{deployTarget}" ]
                         None
 
                 use dockerRunProc = Process.Start(dockerRunPsi)
-                dockerRunProc.WaitForExit(getDeployTimeout ()) && dockerRunProc.ExitCode = 0
+
+                dockerRunProc.WaitForExit(processTimeouts.DeployTimeout)
+                && dockerRunProc.ExitCode = 0
             | _ -> true // その他のデプロイターゲットでも成功とする
         with _ ->
             false

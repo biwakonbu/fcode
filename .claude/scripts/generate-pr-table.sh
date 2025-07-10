@@ -3,6 +3,15 @@
 # PR Description Table Generator
 # Markdownテーブルを正しく生成し、制御文字を除去
 
+# 制御文字・リダイレクト記号を除去（関数化で効率化）
+clean_markdown() {
+    echo "$1" | sed -E 's/[<>]//g; s/\/dev\/null//g'
+}
+
+# 制御文字・HTML特殊文字をエスケープ（関数化で効率化）
+escape_html() {
+    echo "$1" | sed -E 's/</\&lt;/g; s/>/\&gt;/g; s/\/dev\/null//g'
+}
 generate_effect_table() {
     local title="$1"
     shift
@@ -31,11 +40,7 @@ EOF
         after="${after#"${after%%[![:space:]]*}"}"
         after="${after%"${after##*[![:space:]]}"}"
         
-        # 制御文字・リダイレクト記号を除去（関数化で効率化）
-        clean_markdown() {
-            echo "$1" | sed -E 's/[<>]//g; s/\/dev\/null//g'
-        }
-        
+        # 制御文字・リダイレクト記号を除去
         name=$(clean_markdown "$name")
         before=$(clean_markdown "$before")
         after=$(clean_markdown "$after")
@@ -75,11 +80,7 @@ EOF
         after="${after#"${after%%[![:space:]]*}"}"
         after="${after%"${after##*[![:space:]]}"}"
         
-        # 制御文字・HTML特殊文字をエスケープ（関数化で効率化）
-        escape_html() {
-            echo "$1" | sed -E 's/</\&lt;/g; s/>/\&gt;/g; s/\/dev\/null//g'
-        }
-        
+        # 制御文字・HTML特殊文字をエスケープ
         name=$(escape_html "$name")
         before=$(escape_html "$before")
         after=$(escape_html "$after")

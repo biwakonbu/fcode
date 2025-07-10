@@ -6,6 +6,7 @@ open System.Text.Json
 open System.Threading.Tasks
 open System.IO.Compression
 open FCode.SecurityUtils
+open fcode
 
 /// セッション永続化機能を提供するモジュール
 module SessionPersistenceManager =
@@ -196,26 +197,33 @@ module SessionPersistenceManager =
                 if String.IsNullOrWhiteSpace(stateJson) then
                     raise (ArgumentException("State file is empty or invalid"))
 
-                // 不正な制御文字を除去
-                let cleanStateJson =
-                    System.Text.RegularExpressions.Regex.Replace(stateJson.Trim(), @"[\x00-\x08\x0E-\x1F\x7F]", "")
+                // JsonSanitizerによる制御文字・エスケープシーケンス完全除去
+                let cleanStateJson = JsonSanitizer.sanitizeForJson stateJson
 
-                // JSON形式の基本検証
-                if not (cleanStateJson.StartsWith("{") && cleanStateJson.EndsWith("}")) then
-                    raise (JsonException("Invalid JSON format in state file"))
+                // JsonSanitizerによる事前検証
+                if not (JsonSanitizer.isValidJsonCandidate cleanStateJson) then
+                    raise (JsonException("Invalid JSON format in state file after sanitization"))
 
-                let mutable paneState = JsonSerializer.Deserialize<PaneState>(cleanStateJson)
+                // JsonSanitizerによる安全なJSON解析
+                let paneStateResult = JsonSanitizer.tryParseJson<PaneState> cleanStateJson
 
-                // 会話履歴の読み込み
-                if File.Exists(historyFile) then
-                    let compressedData = File.ReadAllBytes(historyFile)
-                    let history = decompressHistory compressedData
+                let basePaneState =
+                    match paneStateResult with
+                    | Result.Ok state -> state
+                    | Result.Error errorMsg -> raise (JsonException($"JSON parse failed: {errorMsg}"))
 
-                    paneState <-
-                        { paneState with
+                // 会話履歴の読み込み（関数型アプローチ）
+                let finalPaneState =
+                    if File.Exists(historyFile) then
+                        let compressedData = File.ReadAllBytes(historyFile)
+                        let history = decompressHistory compressedData
+
+                        { basePaneState with
                             ConversationHistory = history }
+                    else
+                        basePaneState
 
-                Success paneState
+                Success finalPaneState
         with ex ->
             Error $"ペイン状態読み込み失敗 ({paneId}): {ex.Message}"
 
@@ -368,20 +376,26 @@ module SessionPersistenceManager =
             let sessions = listSessions config
             let oldSessions = sessions |> List.filter (fun s -> s.LastActivity < cutoffTime)
 
-            let mutable deletedCount = 0
+            // 関数型アプローチでセッション削除
+            let deleteResults =
+                oldSessions
+                |> List.map (fun session ->
+                    try
+                        let sessionDir =
+                            Path.Combine(config.StorageDirectory, "sessions", session.SessionId)
 
-            for session in oldSessions do
-                try
-                    let sessionDir =
-                        Path.Combine(config.StorageDirectory, "sessions", session.SessionId)
+                        if Directory.Exists(sessionDir) then
+                            Directory.Delete(sessionDir, true)
+                            Logger.logInfo "SessionPersistence" $"古いセッションを削除: {session.SessionId}"
+                            true // 削除成功
+                        else
+                            false // ディレクトリが存在しない
+                    with ex ->
+                        Logger.logWarning "SessionPersistence" $"セッション削除失敗 ({session.SessionId}): {ex.Message}"
+                        false // 削除失敗
+                )
 
-                    if Directory.Exists(sessionDir) then
-                        Directory.Delete(sessionDir, true)
-                        deletedCount <- deletedCount + 1
-                        Logger.logInfo "SessionPersistence" $"古いセッションを削除: {session.SessionId}"
-                with ex ->
-                    Logger.logWarning "SessionPersistence" $"セッション削除失敗 ({session.SessionId}): {ex.Message}"
-
+            let deletedCount = deleteResults |> List.filter id |> List.length
             Success deletedCount
         with ex ->
             Logger.logError "SessionPersistence" $"セッションクリーンアップ失敗: {ex.Message}"

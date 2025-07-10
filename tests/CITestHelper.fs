@@ -7,7 +7,7 @@ open FCode.Logger
 /// CI環境統一判定・設定ヘルパー
 module CIEnvironment =
 
-    /// CI環境変数の統一判定
+    /// CI環境変数の統一判定（強化版）
     let isCI () =
         let ciVars =
             [ "CI" // 汎用CI環境
@@ -15,12 +15,21 @@ module CIEnvironment =
               "GITHUB_ACTIONS" // GitHub Actions
               "JENKINS_URL" // Jenkins
               "GITLAB_CI" // GitLab CI
-              "BUILDKITE" ] // Buildkite
+              "BUILDKITE" // Buildkite
+              "CIRCLECI" // CircleCI
+              "APPVEYOR" // AppVeyor
+              "FCODE_TEST_CI" ] // fcode専用CI設定
 
-        ciVars
-        |> List.exists (fun var ->
-            let value = Environment.GetEnvironmentVariable(var)
-            not (String.IsNullOrEmpty(value)) && value <> "false")
+        let hasValidCI =
+            ciVars
+            |> List.exists (fun var ->
+                let value = Environment.GetEnvironmentVariable(var)
+                not (String.IsNullOrEmpty(value)) && value <> "false")
+
+        // ヘッドレス環境も考慮（DISPLAY変数なし）
+        let isHeadless = String.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"))
+
+        hasValidCI || isHeadless
 
     /// CI環境の強制設定（テスト用）
     let forceCI (enabled: bool) =

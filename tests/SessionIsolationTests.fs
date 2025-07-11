@@ -36,7 +36,7 @@ type SessionIsolationTests() =
             Assert.IsTrue(Directory.Exists(workspace.TempDirectory))
             Assert.IsTrue(Directory.Exists(workspace.OutputDirectory))
             Assert.AreEqual("test-pane", workspace.PaneId)
-        | Error e -> Assert.Fail(sprintf "ワークスペース作成失敗: %s" e)
+        | Result.Error e -> Assert.Fail(sprintf "ワークスペース作成失敗: %s" e)
 
     /// 基本的な環境変数分離テスト
     [<Test>]
@@ -50,7 +50,7 @@ type SessionIsolationTests() =
             Assert.AreEqual("dev", environment.ClaudeRole)
             Assert.IsTrue(environment.CustomVars.ContainsKey("PANE_ID"))
             Assert.IsTrue(environment.CustomVars.ContainsKey("SESSION_ID"))
-        | Error e -> Assert.Fail(sprintf "環境作成失敗: %s" e)
+        | Result.Error e -> Assert.Fail(sprintf "環境作成失敗: %s" e)
 
     /// 基本的なファイルロックテスト
     [<Test>]
@@ -72,7 +72,7 @@ type SessionIsolationTests() =
             // ロック解放
             match FileLockManager.releaseFileLock config lockId with
             | Ok() -> Assert.Pass("ロック取得・解放成功")
-            | Error e -> Assert.Fail(sprintf "ロック解放失敗: %s" e)
+            | Result.Error e -> Assert.Fail(sprintf "ロック解放失敗: %s" e)
         | result -> Assert.Fail(sprintf "ロック取得失敗: %A" result)
 
     /// 基本的なセッション状態管理テスト
@@ -91,4 +91,4 @@ type SessionIsolationTests() =
             Assert.IsTrue(session.SessionId.Contains("test-pane"))
             Assert.AreEqual(0, session.ConversationHistory.Length)
             Assert.AreEqual(testBaseDir, session.WorkingDirectory)
-        | Error e -> Assert.Fail(sprintf "セッション作成失敗: %s" e)
+        | Result.Error e -> Assert.Fail(sprintf "セッション作成失敗: %s" e)

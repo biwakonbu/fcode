@@ -71,6 +71,7 @@
     <Compile Include="StorageDesignIntegrationTests.fs"/>
     <Compile Include="StoragePerformanceTests.fs"/>
     <Compile Include="TaskAssignmentManagerTests.fs"/>
+    <Compile Include="AgentWorkDisplayManagerTests.fs"/>
     <Compile Include="QualityGateManagerTests.fs"/>
     <Compile Include="EscalationManagerTests.fs"/>
     <Compile Include="VirtualTimeManagerTests.fs"/>
@@ -103,6 +104,7 @@
     <Compile Include="DevOpsIntegrationTests.fs"/>
     <!-- Issue #94: TUI Internal API Tests (将来実装) -->
     <Compile Include="TUIInternalAPITests.fs"/>
+    <Compile Include="Program.fs"/>
   </ItemGroup>
 
   <!-- Performance tests - only included when RunPerformanceTests is true -->

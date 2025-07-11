@@ -18,6 +18,7 @@ open FCode.FullWorkflowCoordinator
 open FCode.SimpleMemoryMonitor
 open FCode.ConfigurationManager
 open FCode.TaskAssignmentManager
+// AgentWorkDisplayManager and AgentWorkSimulator are in FCode namespace
 
 // グローバル変数として定義
 let mutable globalPaneTextViews: Map<string, TextView> = Map.empty
@@ -65,6 +66,9 @@ let processPOInstruction (instruction: string) : unit =
         taskAssignmentManager.RegisterAgent(qaProfile)
         taskAssignmentManager.RegisterAgent(uxProfile)
 
+        // AgentWorkDisplayManagerの取得
+        let workDisplayManager = AgentWorkDisplayGlobal.GetManager()
+
         // 指示をタスクに分解して配分
         match taskAssignmentManager.ProcessInstructionAndAssign(instruction) with
         | Result.Ok assignments ->
@@ -84,22 +88,46 @@ let processPOInstruction (instruction: string) : unit =
             addSystemActivity "PO" SystemMessage $"指示処理完了: {assignments.Length}個のタスクを配分しました"
             |> ignore
 
-            // 各エージェントペインに作業内容を表示
+            // 各エージェントペインに作業内容を表示し、AgentWorkDisplayManagerでタスク開始を記録
             for (task, agentId) in assignments do
+                // AgentWorkDisplayManagerでタスク開始を記録
+                workDisplayManager.StartTask(agentId, task.Title, task.EstimatedDuration)
+
                 match globalPaneTextViews.TryFind(agentId) with
                 | Some textView ->
-                    let currentText = textView.Text.ToString()
+                    // AgentWorkDisplayManagerからフォーマットされた作業状況を取得
+                    match workDisplayManager.GetAgentWorkInfo(agentId) with
+                    | Some workInfo ->
+                        let formattedStatus = workDisplayManager.FormatWorkStatus(workInfo)
+                        textView.Text <- formattedStatus
+                        textView.SetNeedsDisplay()
+                        logInfo "UI" $"Updated work display for {agentId}: {task.Title}"
+                    | None ->
+                        // フォールバック: 従来の表示
+                        let currentText = textView.Text.ToString()
 
-                    let newText =
-                        $"{currentText}\n[{timestamp}] 新しいタスク: {task.Title}\n説明: {task.Description}\n"
+                        let newText =
+                            $"{currentText}\n[{timestamp}] 新しいタスク: {task.Title}\n説明: {task.Description}\n"
 
-                    textView.Text <- newText
-                    textView.SetNeedsDisplay()
-                    logInfo "UI" $"Task assigned to {agentId}: {task.Title}"
+                        textView.Text <- newText
+                        textView.SetNeedsDisplay()
+                        logInfo "UI" $"Task assigned to {agentId}: {task.Title} (fallback display)"
                 | None -> logWarning "UI" $"Agent pane not found for: {agentId}"
 
             // 画面更新
             Application.Refresh()
+
+            // 作業シミュレーションを開始（リアルタイム進捗表示のため）
+            let simulator = AgentWorkSimulatorGlobal.GetSimulator()
+
+            let simulationAssignments =
+                assignments
+                |> List.map (fun (task, agentId) ->
+                    let durationMinutes = int (task.EstimatedDuration.TotalMinutes)
+                    (agentId, task.Title, durationMinutes))
+
+            simulator.StartWorkSimulation(simulationAssignments)
+            logInfo "PO" $"Started work simulation for {assignments.Length} tasks"
 
         | Result.Error errorMsg ->
             logError "PO" $"Failed to process instruction: {errorMsg}"
@@ -197,6 +225,9 @@ let main argv =
             // TextView直接参照用マップ
             let mutable paneTextViews = Map.empty<string, TextView>
 
+            // AgentWorkDisplayManagerの取得（ペイン作成時用）
+            let workDisplayManager = AgentWorkDisplayGlobal.GetManager()
+
             // Helper function to create a pane with a given title and TextView
             let makePane title =
                 logDebug "UI" $"Creating pane: {title}"
@@ -214,7 +245,20 @@ let main argv =
                     textView.Width <- Dim.Fill()
                     textView.Height <- Dim.Fill()
                     textView.ReadOnly <- true
-                    textView.Text <- $"[DEBUG] {title}ペイン - TextView初期化完了\n[DEBUG] Claude Code初期化準備中..."
+
+                    // AgentWorkDisplayManagerでエージェントを初期化
+                    let agentId = if title = "PM / PdM タイムライン" then "pm" else title
+                    workDisplayManager.InitializeAgent(agentId)
+
+                    // 初期表示をAgentWorkDisplayManagerから取得
+                    match workDisplayManager.GetAgentWorkInfo(agentId) with
+                    | Some workInfo ->
+                        let formattedStatus = workDisplayManager.FormatWorkStatus(workInfo)
+                        textView.Text <- formattedStatus
+                        logInfo "UI" $"Initialized agent work display for: {agentId}"
+                    | None ->
+                        textView.Text <- $"[DEBUG] {title}ペイン - TextView初期化完了\n[DEBUG] Claude Code初期化準備中..."
+                        logWarning "UI" $"Failed to get work info for agent: {agentId}"
 
                     // Terminal.Gui 1.15.0の推奨方法: Add()メソッド使用
                     fv.Add(textView)
@@ -226,6 +270,20 @@ let main argv =
                     // TextView直接参照用マップに追加
                     paneTextViews <- paneTextViews.Add(title, textView)
                     globalPaneTextViews <- globalPaneTextViews.Add(title, textView)
+
+                    // AgentWorkDisplayManagerの表示更新ハンドラーを登録
+                    workDisplayManager.RegisterDisplayUpdateHandler(fun updatedAgentId updatedWorkInfo ->
+                        if updatedAgentId = agentId then
+                            try
+                                let formattedStatus = workDisplayManager.FormatWorkStatus(updatedWorkInfo)
+
+                                Application.MainLoop.Invoke(fun () ->
+                                    textView.Text <- formattedStatus
+                                    textView.SetNeedsDisplay())
+
+                                logDebug "UI" $"Display updated for agent: {agentId}"
+                            with ex ->
+                                logError "UI" $"Failed to update display for agent {agentId}: {ex.Message}")
 
                     logInfo "UI" $"TextView added to pane: {title} - Subviews count: {fv.Subviews.Count}"
                     logDebug "UI" $"TextView type: {textView.GetType().Name}"

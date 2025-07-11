@@ -560,8 +560,28 @@ type SessionManager() =
                 with ex ->
                     logException "SessionManager" $"Failed to stop session for pane: {paneId}" ex
 
-                    MessageBox.ErrorQuery(50, 10, "Error", $"Claude Code終了エラー: {ex.Message}", "OK")
-                    |> ignore
+                    // FC-027: エラーハンドリング強化・ログレベル調整
+                    logWarning "SessionManager" $"Session cleanup warning for {paneId}: {ex.Message}"
+
+                    // セッションを非アクティブ化（部分的成功として扱う）
+                    let updatedSession =
+                        { session with
+                            Process = None
+                            IsActive = false }
+
+                    sessions <- sessions.Add(paneId, updatedSession)
+
+                    // エラーメッセージにログ確認案内追加
+                    match session.OutputView with
+                    | Some outputView ->
+                        session.OutputBuffer.AppendLine($"[WARN] セッション終了時エラー: {ex.Message}") |> ignore
+
+                        session.OutputBuffer.AppendLine($"[INFO] 詳細はログファイルを確認: {logger.LogPath}")
+                        |> ignore
+
+                        outputView.Text <- session.OutputBuffer.ToString()
+                        outputView.SetNeedsDisplay()
+                    | None -> ()
 
                     false
             | None ->

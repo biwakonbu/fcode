@@ -199,28 +199,81 @@ module MockApplication =
 
 /// UI要素ファクトリ（CI環境判定付き）
 module UIFactory =
-    open FCode.Tests.CITestHelper
 
     let createFrameView (title: string) =
-        if CIEnvironment.isCI () then
+        if FCode.Tests.CITestHelper.CIEnvironment.isCI () then
             MockFrameView(title) :> obj
         else
             new Terminal.Gui.FrameView(title) :> obj
 
     let createTextView () =
-        if CIEnvironment.isCI () then
+        if FCode.Tests.CITestHelper.CIEnvironment.isCI () then
             MockTextView() :> obj
         else
             new Terminal.Gui.TextView() :> obj
 
     let createLabel (text: string) =
-        if CIEnvironment.isCI () then
+        if FCode.Tests.CITestHelper.CIEnvironment.isCI () then
             MockLabel(text) :> obj
         else
             new Terminal.Gui.Label(text) :> obj
 
     let createButton (text: string) =
-        if CIEnvironment.isCI () then
+        if FCode.Tests.CITestHelper.CIEnvironment.isCI () then
             MockButton(text) :> obj
         else
             new Terminal.Gui.Button(text) :> obj
+
+/// Terminal.Gui初期化の完全回避（FC-027専用）
+module SafeTerminalGuiInitializer =
+
+    /// CI環境でのApplication.Init完全回避
+    let safeApplicationInit () =
+        if not (FCode.Tests.CITestHelper.CIEnvironment.isCI ()) then
+            try
+                Terminal.Gui.Application.Init()
+                logInfo "MockUI" "Terminal.Gui初期化完了"
+            with ex ->
+                logWarning "MockUI" $"Terminal.Gui初期化失敗（CI環境として継続）: {ex.Message}"
+                FCode.Tests.CITestHelper.CIEnvironment.forceCI true
+        else
+            MockApplication.Init()
+            logInfo "MockUI" "CI環境: Mock Application初期化完了"
+
+    /// CI環境でのApplication.Shutdown完全回避
+    let safeApplicationShutdown () =
+        if not (FCode.Tests.CITestHelper.CIEnvironment.isCI ()) then
+            try
+                Terminal.Gui.Application.Shutdown()
+                logInfo "MockUI" "Terminal.Guiシャットダウン完了"
+            with ex ->
+                logWarning "MockUI" $"Terminal.Guiシャットダウン失敗: {ex.Message}"
+        else
+            MockApplication.Shutdown()
+            logInfo "MockUI" "CI環境: Mock Applicationシャットダウン完了"
+
+/// テスト用のモックUI統合設定
+module MockUITestSetup =
+
+    /// テスト開始時の安全な設定
+    let setupMockUI () =
+        if FCode.Tests.CITestHelper.CIEnvironment.isCI () then
+            // CI環境ではモックUI使用を強制
+            System.Environment.SetEnvironmentVariable("FCODE_MOCK_UI", "true")
+            logInfo "MockUI" "CI環境モード有効"
+        else
+            logInfo "MockUI" "開発環境モード有効"
+
+    /// テスト終了時のクリーンアップ
+    let cleanupMockUI () =
+        System.Environment.SetEnvironmentVariable("FCODE_MOCK_UI", null)
+        logInfo "MockUI" "クリーンアップ完了"
+
+    /// テスト実行時の自動設定
+    let withMockUI (action: unit -> 'T) : 'T =
+        setupMockUI ()
+
+        try
+            action ()
+        finally
+            cleanupMockUI ()

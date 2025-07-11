@@ -115,6 +115,7 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - **レイアウト比率**: 上段40%(dev1-3) / 中段40%(qa1-2,ux) / 下段20%(PMタイムライン)
 
 ### 実装済み機能（100%完了）
+
 - **UI基盤完全実装**: 8ペインレイアウト（会話、dev1-3、qa1-2、ux、PMタイムライン）
 - **UI改善完了**: 会話ペイン60列幅、二重枠解消、統一カラースキーム
 - **Emacsキーバインドシステム**: マルチキーシーケンス完全対応（246行）
@@ -123,7 +124,7 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - **包括的ログシステム**: 4段階ログレベル、カテゴリ別出力（71行）
 - **プロセス分離アーキテクチャ基盤**: ProcessSupervisor完全実装（422行）
 - **UIHelpers根本修正**: Terminal.Gui 1.15.0対応、リフレクション安全化（2025-06-29）
-- **包括的テストスイート**: 240テストケース、5カテゴリ（Unit/Integration/Performance/Stability）
+- **包括的テストスイート**: 240テストケース、4カテゴリ（Unit/Integration/Performance/Stability）
 - **リアルタイム協調機能基盤**: 完全実装（2,526行、包括的アーキテクチャ）
 - **SQLite3タスクストレージ**: TaskStorageManager実装完了（477行）
 - **FC-027テスト安定性根本修正**: JSON制御文字サニタイズ・CI環境最適化（2025-07-11）
@@ -345,3 +346,4 @@ dotnet test tests/fcode.Tests.fsproj
 - `.fsharplint.json`: FSharpLint標準形式での品質ルール設定
 - CI/CDパイプライン: F# Compiler + FSharpLint品質チェック
 - `.github/workflows/ci.yml`: Linux/macOS自動テスト実行
+

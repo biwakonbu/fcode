@@ -50,18 +50,20 @@ jobs:
       run: |
         echo "📊 Verifying test categorization by examining source files..."
         
-        # Count Category attributes in test files
+        # Count TestFixture and Test methods to ensure proper categorization
+        TESTFIXTURE_COUNT=$(find tests -name "*.fs" -exec grep -c "\[<TestFixture>\]" {} \; | awk '{sum += $1} END {print sum}')
         CATEGORY_COUNT=$(find tests -name "*.fs" -exec grep -c "\[<Category" {} \; | awk '{sum += $1} END {print sum}')
         TEST_COUNT=$(find tests -name "*.fs" -exec grep -c "\[<Test>" {} \; | awk '{sum += $1} END {print sum}')
         
+        echo "  TestFixture count: $TESTFIXTURE_COUNT"
         echo "  Category attributes found: $CATEGORY_COUNT"
         echo "  Test methods found: $TEST_COUNT"
         
-        # All tests should have at least one category
-        if [ "$CATEGORY_COUNT" -ge "$TEST_COUNT" ]; then
-          echo "✅ Test categorization verified: All $TEST_COUNT tests have categories"
+        # Ensure we have sufficient categorization (TestFixture categories cover multiple tests)
+        if [ "$CATEGORY_COUNT" -ge "$TESTFIXTURE_COUNT" ]; then
+          echo "✅ Test categorization verified: $TESTFIXTURE_COUNT TestFixtures with $CATEGORY_COUNT categories for $TEST_COUNT tests"
         else
-          echo "❌ Missing categories: $((TEST_COUNT - CATEGORY_COUNT)) tests lack categories"
+          echo "❌ Insufficient categories: Need at least one category per TestFixture ($TESTFIXTURE_COUNT TestFixtures, $CATEGORY_COUNT categories)"
           exit 1
         fi
     

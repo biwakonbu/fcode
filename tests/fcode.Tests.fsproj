@@ -26,6 +26,9 @@
     <Compile Include="CITestHelper.fs"/>
     <Compile Include="MockUI.fs"/>
     <Compile Include="TestHelpers.fs"/>
+    <!-- FC-027: Test Stability Root Fix Tests -->
+    <Compile Include="JsonSanitizerTests.fs"/>
+    <Compile Include="MockUIEnhancementTests.fs"/>
     <Compile Include="MockFrameViewTests.fs"/>
     <Compile Include="ConfigurationManagerTests.fs"/>
     <Compile Include="AgentCLITests.fs"/>

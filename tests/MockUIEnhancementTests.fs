@@ -76,10 +76,10 @@ type MockUIEnhancementTests() =
     [<Test>]
     member _.``MockApplicationが正常に初期化される``() =
         MockApplication.Init()
-        Assert.IsTrue(MockApplication.IsInitialized)
+        Assert.IsTrue(MockApplication.IsInitialized())
 
         MockApplication.Shutdown()
-        Assert.IsFalse(MockApplication.IsInitialized)
+        Assert.IsFalse(MockApplication.IsInitialized())
 
     [<Test>]
     member _.``MockApplicationのRun機能が動作する``() =
@@ -188,10 +188,10 @@ type MockUIStabilityTests() =
     member _.``MockApplicationの繰り返し初期化で問題が発生しない``() =
         for _ in 1..10 do
             MockApplication.Init()
-            Assert.IsTrue(MockApplication.IsInitialized)
+            Assert.IsTrue(MockApplication.IsInitialized())
 
             MockApplication.Shutdown()
-            Assert.IsFalse(MockApplication.IsInitialized)
+            Assert.IsFalse(MockApplication.IsInitialized())
 
     [<Test>]
     member _.``巨大テキストでMockTextViewが安定動作する``() =

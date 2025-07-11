@@ -195,7 +195,7 @@ module MockApplication =
 
     let RequestStop () = logInfo "MockUI" "Mock Application停止要求"
 
-    let IsInitialized = isInitialized
+    let IsInitialized = fun () -> isInitialized
 
 /// UI要素ファクトリ（CI環境判定付き）
 module UIFactory =

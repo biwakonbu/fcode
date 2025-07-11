@@ -26,91 +26,88 @@ let mutable globalPaneTextViews: Map<string, TextView> = Map.empty
 let processPOInstruction (instruction: string) : unit =
     try
         logInfo "PO" $"Starting PO instruction processing: {instruction}"
-        
+
         // TaskAssignmentManagerの初期化
         let nlp = NaturalLanguageProcessor()
         let matcher = AgentSpecializationMatcher()
         let reassignmentSystem = DynamicReassignmentSystem()
         let taskAssignmentManager = TaskAssignmentManager(nlp, matcher, reassignmentSystem)
-        
+
         // 基本エージェントプロファイルを登録
-        let devProfile = {
-            AgentId = "dev1"
-            Specializations = [Development ["frontend"; "backend"; "general"]]
-            LoadCapacity = 3.0
-            CurrentLoad = 0.0
-            SuccessRate = 0.95
-            AverageTaskDuration = System.TimeSpan.FromHours(2.0)
-            LastAssignedTask = None
-        }
-        
-        let qaProfile = {
-            AgentId = "qa1"
-            Specializations = [Testing ["unit-testing"; "integration-testing"]]
-            LoadCapacity = 2.0
-            CurrentLoad = 0.0
-            SuccessRate = 0.92
-            AverageTaskDuration = System.TimeSpan.FromHours(1.5)
-            LastAssignedTask = None
-        }
-        
-        let uxProfile = {
-            AgentId = "ux"
-            Specializations = [UXDesign ["interface"; "usability"]]
-            LoadCapacity = 2.0
-            CurrentLoad = 0.0
-            SuccessRate = 0.88
-            AverageTaskDuration = System.TimeSpan.FromHours(3.0)
-            LastAssignedTask = None
-        }
-        
+        let devProfile =
+            { AgentId = "dev1"
+              Specializations = [ Development [ "frontend"; "backend"; "general" ] ]
+              LoadCapacity = 3.0
+              CurrentLoad = 0.0
+              SuccessRate = 0.95
+              AverageTaskDuration = System.TimeSpan.FromHours(2.0)
+              LastAssignedTask = None }
+
+        let qaProfile =
+            { AgentId = "qa1"
+              Specializations = [ Testing [ "unit-testing"; "integration-testing" ] ]
+              LoadCapacity = 2.0
+              CurrentLoad = 0.0
+              SuccessRate = 0.92
+              AverageTaskDuration = System.TimeSpan.FromHours(1.5)
+              LastAssignedTask = None }
+
+        let uxProfile =
+            { AgentId = "ux"
+              Specializations = [ UXDesign [ "interface"; "usability" ] ]
+              LoadCapacity = 2.0
+              CurrentLoad = 0.0
+              SuccessRate = 0.88
+              AverageTaskDuration = System.TimeSpan.FromHours(3.0)
+              LastAssignedTask = None }
+
         taskAssignmentManager.RegisterAgent(devProfile)
         taskAssignmentManager.RegisterAgent(qaProfile)
         taskAssignmentManager.RegisterAgent(uxProfile)
-        
+
         // 指示をタスクに分解して配分
         match taskAssignmentManager.ProcessInstructionAndAssign(instruction) with
         | Result.Ok assignments ->
             logInfo "PO" $"Successfully processed instruction - {assignments.Length} tasks assigned"
-            
+
             // 会話ペインに結果を表示
-            let resultText = 
+            let resultText =
                 assignments
                 |> List.map (fun (task, agentId) ->
                     $"✓ {task.Title} → {agentId} (予定時間: {task.EstimatedDuration.TotalMinutes:F0}分)")
                 |> String.concat "\n"
-            
+
             let timestamp = System.DateTime.Now.ToString("HH:mm:ss")
             let displayText = $"\n[{timestamp}] PO指示処理完了:\n{resultText}\n"
-            
+
             // 会話ペインに追加
             addSystemActivity "PO" SystemMessage $"指示処理完了: {assignments.Length}個のタスクを配分しました"
             |> ignore
-            
+
             // 各エージェントペインに作業内容を表示
             for (task, agentId) in assignments do
                 match globalPaneTextViews.TryFind(agentId) with
                 | Some textView ->
                     let currentText = textView.Text.ToString()
-                    let newText = $"{currentText}\n[{timestamp}] 新しいタスク: {task.Title}\n説明: {task.Description}\n"
+
+                    let newText =
+                        $"{currentText}\n[{timestamp}] 新しいタスク: {task.Title}\n説明: {task.Description}\n"
+
                     textView.Text <- newText
                     textView.SetNeedsDisplay()
                     logInfo "UI" $"Task assigned to {agentId}: {task.Title}"
-                | None ->
-                    logWarning "UI" $"Agent pane not found for: {agentId}"
-            
+                | None -> logWarning "UI" $"Agent pane not found for: {agentId}"
+
             // 画面更新
             Application.Refresh()
-            
+
         | Result.Error errorMsg ->
             logError "PO" $"Failed to process instruction: {errorMsg}"
-            addSystemActivity "PO" SystemMessage $"指示処理エラー: {errorMsg}"
-            |> ignore
-            
+            addSystemActivity "PO" SystemMessage $"指示処理エラー: {errorMsg}" |> ignore
+
     with ex ->
         logError "PO" $"Exception in PO instruction processing: {ex.Message}"
-        addSystemActivity "PO" SystemMessage $"システムエラー: {ex.Message}"
-        |> ignore
+        addSystemActivity "PO" SystemMessage $"システムエラー: {ex.Message}" |> ignore
 
 [<EntryPoint>]
 let main argv =
@@ -587,11 +584,12 @@ let main argv =
                         // PO指示入力処理
                         let currentText = conversationTextView.Text.ToString()
                         let lines = currentText.Split('\n')
-                        let lastLine = lines |> Array.last
-                        
+                        let lastLine = if Array.isEmpty lines then "" else lines |> Array.last
+
                         // 「>」で始まる行をPO指示として処理
                         if lastLine.StartsWith(">") then
                             let instruction = lastLine.Substring(1).Trim()
+
                             if not (System.String.IsNullOrEmpty(instruction)) then
                                 logInfo "PO" $"Processing PO instruction: {instruction}"
                                 processPOInstruction instruction

@@ -9,10 +9,14 @@ open System.Diagnostics
 open FCode.Logger
 open Pty.Net
 
-/// PTYセッション情報（Pty.Net使用版→フォールバック対応）
+/// セッションバックエンド種別（型安全な実装）
+type SessionBackend =
+    | PtyBackend of IPtyConnection
+    | ProcessBackend of Process
+
+/// PTYセッション情報（型安全設計）
 type PtySession =
-    { PtyConnection: IPtyConnection option
-      Process: Process option
+    { Backend: SessionBackend
       ProcessId: int
       IsRunning: bool
       mutable OutputBuffer: StringBuilder
@@ -27,11 +31,9 @@ type PtyNetManager() =
     member this.CreateSession(command: string, args: string[]) : Task<Result<PtySession, string>> =
         task {
             try
-                // Pty.Net試行（現在のバージョンでは失敗予定）
-                logInfo "PTYセッション作成試行" $"command={command}, trying Pty.Net first"
-
-                // 現在のPty.Net 0.1.16-preは不安定なため、
-                // 基盤実装としてフォールバック処理を使用
+                // TODO: FC-028.2でPty.Net実装を追加予定
+                // 現在は基盤実装としてProcess方式のみをサポート
+                logInfo "PTYセッション作成" $"command={command}, 現在はProcess方式を使用"
                 return! this.CreateFallbackSession(command, args)
 
             with ex ->
@@ -58,8 +60,7 @@ type PtyNetManager() =
                 proc.StartInfo <- processInfo
 
                 let session =
-                    { PtyConnection = None
-                      Process = Some proc
+                    { Backend = ProcessBackend proc
                       ProcessId = 0
                       IsRunning = false
                       OutputBuffer = StringBuilder()
@@ -120,11 +121,11 @@ type PtyNetManager() =
         task {
             match currentSession with
             | Some session when session.IsRunning ->
-                match session.Process with
-                | Some _ ->
+                match session.Backend with
+                | ProcessBackend _ ->
                     // Process使用時は既にイベントで処理済み
                     logInfo "出力読み取り開始" "Process.OutputDataReceivedで自動処理中"
-                | None ->
+                | PtyBackend _ ->
                     // PTY使用時（現在は未実装）
                     logInfo "出力読み取り開始" "PTY出力読み取りは将来実装予定"
             | _ -> logWarning "出力読み取り開始" "アクティブなセッションが存在しません"
@@ -133,9 +134,9 @@ type PtyNetManager() =
     /// 出力読み取り（セッション付き）
     member private this.StartOutputReading(session: PtySession) : Task<unit> =
         task {
-            match session.Process with
-            | Some _ -> logInfo "出力読み取り開始" "Process.OutputDataReceivedで自動処理中"
-            | None -> logInfo "出力読み取り開始" "PTY出力読み取りは将来実装予定"
+            match session.Backend with
+            | ProcessBackend _ -> logInfo "出力読み取り開始" "Process.OutputDataReceivedで自動処理中"
+            | PtyBackend _ -> logInfo "出力読み取り開始" "PTY出力読み取りは将来実装予定"
         }
 
     /// 入力データ送信（Process対応）
@@ -143,13 +144,13 @@ type PtyNetManager() =
         match currentSession with
         | Some session when session.IsRunning ->
             try
-                match session.Process with
-                | Some proc ->
+                match session.Backend with
+                | ProcessBackend proc ->
                     // Process使用時の入力送信
                     proc.StandardInput.Write(input)
                     proc.StandardInput.Flush()
                     true
-                | None ->
+                | PtyBackend _ ->
                     // PTY使用時（現在は未実装）
                     logWarning "PTY入力送信" "PTY入力送信は将来実装予定"
                     false
@@ -177,14 +178,14 @@ type PtyNetManager() =
             session.CancellationTokenSource.Cancel()
 
             try
-                match session.Process with
-                | Some proc ->
+                match session.Backend with
+                | ProcessBackend proc ->
                     // Process終了
                     if not proc.HasExited then
                         proc.Kill()
 
                     proc.Dispose()
-                | None ->
+                | PtyBackend _ ->
                     // PTY接続終了（将来実装）
                     logInfo "PTY接続終了" "PTY接続終了は将来実装予定"
             with ex ->

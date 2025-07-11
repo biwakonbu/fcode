@@ -75,15 +75,16 @@ graph TD
 ### 6. 文書更新・完了処理
 
 PR作成後の最終処理：
-- **GitHub Issue状態更新**: 
+- **GitHub Issue状態更新**:
   - 対応するGitHub Issue（#XXX）が存在する場合: 進捗コメント追加・ラベル更新
   - 存在しない場合: issues/FC-XXX.mdファイルの状況更新のみ
 - TODO.mdの該当タスクを完了マーク更新
 - issueファイルの状況・完了日時更新
 - 次期タスクの準備状況確認
 
-#### GitHub Issue更新テンプレート（#XXXが存在する場合）
-```
+#### GitHub Issue更新テンプレート（#XXX が存在する場合）
+
+```md
 PR #YY で実装完了しました。
 
 ✅ **実装完了内容**:

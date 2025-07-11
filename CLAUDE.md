@@ -45,7 +45,7 @@ src/                         # メインアプリケーション
 ├── bin/                     # ビルド出力
 └── obj/                     # ビルド中間ファイル
 
-tests/                       # 包括的テストスイート（151テスト）
+tests/                       # 包括的テストスイート（510テスト）
 ├── KeyBindingsTests.fs      # キーバインドシステムテスト
 ├── ColorSchemesTests.fs     # カラースキーム機能テスト
 ├── WorkerProcessManagerDynamicWaitTests.fs  # 動的待機機能テスト
@@ -124,7 +124,7 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - **包括的ログシステム**: 4段階ログレベル、カテゴリ別出力（71行）
 - **プロセス分離アーキテクチャ基盤**: ProcessSupervisor完全実装（422行）
 - **UIHelpers根本修正**: Terminal.Gui 1.15.0対応、リフレクション安全化（2025-06-29）
-- **包括的テストスイート**: 240テストケース、4カテゴリ（Unit/Integration/Performance/Stability）
+- **包括的テストスイート**: 510テストケース、4カテゴリ（Unit/Integration/Performance/Stability）
 - **リアルタイム協調機能基盤**: 完全実装（2,526行、包括的アーキテクチャ）
 - **SQLite3タスクストレージ**: TaskStorageManager実装完了（477行）
 - **FC-027テスト安定性根本修正**: JSON制御文字サニタイズ・CI環境最適化（2025-07-11）
@@ -172,8 +172,9 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 ## 現在のプロジェクト状態（2025-07-11）
 
 ### 最新の実装状況（2025-07-11 更新）
+
 - **総実装ライン数**: 3,950行 (src/), 3,000行 (tests/)
-- **テストカバレッジ**: 240/240テスト 100%パス（FC-027完了・SQLite3統合テスト含む）
+- **テストカバレッジ**: 510/510テスト 100%パス（FC-027完了・SQLite3統合テスト含む）
 - **アーキテクチャ基盤**: UI、キーバインド、ログ、プロセス分離、リアルタイム協調すべて完成
 - **根本修正完了**: TextView初期化問題解決（Terminal.Gui 1.15.0対応）・CI環境最適化
 - **SQLite3 TaskStorageManager**: Repository Pattern完全実装・統合テスト成功（2025-07-02）

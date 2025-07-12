@@ -115,6 +115,7 @@ let processPOInstruction (instruction: string) : unit =
                         | TaskPriority.High -> "🔴"
                         | TaskPriority.Medium -> "🟡"
                         | TaskPriority.Low -> "🟢"
+                        | _ -> "❓" // 未知の優先度値に対するフォールバック
 
                     addSystemActivity
                         "TaskDetail"

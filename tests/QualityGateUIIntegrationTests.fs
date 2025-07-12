@@ -72,7 +72,7 @@ type QualityGateUIIntegrationTests() =
         Assert.That(entry.TaskTitle, Is.EqualTo("Test Task"))
         Assert.That(entry.DisplayStatus, Is.EqualTo(QualityGateDisplayStatus.Pending))
         Assert.That(entry.POApprovalRequired, Is.False)
-        Assert.That(entry.EscalationId, Is.None)
+        Assert.That(entry.EscalationId, Is.EqualTo(None))
 
     [<Test>]
     member _.``getStatusDisplay 表示テスト``() =
@@ -100,15 +100,53 @@ type QualityGateUIIntegrationTests() =
 
             // EscalationManagerは実際の依存関係が必要だが、テスト用に簡易化
             let config =
-                { EscalationEnabled = true
-                  PONotificationThreshold = EscalationSeverity.Important
+                { MaxConcurrentAgents = 10
+                  TaskTimeoutMinutes = 30
+                  StaleAgentThreshold = TimeSpan.FromMinutes(5.0)
+                  MaxRetryAttempts = 3
+                  DatabasePath = "~/.fcode/tasks.db"
+                  ConnectionPoolSize = 5
+                  WALModeEnabled = true
+                  AutoVacuumEnabled = false
+                  MaxHistoryRetentionDays = 30
+                  BackupEnabled = false
+                  BackupIntervalHours = 24
+                  EscalationEnabled = true
                   AutoRecoveryMaxAttempts = 3
-                  MaxConcurrentAgents = 10 // 追加のフィールド
-                }
+                  PONotificationThreshold = EscalationSeverity.Important
+                  CriticalEscalationTimeoutMinutes = 60
+                  DataProtectionModeEnabled = false
+                  EmergencyShutdownEnabled = false }
 
-            // 実際の依存関係は null で代用（テスト環境）
+            // 依存関係の作成
+            let agentStateManager =
+                new FCode.Collaboration.AgentStateManager.AgentStateManager(config)
+
+            let taskDependencyGraph =
+                new FCode.Collaboration.TaskDependencyGraph.TaskDependencyGraph(config)
+
+            let progressAggregator =
+                new FCode.Collaboration.ProgressAggregator.ProgressAggregator(
+                    agentStateManager,
+                    taskDependencyGraph,
+                    config
+                )
+
+            let collaborationCoordinator =
+                new FCode.Collaboration.CollaborationCoordinator.CollaborationCoordinator(
+                    agentStateManager,
+                    taskDependencyGraph,
+                    config
+                )
+
             let escalationManager =
-                new Collaboration.EscalationManager.EscalationManager(null, null, null, null, config)
+                new FCode.Collaboration.EscalationManager.EscalationManager(
+                    agentStateManager,
+                    taskDependencyGraph,
+                    progressAggregator,
+                    collaborationCoordinator,
+                    config
+                )
 
             let manager =
                 new QualityGateUIIntegrationManager(qualityGateManager, escalationManager)
@@ -118,6 +156,11 @@ type QualityGateUIIntegrationTests() =
 
             // リソース解放
             manager.Dispose()
+            agentStateManager.Dispose()
+            taskDependencyGraph.Dispose()
+            progressAggregator.Dispose()
+            collaborationCoordinator.Dispose()
+            escalationManager.Dispose()
 
         with ex ->
             // 依存関係の問題は予期されているため、特定の例外のみテスト失敗とする
@@ -148,7 +191,7 @@ type QualityGateUIIntegrationTests() =
         Assert.That(sampleEntry.TaskId, Is.EqualTo(taskId))
         Assert.That(sampleEntry.DisplayStatus, Is.EqualTo(QualityGateDisplayStatus.InProgress))
         Assert.That(sampleEntry.POApprovalRequired, Is.True)
-        Assert.That(sampleEntry.EscalationId, Is.Some.And.EqualTo("ESC-001"))
+        Assert.That(sampleEntry.EscalationId, Is.EqualTo(Some "ESC-001"))
 
     [<Test>]
     member _.``品質レベル判定ロジックテスト``() =
@@ -268,10 +311,23 @@ type QualityGateUIIntegrationTests() =
     member _.``設定値・定数テスト``() =
         // 設定値や定数の基本テスト
         let testConfig =
-            { EscalationEnabled = true
-              PONotificationThreshold = EscalationSeverity.Important
+            { MaxConcurrentAgents = 10
+              TaskTimeoutMinutes = 30
+              StaleAgentThreshold = TimeSpan.FromMinutes(5.0)
+              MaxRetryAttempts = 3
+              DatabasePath = "~/.fcode/tasks.db"
+              ConnectionPoolSize = 5
+              WALModeEnabled = true
+              AutoVacuumEnabled = false
+              MaxHistoryRetentionDays = 30
+              BackupEnabled = false
+              BackupIntervalHours = 24
+              EscalationEnabled = true
               AutoRecoveryMaxAttempts = 3
-              MaxConcurrentAgents = 10 }
+              PONotificationThreshold = EscalationSeverity.Important
+              CriticalEscalationTimeoutMinutes = 60
+              DataProtectionModeEnabled = false
+              EmergencyShutdownEnabled = false }
 
         Assert.That(testConfig.EscalationEnabled, Is.True)
         Assert.That(testConfig.PONotificationThreshold, Is.EqualTo(EscalationSeverity.Important))

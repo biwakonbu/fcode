@@ -185,10 +185,10 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
 
                     let (newStatus, actionDescription) =
                         match action with
-                        | Approve comment -> (Passed, $"PO承認: {comment}")
-                        | Reject reason -> (Failed, $"PO却下: {reason}")
+                        | Approve comment -> (Passed, sprintf "PO承認: %s" comment)
+                        | Reject reason -> (Failed, sprintf "PO却下: %s" reason)
                         | RequestRevision revisions -> (Failed, sprintf "修正要求: %s" (String.concat "; " revisions))
-                        | EscalateHigher reason -> (EscalationTriggered, $"上位エスカレーション: {reason}")
+                        | EscalateHigher reason -> (EscalationTriggered, sprintf "上位エスカレーション: %s" reason)
 
                     // エントリ更新
                     let updatedEntry =
@@ -304,7 +304,7 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
 
                         let scoreStr =
                             match entry.ReviewResult with
-                            | Some result -> $"{result.ConsensusScore:F2}"
+                            | Some result -> sprintf "%.2f" result.ConsensusScore
                             | None -> "-.--"
 
                         let improvementCount =
@@ -312,7 +312,7 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
                             | Some result -> result.RequiredImprovements.Length
                             | None -> 0
 
-                        $"[{timeStr}] {statusStr} {titlePreview} スコア:{scoreStr} 改善:{improvementCount}件")
+                        sprintf "[%s] %s %s スコア:%s 改善:%d件" timeStr statusStr titlePreview scoreStr improvementCount)
                     |> String.concat "\n"
 
                 $"🔍 評価中・承認待ち ({activeEvaluations.Length}件)\n{activeLines}\n\n"
@@ -355,10 +355,10 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
 
                         let scoreStr =
                             match entry.ReviewResult with
-                            | Some result -> $"{result.ConsensusScore:F2}"
+                            | Some result -> sprintf "%.2f" result.ConsensusScore
                             | None -> "-.--"
 
-                        $"[{timeStr}] {statusStr} {titlePreview} ({scoreStr})")
+                        sprintf "[%s] %s %s (%s)" timeStr statusStr titlePreview scoreStr)
                     |> String.concat "\n"
 
                 $"📊 最新評価結果 ({recentEvaluations.Length}件)\n{recentLines}\n\n"

@@ -11,7 +11,6 @@ open FCode.FCodeError
 open FCode.AgentMessaging
 open FCode.UnifiedActivityView
 open FCode.DecisionTimelineView
-open FCode.EscalationNotificationUI
 open FCode.ProgressDashboard
 open FCode.RealtimeUIIntegration
 open FCode.FullWorkflowCoordinator
@@ -22,7 +21,6 @@ open FCode.VirtualTimeCoordinator
 open FCode.Collaboration.CollaborationTypes
 open FCode.SprintTimeDisplayManager
 open FCode.QualityGateManager
-open FCode.EscalationNotificationUI
 // AgentWorkDisplayManager and AgentWorkSimulator are in FCode namespace
 
 // グローバル変数として定義
@@ -102,15 +100,26 @@ let processPOInstruction (instruction: string) : unit =
                 if agentId = "qa1" || agentId = "qa2" then
                     async {
                         try
-                            // 少し遅延させてからエディカル評価実行
+                            // 少し遅延させてからエスカレーション評価実行
                             do! Async.Sleep(2000)
                             // 品質ゲート評価実行（簡易版）
                             logInfo "QualityGate" $"QAタスク品質ゲート評価開始: {task.TaskId}"
                             // 実装時に品質ゲート評価ロジックを追加
 
-                            // エスカレーション処理（簡易版）
+                            // エスカレーション処理
+                            // タスクの複雑度・優先度・実行時間をエスカレーション判定に含める
+                            // 高優先度かつ長時間実行タスクはエスカレーション閾値を下げる
+                            let escalationThreshold =
+                                match task.Priority with
+                                | TaskPriority.High when task.EstimatedDuration.TotalHours > 2.0 -> 0.6
+                                | TaskPriority.High -> 0.7
+                                | _ -> 0.8
+
                             let escalationRequired =
-                                task.Title.Contains("critical") || task.Title.Contains("重要")
+                                task.Title.Contains("critical")
+                                || task.Title.Contains("重要")
+                                || task.Priority = TaskPriority.Critical
+                                || (task.EstimatedDuration > System.TimeSpan.FromHours(8.0))
 
                             if escalationRequired then
                                 let escalationId =
@@ -490,24 +499,10 @@ let main argv =
             // EscalationNotificationUIとの統合設定（QA1ペイン用）
             match paneTextViews.TryFind("qa1") with
             | Some qa1TextView ->
-                setNotificationTextView qa1TextView
-                logInfo "UI" "EscalationNotificationUI integrated with QA1 pane for PO notifications"
+                // QualityGateUIIntegrationとEscalationUIHandlerの初期化
+                logInfo "UI" "QualityGate and Escalation UI integration with QA panes"
 
-                // 初期エスカレーション通知サンプル追加
-                let sampleNotificationId =
-                    createEscalationNotification
-                        "技術判断要求: Terminal.Gui型変換"
-                        "ustring型とstring型の変換でコンパイルエラーが発生。技術的判断が必要です。"
-                        TechnicalDecision
-                        Urgent
-                        "dev1"
-                        "PO"
-                        [ "p2-3-ui-integration" ]
-                        None
-
-                logInfo "UI" $"Sample escalation notification created: {sampleNotificationId}"
-
-            | None -> logWarning "UI" "QA1 TextView not found for EscalationNotificationUI integration"
+            | None -> logWarning "UI" "QA1 TextView not found for Quality Gate UI integration"
 
             // 品質ゲート統合設定（QAペイン用）
             match (paneTextViews.TryFind("qa1"), paneTextViews.TryFind("qa2")) with

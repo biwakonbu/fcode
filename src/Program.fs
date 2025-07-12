@@ -502,7 +502,6 @@ let main argv =
                     fv.Add(statusView)
 
                     // ステータスビューをグローバルマップに登録
-                    let agentId = paneToAgentIdMapping |> Map.tryFind title |> Option.defaultValue title
                     agentStatusViews <- agentStatusViews |> Map.add agentId statusView
                     logInfo "UI" (sprintf "Registered status view for agent: %s" agentId)
 

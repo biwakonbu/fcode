@@ -105,6 +105,8 @@
     <Compile Include="DevOpsIntegrationTests.fs"/>
     <!-- Issue #94: TUI Internal API Tests (将来実装) -->
     <Compile Include="TUIInternalAPITests.fs"/>
+    <!-- SC-1-2: Agent Work Display Integration Tests -->
+    <Compile Include="SC12IntegrationTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

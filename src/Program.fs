@@ -21,6 +21,8 @@ open FCode.TaskAssignmentManager
 open FCode.VirtualTimeCoordinator
 open FCode.Collaboration.CollaborationTypes
 open FCode.SprintTimeDisplayManager
+open FCode.QualityGateManager
+open FCode.EscalationNotificationUI
 // AgentWorkDisplayManager and AgentWorkSimulator are in FCode namespace
 
 // グローバル変数として定義
@@ -95,6 +97,49 @@ let processPOInstruction (instruction: string) : unit =
             for (task, agentId) in assignments do
                 // AgentWorkDisplayManagerでタスク開始を記録
                 workDisplayManager.StartTask(agentId, task.Title, task.EstimatedDuration)
+
+                // 品質ゲート評価を自動実行（QAエージェントのタスクの場合）
+                if agentId = "qa1" || agentId = "qa2" then
+                    async {
+                        try
+                            // 少し遅延させてからエディカル評価実行
+                            do! Async.Sleep(2000)
+                            // 品質ゲート評価実行（簡易版）
+                            logInfo "QualityGate" $"QAタスク品質ゲート評価開始: {task.TaskId}"
+                            // 実装時に品質ゲート評価ロジックを追加
+
+                            // エスカレーション処理（簡易版）
+                            let escalationRequired =
+                                task.Title.Contains("critical") || task.Title.Contains("重要")
+
+                            if escalationRequired then
+                                let escalationId =
+                                    sprintf "ESC-%s" (System.DateTime.Now.ToString("yyyyMMdd-HHmmss"))
+
+                                let escalationContext =
+                                    { EscalationId = escalationId
+                                      TaskId = task.TaskId
+                                      AgentId = agentId
+                                      Severity = EscalationSeverity.Important
+                                      Factors =
+                                        { ImpactScope = RelatedTasks
+                                          TimeConstraint = SoonDeadline(System.TimeSpan.FromHours(4.0))
+                                          RiskLevel = ModerateRisk
+                                          BlockerType = BlockerType.QualityGate
+                                          AutoRecoveryAttempts = 0
+                                          DependentTaskCount = 1 }
+                                      Description = sprintf "品質ゲート評価: %s" task.Title
+                                      DetectedAt = System.DateTime.UtcNow
+                                      AutoRecoveryAttempted = false
+                                      RequiredActions = [ "品質改善"; "PO判断要求" ]
+                                      EstimatedResolutionTime = Some(System.TimeSpan.FromHours(2.0)) }
+
+                                // エスカレーション通知作成（簡易版）
+                                logInfo "EscalationHandler" $"品質ゲートエスカレーション発生: {escalationId}"
+                        with ex ->
+                            logError "QualityGate" $"QAタスク品質ゲート評価例外: {ex.Message}"
+                    }
+                    |> Async.Start
 
                 match globalPaneTextViews.TryFind(agentId) with
                 | Some textView ->
@@ -464,6 +509,42 @@ let main argv =
 
             | None -> logWarning "UI" "QA1 TextView not found for EscalationNotificationUI integration"
 
+            // 品質ゲート統合設定（QAペイン用）
+            match (paneTextViews.TryFind("qa1"), paneTextViews.TryFind("qa2")) with
+            | (Some qa1TextView, Some qa2TextView) ->
+                logInfo "UI" "Quality gate integration configured for QA1 and QA2 panes"
+                // 実装時に品質ゲートUI統合機能を追加
+
+                // サンプルタスクで品質ゲート評価をテスト
+                try
+                    let sampleTask: ParsedTask =
+                        { TaskId = "sample-quality-gate-001"
+                          Title = "Sample Quality Gate Evaluation"
+                          Description = "品質ゲート機能のサンプル評価タスク"
+                          RequiredSpecialization = Testing [ "quality-assurance"; "testing" ]
+                          EstimatedDuration = System.TimeSpan.FromHours(1.0)
+                          Dependencies = []
+                          Priority = TaskPriority.Medium
+                        // EstimatedComplexity = 0.5 // ParsedTaskに存在しないフィールドを削除
+                        // RequiredSkills = ["quality-evaluation"; "testing"] // ParsedTaskに存在しないフィールドを削除
+                        // CreatedAt = System.DateTime.UtcNow // ParsedTaskに存在しないフィールドを削除
+                        }
+
+                    async {
+                        try
+                            // サンプル品質ゲート評価（簡易版）
+                            logInfo "UI" $"Sample quality gate evaluation started: {sampleTask.TaskId}"
+                        // 実装時に品質ゲート評価ロジックを追加
+                        with ex ->
+                            logError "UI" $"Sample quality gate evaluation exception: {ex.Message}"
+                    }
+                    |> Async.Start
+
+                with ex ->
+                    logError "UI" $"Failed to create sample quality gate evaluation: {ex.Message}"
+
+            | _ -> logWarning "UI" "QA1 or QA2 TextView not found for QualityGateUIIntegration"
+
             // ProgressDashboardとの統合設定（UXペイン用）
             match paneTextViews.TryFind("ux") with
             | Some uxTextView ->
@@ -475,11 +556,11 @@ let main argv =
                     // 実際のタスク完了率を取得 (将来的にProgressAggregatorから)
                     75.0 // デフォルト値、将来的に動的取得実装
 
-                match createMetric TaskCompletion "Overall Task Completion" actualProgress 100.0 "%" with
+                match createMetric MetricType.TaskCompletion "Overall Task Completion" actualProgress 100.0 "%" with
                 | Result.Ok taskCompletionId ->
                     let qualityScore = 85.0 // QualityGateManagerから取得予定
 
-                    match createMetric CodeQuality "Code Quality Score" qualityScore 100.0 "pts" with
+                    match createMetric MetricType.CodeQuality "Code Quality Score" qualityScore 100.0 "pts" with
                     | Result.Ok codeQualityId ->
                         let sprintProgress = (actualProgress + qualityScore) / 2.0
 

@@ -75,6 +75,7 @@
     <Compile Include="QualityGateManagerTests.fs"/>
     <Compile Include="EscalationManagerTests.fs"/>
     <Compile Include="VirtualTimeManagerTests.fs"/>
+    <Compile Include="QualityGateUIIntegrationTests.fs"/>
     <Compile Include="CompletionAssessmentTests.fs"/>
     <Compile Include="QualityEvaluationSummaryTests.fs"/>
     <Compile Include="NextSprintPlannerTests.fs"/>

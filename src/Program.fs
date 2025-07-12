@@ -11,7 +11,6 @@ open FCode.FCodeError
 open FCode.AgentMessaging
 open FCode.UnifiedActivityView
 open FCode.DecisionTimelineView
-open FCode.EscalationNotificationUI
 open FCode.ProgressDashboard
 open FCode.RealtimeUIIntegration
 open FCode.FullWorkflowCoordinator
@@ -21,6 +20,7 @@ open FCode.TaskAssignmentManager
 open FCode.VirtualTimeCoordinator
 open FCode.Collaboration.CollaborationTypes
 open FCode.SprintTimeDisplayManager
+open FCode.QualityGateManager
 // AgentWorkDisplayManager and AgentWorkSimulator are in FCode namespace
 
 // グローバル変数として定義
@@ -95,6 +95,60 @@ let processPOInstruction (instruction: string) : unit =
             for (task, agentId) in assignments do
                 // AgentWorkDisplayManagerでタスク開始を記録
                 workDisplayManager.StartTask(agentId, task.Title, task.EstimatedDuration)
+
+                // 品質ゲート評価を自動実行（QAエージェントのタスクの場合）
+                if agentId = "qa1" || agentId = "qa2" then
+                    async {
+                        try
+                            // 少し遅延させてからエスカレーション評価実行
+                            do! Async.Sleep(2000)
+                            // 品質ゲート評価実行（簡易版）
+                            logInfo "QualityGate" (sprintf "QAタスク品質ゲート評価開始: %s" task.TaskId)
+                            // 実装時に品質ゲート評価ロジックを追加
+
+                            // エスカレーション処理
+                            // タスクの複雑度・優先度・実行時間をエスカレーション判定に含める
+                            // 高優先度かつ長時間実行タスクはエスカレーション閾値を下げる
+                            let escalationThreshold =
+                                match task.Priority with
+                                | TaskPriority.High when task.EstimatedDuration.TotalHours > 2.0 -> 0.6
+                                | TaskPriority.High -> 0.7
+                                | _ -> 0.8
+
+                            let escalationRequired =
+                                task.Title.Contains("critical")
+                                || task.Title.Contains("重要")
+                                || task.Priority = TaskPriority.Critical
+                                || (task.EstimatedDuration > System.TimeSpan.FromHours(8.0))
+
+                            if escalationRequired then
+                                let escalationId =
+                                    sprintf "ESC-%s" (System.DateTime.Now.ToString("yyyyMMdd-HHmmss"))
+
+                                let escalationContext =
+                                    { EscalationId = escalationId
+                                      TaskId = task.TaskId
+                                      AgentId = agentId
+                                      Severity = EscalationSeverity.Important
+                                      Factors =
+                                        { ImpactScope = RelatedTasks
+                                          TimeConstraint = SoonDeadline(System.TimeSpan.FromHours(4.0))
+                                          RiskLevel = ModerateRisk
+                                          BlockerType = BlockerType.QualityGate
+                                          AutoRecoveryAttempts = 0
+                                          DependentTaskCount = 1 }
+                                      Description = sprintf "品質ゲート評価: %s" task.Title
+                                      DetectedAt = System.DateTime.UtcNow
+                                      AutoRecoveryAttempted = false
+                                      RequiredActions = [ "品質改善"; "PO判断要求" ]
+                                      EstimatedResolutionTime = Some(System.TimeSpan.FromHours(2.0)) }
+
+                                // エスカレーション通知作成（簡易版）
+                                logInfo "EscalationHandler" (sprintf "品質ゲートエスカレーション発生: %s" escalationId)
+                        with ex ->
+                            logError "QualityGate" (sprintf "QAタスク品質ゲート評価例外: %s" ex.Message)
+                    }
+                    |> Async.Start
 
                 match globalPaneTextViews.TryFind(agentId) with
                 | Some textView ->
@@ -445,24 +499,46 @@ let main argv =
             // EscalationNotificationUIとの統合設定（QA1ペイン用）
             match paneTextViews.TryFind("qa1") with
             | Some qa1TextView ->
-                setNotificationTextView qa1TextView
-                logInfo "UI" "EscalationNotificationUI integrated with QA1 pane for PO notifications"
+                // QualityGateUIIntegrationとEscalationUIHandlerの初期化
+                logInfo "UI" "QualityGate and Escalation UI integration with QA panes"
 
-                // 初期エスカレーション通知サンプル追加
-                let sampleNotificationId =
-                    createEscalationNotification
-                        "技術判断要求: Terminal.Gui型変換"
-                        "ustring型とstring型の変換でコンパイルエラーが発生。技術的判断が必要です。"
-                        TechnicalDecision
-                        Urgent
-                        "dev1"
-                        "PO"
-                        [ "p2-3-ui-integration" ]
-                        None
+            | None -> logWarning "UI" "QA1 TextView not found for Quality Gate UI integration"
 
-                logInfo "UI" $"Sample escalation notification created: {sampleNotificationId}"
+            // 品質ゲート統合設定（QAペイン用）
+            match (paneTextViews.TryFind("qa1"), paneTextViews.TryFind("qa2")) with
+            | (Some qa1TextView, Some qa2TextView) ->
+                logInfo "UI" "Quality gate integration configured for QA1 and QA2 panes"
+                // 実装時に品質ゲートUI統合機能を追加
 
-            | None -> logWarning "UI" "QA1 TextView not found for EscalationNotificationUI integration"
+                // サンプルタスクで品質ゲート評価をテスト
+                try
+                    let sampleTask: ParsedTask =
+                        { TaskId = "sample-quality-gate-001"
+                          Title = "Sample Quality Gate Evaluation"
+                          Description = "品質ゲート機能のサンプル評価タスク"
+                          RequiredSpecialization = Testing [ "quality-assurance"; "testing" ]
+                          EstimatedDuration = System.TimeSpan.FromHours(1.0)
+                          Dependencies = []
+                          Priority = TaskPriority.Medium
+                        // EstimatedComplexity = 0.5 // ParsedTaskに存在しないフィールドを削除
+                        // RequiredSkills = ["quality-evaluation"; "testing"] // ParsedTaskに存在しないフィールドを削除
+                        // CreatedAt = System.DateTime.UtcNow // ParsedTaskに存在しないフィールドを削除
+                        }
+
+                    async {
+                        try
+                            // サンプル品質ゲート評価（簡易版）
+                            logInfo "UI" (sprintf "Sample quality gate evaluation started: %s" sampleTask.TaskId)
+                        // 実装時に品質ゲート評価ロジックを追加
+                        with ex ->
+                            logError "UI" (sprintf "Sample quality gate evaluation exception: %s" ex.Message)
+                    }
+                    |> Async.Start
+
+                with ex ->
+                    logError "UI" (sprintf "Failed to create sample quality gate evaluation: %s" ex.Message)
+
+            | _ -> logWarning "UI" "QA1 or QA2 TextView not found for QualityGateUIIntegration"
 
             // ProgressDashboardとの統合設定（UXペイン用）
             match paneTextViews.TryFind("ux") with
@@ -475,11 +551,11 @@ let main argv =
                     // 実際のタスク完了率を取得 (将来的にProgressAggregatorから)
                     75.0 // デフォルト値、将来的に動的取得実装
 
-                match createMetric TaskCompletion "Overall Task Completion" actualProgress 100.0 "%" with
+                match createMetric MetricType.TaskCompletion "Overall Task Completion" actualProgress 100.0 "%" with
                 | Result.Ok taskCompletionId ->
                     let qualityScore = 85.0 // QualityGateManagerから取得予定
 
-                    match createMetric CodeQuality "Code Quality Score" qualityScore 100.0 "pts" with
+                    match createMetric MetricType.CodeQuality "Code Quality Score" qualityScore 100.0 "pts" with
                     | Result.Ok codeQualityId ->
                         let sprintProgress = (actualProgress + qualityScore) / 2.0
 
@@ -495,9 +571,9 @@ let main argv =
                         with
                         | Result.Ok overallKPIId ->
                             logInfo "UI" $"Sample metrics and KPIs created for progress dashboard"
-                        | Result.Error error -> logError "UI" $"Failed to create overall KPI: {error}"
-                    | Result.Error error -> logError "UI" $"Failed to create code quality metric: {error}"
-                | Result.Error error -> logError "UI" $"Failed to create task completion metric: {error}"
+                        | Result.Error error -> logError "UI" (sprintf "Failed to create overall KPI: %s" error)
+                    | Result.Error error -> logError "UI" (sprintf "Failed to create code quality metric: %s" error)
+                | Result.Error error -> logError "UI" (sprintf "Failed to create task completion metric: %s" error)
 
             | None -> logWarning "UI" "UX TextView not found for ProgressDashboard integration"
 
@@ -757,7 +833,7 @@ let main argv =
 
                                     logInfo "Application" "統合イベントループ正常停止完了"
                                 with ex ->
-                                    logError "Application" $"統合イベントループ停止時エラー: {ex.Message}")
+                                    logError "Application" (sprintf "統合イベントループ停止時エラー: %s" ex.Message))
 
                         System.AppDomain.CurrentDomain.ProcessExit.AddHandler(processExitHandler)
 

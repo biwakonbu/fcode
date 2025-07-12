@@ -80,6 +80,8 @@
     <Compile Include="SprintTimeDisplayManager.fs" />
     <Compile Include="TaskAssignmentManager.fs" />
     <Compile Include="QualityGateManager.fs" />
+    <Compile Include="QualityGateUIIntegration.fs" />
+    <Compile Include="EscalationUIHandler.fs" />
     <!-- WorkflowCore - Minimal Working Architecture -->
     <Compile Include="WorkflowCore/WorkflowTypes.fs" />
     <Compile Include="WorkflowCore/MinimalWorkflowCoordinator.fs" />

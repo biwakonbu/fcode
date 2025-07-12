@@ -18,6 +18,9 @@ open FCode.FullWorkflowCoordinator
 open FCode.SimpleMemoryMonitor
 open FCode.ConfigurationManager
 open FCode.TaskAssignmentManager
+open FCode.VirtualTimeCoordinator
+open FCode.Collaboration.CollaborationTypes
+open FCode.SprintTimeDisplayManager
 // AgentWorkDisplayManager and AgentWorkSimulator are in FCode namespace
 
 // グローバル変数として定義
@@ -131,7 +134,31 @@ let processPOInstruction (instruction: string) : unit =
                 logInfo "PO" (sprintf "Started work simulation for %d tasks" assignments.Length)
             with ex ->
                 logError "PO" (sprintf "Failed to start work simulation: %s" ex.Message)
-        // シミュレーション失敗はクリティカルではないため、処理を継続
+            // シミュレーション失敗はクリティカルではないため、処理を継続
+
+            // スプリント開始（18分タイマー開始）
+            let sprintTimeDisplayManager = SprintTimeDisplayGlobal.GetManager()
+            let sprintId = sprintf "sprint-%s" (System.DateTime.Now.ToString("yyyyMMdd-HHmmss"))
+
+            async {
+                try
+                    let! sprintResult = sprintTimeDisplayManager.StartSprint(sprintId)
+
+                    match sprintResult with
+                    | Result.Ok() ->
+                        logInfo "Sprint" (sprintf "18分スプリント開始: %s" sprintId)
+
+                        addSystemActivity "Sprint" SystemMessage (sprintf "🚀 18分スプリント開始: %s" sprintId)
+                        |> ignore
+                    | Result.Error error ->
+                        logError "Sprint" (sprintf "スプリント開始失敗: %A" error)
+
+                        addSystemActivity "Sprint" SystemMessage (sprintf "⚠️ スプリント開始失敗: %A" error)
+                        |> ignore
+                with ex ->
+                    logError "Sprint" (sprintf "スプリント開始例外: %s" ex.Message)
+            }
+            |> Async.Start
 
         | Result.Error errorMsg ->
             logError "PO" (sprintf "Failed to process instruction: %s" errorMsg)
@@ -234,6 +261,9 @@ let main argv =
             // AgentWorkDisplayManagerの取得（ペイン作成時用）
             let workDisplayManager = AgentWorkDisplayGlobal.GetManager()
 
+            // SprintTimeDisplayManagerの取得（ペイン作成時用）
+            let sprintTimeDisplayManager = SprintTimeDisplayGlobal.GetManager()
+
             // Helper function to create a pane with a given title and TextView
             let makePane title =
                 logDebug "UI" (sprintf "Creating pane: %s" title)
@@ -302,6 +332,28 @@ let main argv =
                                 logDebug "UI" (sprintf "Display updated for agent: %s" agentId)
                             with ex ->
                                 logError "UI" (sprintf "Failed to update display for agent %s: %s" agentId ex.Message))
+
+                    // PMペイン専用: SprintTimeDisplayManagerとの連携
+                    if title = "PM / PdM タイムライン" then
+                        sprintTimeDisplayManager.RegisterDisplayUpdateHandler(fun displayText ->
+                            try
+                                if not (isNull Application.MainLoop) then
+                                    Application.MainLoop.Invoke(fun () ->
+                                        textView.Text <- NStack.ustring.Make(displayText: string)
+                                        textView.SetNeedsDisplay())
+                                else
+                                    logWarning
+                                        "SprintTimeDisplay"
+                                        "MainLoop not available for sprint time display update"
+
+                                logDebug "SprintTimeDisplay" "PM タイムライン表示を更新しました"
+                            with ex ->
+                                logError "SprintTimeDisplay" (sprintf "PM タイムライン表示更新エラー: %s" ex.Message))
+
+                        // 初期表示を設定
+                        let initialSprintDisplay = sprintTimeDisplayManager.FormatSprintStatus()
+                        textView.Text <- NStack.ustring.Make(initialSprintDisplay: string)
+                        logInfo "SprintTimeDisplay" "PM タイムライン初期表示を設定しました"
 
                     logInfo "UI" (sprintf "TextView added to pane: %s - Subviews count: %d" title fv.Subviews.Count)
                     logDebug "UI" (sprintf "TextView type: %s" (textView.GetType().Name))
@@ -549,6 +601,58 @@ let main argv =
                 // フルワークフローコーディネーター初期化
                 use fullWorkflowCoordinator = new FullWorkflowCoordinator()
 
+                // VirtualTimeCoordinator初期化（18分スプリント・6分スタンドアップ管理）
+                let virtualTimeConfig =
+                    { VirtualHourDurationMs = 60000 // 1vh = 1分
+                      StandupIntervalVH = 6 // 6vh毎スタンドアップ
+                      SprintDurationVD = 3 // 3vd = 18分スプリント
+                      AutoProgressReporting = true
+                      EmergencyStopEnabled = true
+                      MaxConcurrentSprints = 1 }
+
+                let timeCalculationManager =
+                    FCode.Collaboration.TimeCalculationManager.TimeCalculationManager(virtualTimeConfig)
+
+                let meetingScheduler =
+                    FCode.Collaboration.MeetingScheduler.MeetingScheduler(timeCalculationManager, virtualTimeConfig)
+
+                let eventProcessor =
+                    FCode.Collaboration.EventProcessor.EventProcessor(
+                        timeCalculationManager,
+                        meetingScheduler,
+                        virtualTimeConfig
+                    )
+
+                use virtualTimeCoordinator =
+                    new VirtualTimeCoordinator(
+                        timeCalculationManager,
+                        meetingScheduler,
+                        eventProcessor,
+                        virtualTimeConfig
+                    )
+
+                logInfo "VirtualTime" "VirtualTimeCoordinator初期化完了"
+
+                // SprintTimeDisplayManager初期化
+                SprintTimeDisplayGlobal.Initialize(virtualTimeCoordinator)
+                let sprintTimeDisplayManager = SprintTimeDisplayGlobal.GetManager()
+
+                // スタンドアップ通知ハンドラー登録（会話ペインに表示）
+                sprintTimeDisplayManager.RegisterStandupNotificationHandler(fun standupNotification ->
+                    try
+                        if not (isNull Application.MainLoop) then
+                            Application.MainLoop.Invoke(fun () ->
+                                let currentText = conversationTextView.Text.ToString()
+                                let newText = sprintf "%s\n%s\n> " currentText standupNotification
+                                conversationTextView.Text <- NStack.ustring.Make(newText: string)
+                                conversationTextView.SetNeedsDisplay())
+                        else
+                            logWarning "StandupNotification" "MainLoop not available for standup notification display"
+
+                        logInfo "StandupNotification" "スタンドアップ通知を会話ペインに表示しました"
+                    with ex ->
+                        logError "StandupNotification" (sprintf "スタンドアップ通知表示エラー: %s" ex.Message))
+
                 // 非同期タスク管理用CancellationTokenSource
                 use integrationCancellationSource = new System.Threading.CancellationTokenSource()
 
@@ -597,6 +701,21 @@ let main argv =
 
                         logInfo "Application" "統合イベントループ開始（追跡・キャンセル・エラーハンドリング対応）"
 
+                        // スプリント表示定期更新タイマー（スタンドアップ通知含む）
+                        let updateTimer =
+                            new System.Threading.Timer(
+                                (fun _ ->
+                                    try
+                                        sprintTimeDisplayManager.UpdateDisplay()
+                                    with ex ->
+                                        logError "SprintTimer" (sprintf "定期更新エラー: %s" ex.Message)),
+                                null,
+                                System.TimeSpan.FromSeconds(10.0), // 10秒後に開始
+                                System.TimeSpan.FromSeconds(30.0)
+                            ) // 30秒間隔で更新
+
+                        logInfo "Application" "スプリント表示定期更新タイマー開始（30秒間隔・スタンドアップ通知含む）"
+
                         // 基本機能デモ
                         addSystemActivity "system" SystemMessage "FC-015 Phase 4 UI統合・フルフロー機能が正常に初期化されました"
                         |> ignore
@@ -619,6 +738,13 @@ let main argv =
                                         logInfo "Application" "エージェント作業管理リソースをクリーンアップしました"
                                     with ex ->
                                         logError "Application" (sprintf "エージェント管理クリーンアップエラー: %s" ex.Message)
+
+                                    // スプリント表示タイマーのクリーンアップ
+                                    try
+                                        updateTimer.Dispose()
+                                        logInfo "Application" "スプリント表示タイマーをクリーンアップしました"
+                                    with ex ->
+                                        logError "Application" (sprintf "スプリントタイマークリーンアップエラー: %s" ex.Message)
 
                                     if not integrationCancellationSource.IsCancellationRequested then
                                         integrationCancellationSource.Cancel()

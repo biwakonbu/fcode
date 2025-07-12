@@ -2,6 +2,41 @@
   "rules": {
     "redundantNewKeyword": {
       "enabled": false
+    },
+    "functionLength": {
+      "enabled": true,
+      "maxLength": 100
+    },
+    "cyclomaticComplexity": {
+      "enabled": true,
+      "maxComplexity": 15
+    },
+    "unusedValue": {
+      "enabled": true
+    },
+    "unusedOpenStatement": {
+      "enabled": true
+    },
+    "naming": {
+      "enabled": true,
+      "capitals": {
+        "enabled": true
+      },
+      "parameters": {
+        "enabled": true
+      },
+      "types": {
+        "enabled": true
+      },
+      "modules": {
+        "enabled": true
+      }
+    },
+    "suggestions": {
+      "enabled": true
+    },
+    "formatting": {
+      "enabled": true
     }
   }
 }

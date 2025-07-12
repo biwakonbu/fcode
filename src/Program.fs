@@ -126,8 +126,12 @@ let processPOInstruction (instruction: string) : unit =
                     let durationMinutes = int (task.EstimatedDuration.TotalMinutes)
                     (agentId, task.Title, durationMinutes))
 
-            simulator.StartWorkSimulation(simulationAssignments)
-            logInfo "PO" (sprintf "Started work simulation for %d tasks" assignments.Length)
+            try
+                simulator.StartWorkSimulation(simulationAssignments)
+                logInfo "PO" (sprintf "Started work simulation for %d tasks" assignments.Length)
+            with ex ->
+                logError "PO" (sprintf "Failed to start work simulation: %s" ex.Message)
+        // シミュレーション失敗はクリティカルではないため、処理を継続
 
         | Result.Error errorMsg ->
             logError "PO" (sprintf "Failed to process instruction: %s" errorMsg)
@@ -249,7 +253,10 @@ let main argv =
                     textView.ReadOnly <- true
 
                     // AgentWorkDisplayManagerでエージェントを初期化
-                    let agentId = if title = "PM / PdM タイムライン" then "pm" else title
+                    // ペイン名とエージェントIDのマッピング定義
+                    let paneToAgentIdMapping = Map.ofList [ ("PM / PdM タイムライン", "pm") ]
+
+                    let agentId = paneToAgentIdMapping |> Map.tryFind title |> Option.defaultValue title
                     workDisplayManager.InitializeAgent(agentId)
 
                     // 初期表示をAgentWorkDisplayManagerから取得
@@ -283,9 +290,14 @@ let main argv =
                             try
                                 let formattedStatus = workDisplayManager.FormatWorkStatus(updatedWorkInfo)
 
-                                Application.MainLoop.Invoke(fun () ->
-                                    textView.Text <- formattedStatus
-                                    textView.SetNeedsDisplay())
+                                if not (isNull Application.MainLoop) then
+                                    Application.MainLoop.Invoke(fun () ->
+                                        textView.Text <- formattedStatus
+                                        textView.SetNeedsDisplay())
+                                else
+                                    logWarning
+                                        "UI"
+                                        (sprintf "MainLoop not available for agent %s display update" agentId)
 
                                 logDebug "UI" (sprintf "Display updated for agent: %s" agentId)
                             with ex ->
@@ -598,6 +610,15 @@ let main argv =
                             System.EventHandler(fun _ _ ->
                                 try
                                     logInfo "Application" "アプリケーション終了: 統合イベントループ停止中..."
+
+                                    // AgentWorkDisplayManager と AgentWorkSimulator のクリーンアップ
+                                    try
+                                        let workDisplayManager = AgentWorkDisplayGlobal.GetManager()
+                                        let simulator = AgentWorkSimulatorGlobal.GetSimulator()
+                                        simulator.StopWorkSimulation()
+                                        logInfo "Application" "エージェント作業管理リソースをクリーンアップしました"
+                                    with ex ->
+                                        logError "Application" (sprintf "エージェント管理クリーンアップエラー: %s" ex.Message)
 
                                     if not integrationCancellationSource.IsCancellationRequested then
                                         integrationCancellationSource.Cancel()

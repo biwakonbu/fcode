@@ -25,6 +25,7 @@ open FCode.QualityGateManager
 
 // グローバル変数として定義
 let mutable globalPaneTextViews: Map<string, TextView> = Map.empty
+let mutable agentStatusViews: Map<string, TextView> = Map.empty
 
 // タイムスタンプを取得するヘルパー関数
 let getCurrentTimestamp () =
@@ -40,6 +41,76 @@ let getPriorityIcon (priority: TaskPriority) =
     | unknownPriority ->
         logWarning "TaskDisplay" (sprintf "Unknown priority value: %A" unknownPriority)
         "❓" // 未知の優先度値に対するフォールバック
+
+// エージェント状況表示を更新するヘルパー関数
+let updateAgentStatusDisplay (agentId: string) (workDisplayManager: AgentWorkDisplayManager) =
+    match agentStatusViews.TryFind(agentId) with
+    | Some statusView ->
+        match workDisplayManager.GetAgentWorkInfo(agentId) with
+        | Some workInfo ->
+            let formattedStatus = workDisplayManager.FormatWorkStatus(workInfo)
+            statusView.Text <- NStack.ustring.Make(formattedStatus)
+            statusView.SetNeedsDisplay()
+            logDebug "AgentStatus" (sprintf "Updated status display for agent: %s" agentId)
+        | None -> logWarning "AgentStatus" (sprintf "Failed to get work info for agent: %s" agentId)
+    | None -> logDebug "AgentStatus" (sprintf "No status view found for agent: %s" agentId)
+
+// エージェント間情報共有サマリーを生成するヘルパー関数
+let generateTeamStatusSummary (workDisplayManager: AgentWorkDisplayManager) : string =
+    let allAgents = workDisplayManager.GetAllAgentWorkInfos()
+    let timestamp = getCurrentTimestamp ()
+
+    let activeAgents =
+        allAgents
+        |> List.filter (fun (_, workInfo) ->
+            match workInfo.CurrentStatus with
+            | AgentWorkStatus.Working(_, _, _) -> true
+            | _ -> false)
+
+    let completedTasks =
+        allAgents
+        |> List.filter (fun (_, workInfo) ->
+            match workInfo.CurrentStatus with
+            | AgentWorkStatus.Completed(_, _, _) -> true
+            | _ -> false)
+
+    let errorAgents =
+        allAgents
+        |> List.filter (fun (_, workInfo) ->
+            match workInfo.CurrentStatus with
+            | AgentWorkStatus.Error(_, _, _) -> true
+            | _ -> false)
+
+    let summary =
+        sprintf "🤝 チーム状況サマリー [%s]\n\n" timestamp
+        + sprintf
+            "📊 アクティブ: %d人 | ✅ 完了: %d件 | ❌ エラー: %d件\n\n"
+            activeAgents.Length
+            completedTasks.Length
+            errorAgents.Length
+        + "🔄 進行中タスク:\n"
+        + (activeAgents
+           |> List.map (fun (agentId, workInfo) ->
+               match workInfo.CurrentStatus with
+               | AgentWorkStatus.Working(taskTitle, _, progress) ->
+                   sprintf "  • %s: %s (%.1f%%)" agentId taskTitle progress
+               | _ -> "")
+           |> List.filter (fun s -> s <> "")
+           |> String.concat "\n")
+        + (if errorAgents.Length > 0 then
+               "\n\n⚠️ 要注意:\n"
+               + (errorAgents
+                  |> List.map (fun (agentId, workInfo) ->
+                      match workInfo.CurrentStatus with
+                      | AgentWorkStatus.Error(taskTitle, errorMsg, _) ->
+                          sprintf "  • %s: %s - %s" agentId taskTitle errorMsg
+                      | _ -> "")
+                  |> List.filter (fun s -> s <> "")
+                  |> String.concat "\n")
+           else
+               "")
+
+    summary
 
 // PO指示処理関数
 let processPOInstruction (instruction: string) : unit =
@@ -144,6 +215,9 @@ let processPOInstruction (instruction: string) : unit =
                 // AgentWorkDisplayManagerでタスク開始を記録
                 workDisplayManager.StartTask(agentId, task.Title, task.EstimatedDuration)
 
+                // UI即座更新
+                updateAgentStatusDisplay agentId workDisplayManager
+
                 // 品質ゲート評価を自動実行（QAエージェントのタスクの場合）
                 if agentId = "qa1" || agentId = "qa2" then
                     async {
@@ -225,6 +299,10 @@ let processPOInstruction (instruction: string) : unit =
 
             // 作業シミュレーションを開始（リアルタイム進捗表示のため）
             let simulator = AgentWorkSimulatorGlobal.GetSimulator()
+
+            // チーム状況サマリーを会話ペインに表示
+            let teamSummary = generateTeamStatusSummary workDisplayManager
+            addSystemActivity "TeamStatus" SystemMessage teamSummary |> ignore
 
             let simulationAssignments =
                 assignments
@@ -378,12 +456,22 @@ let main argv =
                 // エージェントペインの場合はTextViewを追加
                 if title <> "会話" then
                     logDebug "UI" (sprintf "Adding TextView to pane: %s" title)
+
+                    // メイン作業エリア（上部75%）
                     let textView = new TextView()
                     textView.X <- 0
                     textView.Y <- 0
                     textView.Width <- Dim.Fill()
-                    textView.Height <- Dim.Fill()
+                    textView.Height <- Dim.Percent(75f)
                     textView.ReadOnly <- true
+
+                    // 作業状況表示エリア（下部25%）
+                    let statusView = new TextView()
+                    statusView.X <- 0
+                    statusView.Y <- Pos.Percent(75f)
+                    statusView.Width <- Dim.Fill()
+                    statusView.Height <- Dim.Percent(25f)
+                    statusView.ReadOnly <- true
 
                     // AgentWorkDisplayManagerでエージェントを初期化
                     // ペイン名とエージェントIDのマッピング定義
@@ -393,21 +481,30 @@ let main argv =
                     workDisplayManager.InitializeAgent(agentId)
 
                     // 初期表示をAgentWorkDisplayManagerから取得
+                    // 初期表示設定
+                    textView.Text <-
+                        NStack.ustring.Make(
+                            sprintf "[%sペイン] Claude Code TUI\n\nエージェント作業エリア\n\nClaude Code初期化準備中..." title
+                        )
+
+                    // 作業状況表示をAgentWorkDisplayManagerから取得して設定
                     match workDisplayManager.GetAgentWorkInfo(agentId) with
                     | Some workInfo ->
                         let formattedStatus = workDisplayManager.FormatWorkStatus(workInfo)
-                        textView.Text <- formattedStatus
-                        logInfo "UI" (sprintf "Initialized agent work display for: %s" agentId)
+                        statusView.Text <- NStack.ustring.Make(formattedStatus)
+                        logInfo "UI" (sprintf "Initialized agent work status display for: %s" agentId)
                     | None ->
-                        textView.Text <-
-                            NStack.ustring.Make(
-                                sprintf "[DEBUG] %sペイン - TextView初期化完了\n[DEBUG] Claude Code初期化準備中..." title
-                            )
-
+                        statusView.Text <- NStack.ustring.Make("🤖 エージェント初期化中...")
                         logWarning "UI" (sprintf "Failed to get work info for agent: %s" agentId)
 
                     // Terminal.Gui 1.15.0の推奨方法: Add()メソッド使用
                     fv.Add(textView)
+                    fv.Add(statusView)
+
+                    // ステータスビューをグローバルマップに登録
+                    let agentId = paneToAgentIdMapping |> Map.tryFind title |> Option.defaultValue title
+                    agentStatusViews <- agentStatusViews |> Map.add agentId statusView
+                    logInfo "UI" (sprintf "Registered status view for agent: %s" agentId)
 
                     // 追加後に適切にレイアウト
                     textView.SetNeedsDisplay()
@@ -715,6 +812,21 @@ let main argv =
 
                         logError "AutoStart" "=== ROOT CAUSE: UI structure investigation completed ==="
                         |> ignore
+
+            // SC-1-2: エージェント作業表示リアルタイム更新設定
+            logInfo "Application" "=== SC-1-2: エージェント作業表示リアルタイム更新初期化 ==="
+
+            // AgentWorkDisplayManagerにリアルタイム更新ハンドラーを登録
+            workDisplayManager.RegisterDisplayUpdateHandler(fun updatedAgentId updatedWorkInfo ->
+                // メインUIスレッドで実行
+                if not (isNull Application.MainLoop) then
+                    Application.MainLoop.Invoke(fun () ->
+                        updateAgentStatusDisplay updatedAgentId workDisplayManager
+                        logDebug "UI" (sprintf "Real-time status update applied for agent: %s" updatedAgentId))
+                else
+                    logWarning "UI" "Cannot update display - MainLoop not available")
+
+            logInfo "Application" "Real-time display update handler registered successfully"
 
             // FC-015: Phase 4 UI統合・フルフロー機能初期化（堅牢版）
             logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化開始 ==="

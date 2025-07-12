@@ -499,10 +499,12 @@ let main argv =
                     statusView.ReadOnly <- true
 
                     // AgentWorkDisplayManagerでエージェントを初期化
-                    // ペイン名とエージェントIDのマッピング定義
-                    let paneToAgentIdMapping = Map.ofList [ ("PM / PdM タイムライン", "pm") ]
+                    // ペイン名とエージェントIDのマッピング
+                    let agentId =
+                        match title with
+                        | "PM / PdM タイムライン" -> "pm"
+                        | _ -> title
 
-                    let agentId = paneToAgentIdMapping |> Map.tryFind title |> Option.defaultValue title
                     workDisplayManager.InitializeAgent(agentId)
 
                     // 初期表示をAgentWorkDisplayManagerから取得

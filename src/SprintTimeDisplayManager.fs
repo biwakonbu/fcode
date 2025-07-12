@@ -26,10 +26,23 @@ let CompletionRateThreshold = 90.0
 [<Literal>]
 let MinimumStandupIntervalMinutes = 5.0
 
+/// デフォルトエージェントID設定
+let DefaultAgentIds = [| "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux" |]
+
+/// スプリント完成度評価結果
+type SprintAssessment =
+    { CompletionRate: float
+      IsCompleted: bool
+      TestsPassed: bool
+      DocumentationComplete: bool
+      TasksTotal: int
+      TasksCompleted: int }
+
 /// スプリント時間表示管理クラス
-type SprintTimeDisplayManager(virtualTimeCoordinator: VirtualTimeCoordinator) =
+type SprintTimeDisplayManager(virtualTimeCoordinator: VirtualTimeCoordinator, ?agentIds: string array) =
 
     let syncRoot = obj ()
+    let configuredAgentIds = defaultArg agentIds DefaultAgentIds
     let mutable displayUpdateHandlers: (string -> unit) list = []
     let mutable currentSprintId: string option = None
     let mutable isSprintActive = false
@@ -232,9 +245,10 @@ POが指示を入力することでスプリントが自動開始されます
 
                     let standupNotification =
                         sprintf
-                            "🔔 スタンドアップ通知 - %s\n\n⏰ %d分経過 - スタンドアップ開始時刻です！\n\n📋 アジェンダ:\n• 前回から今回までの進捗報告\n• 次回まで（6分間）の作業計画\n• ブロッカー・課題の共有\n• 必要な支援・調整の要求\n\n👥 参加エージェント: dev1, dev2, dev3, qa1, qa2, ux\n\n⏱️ 予定時間: 3分以内"
+                            "🔔 スタンドアップ通知 - %s\n\n⏰ %d分経過 - スタンドアップ開始時刻です！\n\n📋 アジェンダ:\n• 前回から今回までの進捗報告\n• 次回まで（6分間）の作業計画\n• ブロッカー・課題の共有\n• 必要な支援・調整の要求\n\n👥 参加エージェント: %s\n\n⏱️ 予定時間: 3分以内"
                             (now.ToString("HH:mm:ss"))
                             totalMinutes
+                            (String.concat ", " configuredAgentIds)
 
                     standupNotificationHandlers
                     |> List.iter (fun handler ->
@@ -309,11 +323,10 @@ POが指示を入力することでスプリントが自動開始されます
         try
             // AgentWorkDisplayManagerから実際の作業状況を取得
             let workDisplayManager = FCode.AgentWorkDisplayGlobal.GetManager()
-            let agentIds = [ "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux" ]
 
             let (totalTasks, completedTasks) =
-                agentIds
-                |> List.map (fun agentId ->
+                configuredAgentIds
+                |> Array.map (fun agentId ->
                     match workDisplayManager.GetAgentWorkInfo(agentId) with
                     | Some workInfo ->
                         let isCompleted =
@@ -323,7 +336,7 @@ POが指示を入力することでスプリントが自動開始されます
 
                         (1, if isCompleted then 1 else 0)
                     | None -> (0, 0))
-                |> List.fold
+                |> Array.fold
                     (fun (totalAcc, completedAcc) (total, completed) -> (totalAcc + total, completedAcc + completed))
                     (0, 0)
 
@@ -339,21 +352,21 @@ POが指示を入力することでスプリントが自動開始されます
 
             logInfo "SprintTimeDisplay" (sprintf "完成度評価: %d/%d タスク完了 (%.1f%%)" completedTasks totalTasks completionRate)
 
-            {| CompletionRate = completionRate
-               IsCompleted = isCompleted
-               TestsPassed = testsPassed
-               DocumentationComplete = documentationComplete
-               TasksTotal = totalTasks
-               TasksCompleted = completedTasks |}
+            { CompletionRate = completionRate
+              IsCompleted = isCompleted
+              TestsPassed = testsPassed
+              DocumentationComplete = documentationComplete
+              TasksTotal = totalTasks
+              TasksCompleted = completedTasks }
         with ex ->
             logError "SprintTimeDisplay" (sprintf "完成度評価例外: %s" ex.Message)
 
-            {| CompletionRate = 70.0 // フォールバック値
-               IsCompleted = false
-               TestsPassed = false
-               DocumentationComplete = false
-               TasksTotal = 0
-               TasksCompleted = 0 |}
+            { CompletionRate = 70.0 // フォールバック値
+              IsCompleted = false
+              TestsPassed = false
+              DocumentationComplete = false
+              TasksTotal = 0
+              TasksCompleted = 0 }
 
     /// 品質スコア計算
     member private this.CalculateQualityScore() =
@@ -369,17 +382,7 @@ POが指示を入力することでスプリントが自動開始されます
             0.0
 
     /// スプリント継続判定
-    member private this.DecideSprintContinuation
-        (
-            assessment:
-                {| CompletionRate: float
-                   IsCompleted: bool
-                   TestsPassed: bool
-                   DocumentationComplete: bool
-                   TasksTotal: int
-                   TasksCompleted: int |},
-            qualityScore: float
-        ) =
+    member private this.DecideSprintContinuation(assessment: SprintAssessment, qualityScore: float) =
         try
             if assessment.IsCompleted && qualityScore >= QualityScoreExcellent then
                 "AutoContinue" // 高品質完成・自動継続
@@ -508,6 +511,11 @@ module SprintTimeDisplayGlobal =
     let Initialize (virtualTimeCoordinator: VirtualTimeCoordinator) =
         instance <- Some(new SprintTimeDisplayManager(virtualTimeCoordinator))
         logInfo "SprintTimeDisplayGlobal" "SprintTimeDisplayManagerを初期化しました"
+
+    /// カスタムエージェントIDでインスタンスを初期化
+    let InitializeWithAgents (virtualTimeCoordinator: VirtualTimeCoordinator) (agentIds: string array) =
+        instance <- Some(new SprintTimeDisplayManager(virtualTimeCoordinator, agentIds))
+        logInfo "SprintTimeDisplayGlobal" "SprintTimeDisplayManagerをカスタムエージェント設定で初期化しました"
 
     /// インスタンスを取得
     let GetManager () =

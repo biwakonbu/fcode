@@ -150,21 +150,40 @@ let ``VirtualTimeCoordinator - 無効スプリントID停止エラーテスト``
 
 [<Test>]
 [<Category("Unit")>]
-let ``VirtualTimeCoordinator - 無効スプリントID統計取得エラーテスト`` () =
+let ``VirtualTimeCoordinator - 無効スプリントID統計取得SystemErrorテスト`` () =
     use manager = createVirtualTimeManager ()
 
     let vtManager =
         manager :> FCode.Collaboration.IVirtualTimeManager.IVirtualTimeManager
 
-    // 存在しないスプリントIDの統計取得
+    // 存在しないスプリントIDの統計取得（依存エラーのSystemErrorラップ検証）
     let statsResult =
         vtManager.GetSprintStatistics("invalid-sprint-id") |> Async.RunSynchronously
 
     match statsResult with
-    | Result.Error(SystemError _) -> Assert.True(true) // SystemErrorでも許可
-    | Result.Error(NotFound _) -> Assert.True(true) // NotFoundでも許可（依存コンポーネントから伝搬）
+    | Result.Error(SystemError message) ->
+        // 依存コンポーネントエラーがSystemErrorにラップされることを確認
+        Assert.True(message.Contains("進捗統計取得失敗") || message.Contains("統計"))
     | Result.Ok _ -> Assert.True(false, "無効スプリントIDで統計取得エラーが期待される")
-    | _ -> Assert.True(false, "予期しないエラー形式")
+    | _ -> Assert.True(false, "SystemErrorエラーが期待される")
+
+[<Test>]
+[<Category("Unit")>]
+let ``VirtualTimeCoordinator - 統計取得例外処理SystemErrorテスト`` () =
+    use manager = createVirtualTimeManager ()
+
+    let vtManager =
+        manager :> FCode.Collaboration.IVirtualTimeManager.IVirtualTimeManager
+
+    // null文字列で例外発生を誘発し、適切なSystemError変換を確認
+    let statsResult = vtManager.GetSprintStatistics(null) |> Async.RunSynchronously
+
+    match statsResult with
+    | Result.Error(SystemError message) ->
+        // 例外がSystemErrorに適切に変換されることを確認
+        Assert.True(not (String.IsNullOrEmpty(message)))
+    | Result.Ok _ -> Assert.True(false, "null入力で例外が期待される")
+    | _ -> Assert.True(false, "例外のSystemErrorエラーが期待される")
 
 [<Test>]
 [<Category("Unit")>]

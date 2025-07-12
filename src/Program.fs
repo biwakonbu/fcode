@@ -137,6 +137,24 @@ let processPOInstruction (instruction: string) : unit =
               AverageTaskDuration = System.TimeSpan.FromHours(2.0)
               LastAssignedTask = None }
 
+        let dev2Profile =
+            { AgentId = "dev2"
+              Specializations = [ Development [ "backend"; "database"; "API" ] ]
+              LoadCapacity = 3.0
+              CurrentLoad = 0.0
+              SuccessRate = 0.93
+              AverageTaskDuration = System.TimeSpan.FromHours(2.5)
+              LastAssignedTask = None }
+
+        let dev3Profile =
+            { AgentId = "dev3"
+              Specializations = [ Development [ "testing"; "devops"; "CI/CD" ] ]
+              LoadCapacity = 2.5
+              CurrentLoad = 0.0
+              SuccessRate = 0.90
+              AverageTaskDuration = System.TimeSpan.FromHours(2.0)
+              LastAssignedTask = None }
+
         let qaProfile =
             { AgentId = "qa1"
               Specializations = [ Testing [ "unit-testing"; "integration-testing" ] ]
@@ -144,6 +162,15 @@ let processPOInstruction (instruction: string) : unit =
               CurrentLoad = 0.0
               SuccessRate = 0.92
               AverageTaskDuration = System.TimeSpan.FromHours(1.5)
+              LastAssignedTask = None }
+
+        let qa2Profile =
+            { AgentId = "qa2"
+              Specializations = [ Testing [ "performance-testing"; "security-testing" ] ]
+              LoadCapacity = 2.0
+              CurrentLoad = 0.0
+              SuccessRate = 0.89
+              AverageTaskDuration = System.TimeSpan.FromHours(2.0)
               LastAssignedTask = None }
 
         let uxProfile =
@@ -155,9 +182,23 @@ let processPOInstruction (instruction: string) : unit =
               AverageTaskDuration = System.TimeSpan.FromHours(3.0)
               LastAssignedTask = None }
 
+        let pmProfile =
+            { AgentId = "pm"
+              Specializations = [ ProjectManagement [ "coordination"; "planning"; "management" ] ]
+              LoadCapacity = 1.5
+              CurrentLoad = 0.0
+              SuccessRate = 0.95
+              AverageTaskDuration = System.TimeSpan.FromHours(1.0)
+              LastAssignedTask = None }
+
+        // 全エージェントプロファイルを登録
         taskAssignmentManager.RegisterAgent(devProfile)
+        taskAssignmentManager.RegisterAgent(dev2Profile)
+        taskAssignmentManager.RegisterAgent(dev3Profile)
         taskAssignmentManager.RegisterAgent(qaProfile)
+        taskAssignmentManager.RegisterAgent(qa2Profile)
         taskAssignmentManager.RegisterAgent(uxProfile)
+        taskAssignmentManager.RegisterAgent(pmProfile)
 
         // AgentWorkDisplayManagerの取得
         let workDisplayManager = AgentWorkDisplayGlobal.GetManager()
@@ -214,6 +255,10 @@ let processPOInstruction (instruction: string) : unit =
 
             addSystemActivity "TaskSummary" SystemMessage "═══════════════════" |> ignore
 
+            // チーム状況サマリーを会話ペインに表示
+            let teamSummary = generateTeamStatusSummary workDisplayManager
+            addSystemActivity "TeamStatus" SystemMessage teamSummary |> ignore
+
             // 各エージェントペインに作業内容を表示し、AgentWorkDisplayManagerでタスク開始を記録
             for (task, agentId) in assignments do
                 // AgentWorkDisplayManagerでタスク開始を記録
@@ -228,9 +273,7 @@ let processPOInstruction (instruction: string) : unit =
                         // 品質ゲート評価の実行判定
                         let shouldEvaluate =
                             // 開発タスクの場合は品質ゲート評価を実行
-                            agentId = "dev1"
-                            || agentId = "dev2"
-                            || agentId = "dev3"
+                            agentId.StartsWith("dev")
                             ||
                             // または明示的な品質確認タスクの場合
                             task.Title.Contains("品質")
@@ -317,30 +360,50 @@ let processPOInstruction (instruction: string) : unit =
                         textView.Text <- newText
                         textView.SetNeedsDisplay()
                         logInfo "UI" (sprintf "Task assigned to %s: %s (fallback display)" agentId task.Title)
-                | None -> logWarning "UI" (sprintf "Agent pane not found for: %s" agentId)
 
-            // 画面更新
-            Application.Refresh()
+            // 作業シミュレーション開始（デモ・テスト用）
+            let simulator = new AgentWorkSimulator()
 
-            // 作業シミュレーションを開始（リアルタイム進捗表示のため）
-            let simulator = AgentWorkSimulatorGlobal.GetSimulator()
-
-            // チーム状況サマリーを会話ペインに表示
-            let teamSummary = generateTeamStatusSummary workDisplayManager
-            addSystemActivity "TeamStatus" SystemMessage teamSummary |> ignore
-
+            // AgentWorkSimulatorが期待する形式に変換
             let simulationAssignments =
                 assignments
                 |> List.map (fun (task, agentId) ->
-                    let durationMinutes = int (task.EstimatedDuration.TotalMinutes)
+                    let durationMinutes = int (ceil task.EstimatedDuration.TotalMinutes)
                     (agentId, task.Title, durationMinutes))
 
             try
+                // 作業シミュレーション実行
                 simulator.StartWorkSimulation(simulationAssignments)
                 logInfo "PO" (sprintf "Started work simulation for %d tasks" assignments.Length)
             with ex ->
                 logError "PO" (sprintf "Failed to start work simulation: %s" ex.Message)
-            // シミュレーション失敗はクリティカルではないため、処理を継続
+
+            // 定期的なチーム状況更新の設定
+            let updateIntervalSeconds = 30
+            let updateIterations = 10
+
+            // 定期的なチーム状況更新
+            async {
+                for i in 1..updateIterations do
+                    do! Async.Sleep(updateIntervalSeconds * 1000) // 指定間隔で待機
+
+                    let updatedTeamSummary = generateTeamStatusSummary workDisplayManager
+
+                    addSystemActivity
+                        "TeamUpdate"
+                        SystemMessage
+                        (sprintf
+                            "🔄 チーム状況更新 (%2.1f分経過)\n%s"
+                            (float i * float updateIntervalSeconds / 60.0)
+                            updatedTeamSummary)
+                    |> ignore
+
+                    logInfo "TeamStatus" (sprintf "Team status updated - iteration %d" i)
+            }
+            |> Async.Start
+
+            // 画面更新
+            Application.Refresh()
 
             // スプリント開始（18分タイマー開始）
             let sprintTimeDisplayManager = SprintTimeDisplayGlobal.GetManager()
@@ -503,6 +566,12 @@ let main argv =
                     let agentId =
                         match title with
                         | "PM / PdM タイムライン" -> "pm"
+                        | "dev1" -> "dev1"
+                        | "dev2" -> "dev2"
+                        | "dev3" -> "dev3"
+                        | "qa1" -> "qa1"
+                        | "qa2" -> "qa2"
+                        | "ux" -> "ux"
                         | _ -> title
 
                     workDisplayManager.InitializeAgent(agentId)
@@ -539,6 +608,10 @@ let main argv =
                     // TextView直接参照用マップに追加
                     paneTextViews <- paneTextViews.Add(title, textView)
                     globalPaneTextViews <- globalPaneTextViews.Add(title, textView)
+
+                    // エージェントIDでもアクセスできるようにする
+                    if agentId <> title then
+                        globalPaneTextViews <- globalPaneTextViews.Add(agentId, textView)
 
                     // AgentWorkDisplayManagerの表示更新ハンドラーを登録
                     workDisplayManager.RegisterDisplayUpdateHandler(fun updatedAgentId updatedWorkInfo ->

@@ -41,227 +41,242 @@ let getPriorityIcon (priority: TaskPriority) =
         logWarning "TaskDisplay" (sprintf "Unknown priority value: %A" unknownPriority)
         "❓" // 未知の優先度値に対するフォールバック
 
-// PO指示処理関数
+// UI レイアウト設定定数
+let MainAreaPercentage = 75f
+let StatusAreaPercentage = 25f
+
+// マネージャー初期化関数
+let initializeManagers () =
+    let nlp = NaturalLanguageProcessor()
+    let matcher = AgentSpecializationMatcher()
+    let reassignmentSystem = DynamicReassignmentSystem()
+    let taskAssignmentManager = TaskAssignmentManager(nlp, matcher, reassignmentSystem)
+    let workDisplayManager = AgentWorkDisplayGlobal.GetManager()
+    (taskAssignmentManager, workDisplayManager)
+
+// エージェントプロファイル登録関数
+let registerAgentProfiles (taskAssignmentManager: TaskAssignmentManager) =
+    let devProfile =
+        { AgentId = "dev1"
+          Specializations = [ Development [ "frontend"; "backend"; "general" ] ]
+          LoadCapacity = 3.0
+          CurrentLoad = 0.0
+          SuccessRate = 0.95
+          AverageTaskDuration = System.TimeSpan.FromHours(2.0)
+          LastAssignedTask = None }
+
+    let qaProfile =
+        { AgentId = "qa1"
+          Specializations = [ Testing [ "unit-testing"; "integration-testing" ] ]
+          LoadCapacity = 2.0
+          CurrentLoad = 0.0
+          SuccessRate = 0.92
+          AverageTaskDuration = System.TimeSpan.FromHours(1.5)
+          LastAssignedTask = None }
+
+    let uxProfile =
+        { AgentId = "ux"
+          Specializations = [ UXDesign [ "interface"; "usability" ] ]
+          LoadCapacity = 2.0
+          CurrentLoad = 0.0
+          SuccessRate = 0.88
+          AverageTaskDuration = System.TimeSpan.FromHours(3.0)
+          LastAssignedTask = None }
+
+    taskAssignmentManager.RegisterAgent(devProfile)
+    taskAssignmentManager.RegisterAgent(qaProfile)
+    taskAssignmentManager.RegisterAgent(uxProfile)
+
+// タスク分解結果表示関数
+let displayTaskAssignmentSummary (assignments: (ParsedTask * string) list) =
+    let totalEstimatedTime =
+        assignments |> List.sumBy (fun (task, _) -> task.EstimatedDuration.TotalMinutes)
+
+    let uniqueAgents = assignments |> List.map snd |> List.distinct |> List.length
+
+    addSystemActivity
+        "PO"
+        SystemMessage
+        (sprintf "📋 タスク分解完了: %d個のタスクを%d人のエージェントに配分 (総予定時間: %.1f分)" assignments.Length uniqueAgents totalEstimatedTime)
+    |> ignore
+
+    // タスク分解サマリーを表示
+    addSystemActivity "TaskSummary" SystemMessage "═══ タスク分解結果 ═══" |> ignore
+
+    // 各エージェント別にタスクをグループ化して表示
+    assignments
+    |> List.groupBy snd
+    |> List.iter (fun (agentId, agentTasks) ->
+        let agentTotalTime =
+            agentTasks |> List.sumBy (fun (task, _) -> task.EstimatedDuration.TotalMinutes)
+
+        addSystemActivity "TaskSummary" TaskAssignment (sprintf "👤 %s (総時間: %.1f分)" agentId agentTotalTime)
+        |> ignore
+
+        // 各タスクの詳細を表示
+        agentTasks
+        |> List.iteri (fun i (task, _) ->
+            let priorityIcon = getPriorityIcon task.Priority
+
+            addSystemActivity
+                "TaskDetail"
+                TaskAssignment
+                (sprintf "   %d. %s %s (%.0f分)" (i + 1) priorityIcon task.Title task.EstimatedDuration.TotalMinutes)
+            |> ignore))
+
+    addSystemActivity "TaskSummary" SystemMessage "═══════════════════" |> ignore
+
+// タスクをエージェントに配分する関数
+let assignTasksToAgents (assignments: (ParsedTask * string) list) (workDisplayManager: AgentWorkDisplayManager) =
+    for (task, agentId) in assignments do
+        // AgentWorkDisplayManagerでタスク開始を記録
+        workDisplayManager.StartTask(agentId, task.Title, task.EstimatedDuration)
+
+        // 品質ゲート評価を自動実行（QAエージェントのタスクの場合）
+        if agentId = "qa1" || agentId = "qa2" then
+            async {
+                try
+                    // 少し遅延させてからエスカレーション評価実行
+                    do! Async.Sleep(2000)
+                    // 品質ゲート評価実行（簡易版）
+                    logInfo "QualityGate" (sprintf "QAタスク品質ゲート評価開始: %s" task.TaskId)
+
+                    // エスカレーション処理
+                    let escalationThreshold =
+                        match task.Priority with
+                        | TaskPriority.High when task.EstimatedDuration.TotalHours > 2.0 -> 0.6
+                        | TaskPriority.High -> 0.7
+                        | _ -> 0.8
+
+                    let escalationRequired =
+                        task.Title.Contains("critical")
+                        || task.Title.Contains("重要")
+                        || task.Priority = TaskPriority.Critical
+                        || (task.EstimatedDuration > System.TimeSpan.FromHours(8.0))
+
+                    if escalationRequired then
+                        let escalationId =
+                            sprintf "ESC-%s" (System.DateTime.Now.ToString("yyyyMMdd-HHmmss"))
+
+                        let escalationContext =
+                            { EscalationId = escalationId
+                              TaskId = task.TaskId
+                              AgentId = agentId
+                              Severity = EscalationSeverity.Important
+                              Factors =
+                                { ImpactScope = RelatedTasks
+                                  TimeConstraint = SoonDeadline(System.TimeSpan.FromHours(4.0))
+                                  RiskLevel = ModerateRisk
+                                  BlockerType = BlockerType.QualityGate
+                                  AutoRecoveryAttempts = 0
+                                  DependentTaskCount = 1 }
+                              Description = sprintf "品質ゲート評価: %s" task.Title
+                              DetectedAt = System.DateTime.UtcNow
+                              AutoRecoveryAttempted = false
+                              RequiredActions = [ "品質改善"; "PO判断要求" ]
+                              EstimatedResolutionTime = Some(System.TimeSpan.FromHours(2.0)) }
+
+                        // エスカレーション通知作成（簡易版）
+                        logInfo "EscalationHandler" (sprintf "品質ゲートエスカレーション発生: %s" escalationId)
+                with ex ->
+                    logError "QualityGate" (sprintf "QAタスク品質ゲート評価例外: %s" ex.Message)
+            }
+            |> Async.Start
+
+        match globalPaneTextViews.TryFind(agentId) with
+        | Some textView ->
+            // AgentWorkDisplayManagerからフォーマットされた作業状況を取得
+            match workDisplayManager.GetAgentWorkInfo(agentId) with
+            | Some workInfo ->
+                let formattedStatus = workDisplayManager.FormatWorkStatus(workInfo)
+                textView.Text <- formattedStatus
+                textView.SetNeedsDisplay()
+                logInfo "UI" (sprintf "Updated work display for %s: %s" agentId task.Title)
+            | None ->
+                // フォールバック: 従来の表示
+                let currentText = textView.Text.ToString()
+                let timestamp = System.DateTime.Now.ToString("HH:mm:ss")
+
+                let newText =
+                    sprintf "%s\n[%s] 新しいタスク: %s\n説明: %s\n" currentText timestamp task.Title task.Description
+
+                textView.Text <- newText
+                textView.SetNeedsDisplay()
+                logInfo "UI" (sprintf "Task assigned to %s: %s (fallback display)" agentId task.Title)
+        | None -> logWarning "UI" (sprintf "Agent pane not found for: %s" agentId)
+
+// 作業シミュレーション開始関数
+let startWorkSimulation (assignments: (ParsedTask * string) list) =
+    let simulator = AgentWorkSimulatorGlobal.GetSimulator()
+
+    let simulationAssignments =
+        assignments
+        |> List.map (fun (task, agentId) ->
+            let durationMinutes = int (task.EstimatedDuration.TotalMinutes)
+            (agentId, task.Title, durationMinutes))
+
+    try
+        simulator.StartWorkSimulation(simulationAssignments)
+        logInfo "PO" (sprintf "Started work simulation for %d tasks" assignments.Length)
+    with ex ->
+        logError "PO" (sprintf "Failed to start work simulation: %s" ex.Message)
+
+// スプリント実行開始関数
+let startSprintExecution () =
+    let sprintTimeDisplayManager = SprintTimeDisplayGlobal.GetManager()
+    let sprintId = sprintf "sprint-%s" (System.DateTime.Now.ToString("yyyyMMdd-HHmmss"))
+
+    async {
+        try
+            let! sprintResult = sprintTimeDisplayManager.StartSprint(sprintId)
+
+            match sprintResult with
+            | Result.Ok() ->
+                logInfo "SprintManager" (sprintf "Sprint started successfully: %s" sprintId)
+
+                addSystemActivity "Sprint" SystemMessage (sprintf "🏃 スプリント開始: %s (18分タイマー開始)" sprintId)
+                |> ignore
+
+            | Result.Error errorMsg ->
+                logError "SprintManager" (sprintf "Failed to start sprint: %A" errorMsg)
+
+                addSystemActivity "Sprint" SystemMessage (sprintf "❌ スプリント開始失敗: %A" errorMsg)
+                |> ignore
+        with ex ->
+            logError "SprintManager" (sprintf "Sprint start exception: %s" ex.Message)
+    }
+    |> Async.Start
+
+// PO指示処理関数（リファクタリング済み）
 let processPOInstruction (instruction: string) : unit =
     try
         logInfo "PO" (sprintf "Starting PO instruction processing: %s" instruction)
 
-        // TaskAssignmentManagerの初期化
-        let nlp = NaturalLanguageProcessor()
-        let matcher = AgentSpecializationMatcher()
-        let reassignmentSystem = DynamicReassignmentSystem()
-        let taskAssignmentManager = TaskAssignmentManager(nlp, matcher, reassignmentSystem)
+        // マネージャー初期化
+        let (taskAssignmentManager, workDisplayManager) = initializeManagers ()
 
-        // 基本エージェントプロファイルを登録
-        let devProfile =
-            { AgentId = "dev1"
-              Specializations = [ Development [ "frontend"; "backend"; "general" ] ]
-              LoadCapacity = 3.0
-              CurrentLoad = 0.0
-              SuccessRate = 0.95
-              AverageTaskDuration = System.TimeSpan.FromHours(2.0)
-              LastAssignedTask = None }
-
-        let qaProfile =
-            { AgentId = "qa1"
-              Specializations = [ Testing [ "unit-testing"; "integration-testing" ] ]
-              LoadCapacity = 2.0
-              CurrentLoad = 0.0
-              SuccessRate = 0.92
-              AverageTaskDuration = System.TimeSpan.FromHours(1.5)
-              LastAssignedTask = None }
-
-        let uxProfile =
-            { AgentId = "ux"
-              Specializations = [ UXDesign [ "interface"; "usability" ] ]
-              LoadCapacity = 2.0
-              CurrentLoad = 0.0
-              SuccessRate = 0.88
-              AverageTaskDuration = System.TimeSpan.FromHours(3.0)
-              LastAssignedTask = None }
-
-        taskAssignmentManager.RegisterAgent(devProfile)
-        taskAssignmentManager.RegisterAgent(qaProfile)
-        taskAssignmentManager.RegisterAgent(uxProfile)
-
-        // AgentWorkDisplayManagerの取得
-        let workDisplayManager = AgentWorkDisplayGlobal.GetManager()
+        // エージェントプロファイル登録
+        registerAgentProfiles taskAssignmentManager
 
         // 指示をタスクに分解して配分
         match taskAssignmentManager.ProcessInstructionAndAssign(instruction) with
         | Result.Ok assignments ->
             logInfo "PO" (sprintf "Successfully processed instruction - %d tasks assigned" assignments.Length)
 
-            // UnifiedActivityViewに詳細なタスク分解結果を表示
-            let totalEstimatedTime =
-                assignments |> List.sumBy (fun (task, _) -> task.EstimatedDuration.TotalMinutes)
+            // タスク分解結果表示
+            displayTaskAssignmentSummary assignments
 
-            let uniqueAgents = assignments |> List.map snd |> List.distinct |> List.length
-
-            addSystemActivity
-                "PO"
-                SystemMessage
-                (sprintf
-                    "📋 タスク分解完了: %d個のタスクを%d人のエージェントに配分 (総予定時間: %.1f分)"
-                    assignments.Length
-                    uniqueAgents
-                    totalEstimatedTime)
-            |> ignore
-
-            // タスク分解サマリーを表示
-            addSystemActivity "TaskSummary" SystemMessage "═══ タスク分解結果 ═══" |> ignore
-
-            // 各エージェント別にタスクをグループ化して表示
-            assignments
-            |> List.groupBy snd
-            |> List.iter (fun (agentId, agentTasks) ->
-                let agentTotalTime =
-                    agentTasks |> List.sumBy (fun (task, _) -> task.EstimatedDuration.TotalMinutes)
-
-                addSystemActivity "TaskSummary" TaskAssignment (sprintf "👤 %s (総時間: %.1f分)" agentId agentTotalTime)
-                |> ignore
-
-                // 各タスクの詳細を表示
-                agentTasks
-                |> List.iteri (fun i (task, _) ->
-                    let priorityIcon = getPriorityIcon task.Priority
-
-                    addSystemActivity
-                        "TaskDetail"
-                        TaskAssignment
-                        (sprintf
-                            "   %d. %s %s (%.0f分)"
-                            (i + 1)
-                            priorityIcon
-                            task.Title
-                            task.EstimatedDuration.TotalMinutes)
-                    |> ignore))
-
-            addSystemActivity "TaskSummary" SystemMessage "═══════════════════" |> ignore
-
-            // 各エージェントペインに作業内容を表示し、AgentWorkDisplayManagerでタスク開始を記録
-            for (task, agentId) in assignments do
-                // AgentWorkDisplayManagerでタスク開始を記録
-                workDisplayManager.StartTask(agentId, task.Title, task.EstimatedDuration)
-
-                // 品質ゲート評価を自動実行（QAエージェントのタスクの場合）
-                if agentId = "qa1" || agentId = "qa2" then
-                    async {
-                        try
-                            // 少し遅延させてからエスカレーション評価実行
-                            do! Async.Sleep(2000)
-                            // 品質ゲート評価実行（簡易版）
-                            logInfo "QualityGate" (sprintf "QAタスク品質ゲート評価開始: %s" task.TaskId)
-                            // 実装時に品質ゲート評価ロジックを追加
-
-                            // エスカレーション処理
-                            // タスクの複雑度・優先度・実行時間をエスカレーション判定に含める
-                            // 高優先度かつ長時間実行タスクはエスカレーション閾値を下げる
-                            let escalationThreshold =
-                                match task.Priority with
-                                | TaskPriority.High when task.EstimatedDuration.TotalHours > 2.0 -> 0.6
-                                | TaskPriority.High -> 0.7
-                                | _ -> 0.8
-
-                            let escalationRequired =
-                                task.Title.Contains("critical")
-                                || task.Title.Contains("重要")
-                                || task.Priority = TaskPriority.Critical
-                                || (task.EstimatedDuration > System.TimeSpan.FromHours(8.0))
-
-                            if escalationRequired then
-                                let escalationId =
-                                    sprintf "ESC-%s" (System.DateTime.Now.ToString("yyyyMMdd-HHmmss"))
-
-                                let escalationContext =
-                                    { EscalationId = escalationId
-                                      TaskId = task.TaskId
-                                      AgentId = agentId
-                                      Severity = EscalationSeverity.Important
-                                      Factors =
-                                        { ImpactScope = RelatedTasks
-                                          TimeConstraint = SoonDeadline(System.TimeSpan.FromHours(4.0))
-                                          RiskLevel = ModerateRisk
-                                          BlockerType = BlockerType.QualityGate
-                                          AutoRecoveryAttempts = 0
-                                          DependentTaskCount = 1 }
-                                      Description = sprintf "品質ゲート評価: %s" task.Title
-                                      DetectedAt = System.DateTime.UtcNow
-                                      AutoRecoveryAttempted = false
-                                      RequiredActions = [ "品質改善"; "PO判断要求" ]
-                                      EstimatedResolutionTime = Some(System.TimeSpan.FromHours(2.0)) }
-
-                                // エスカレーション通知作成（簡易版）
-                                logInfo "EscalationHandler" (sprintf "品質ゲートエスカレーション発生: %s" escalationId)
-                        with ex ->
-                            logError "QualityGate" (sprintf "QAタスク品質ゲート評価例外: %s" ex.Message)
-                    }
-                    |> Async.Start
-
-                match globalPaneTextViews.TryFind(agentId) with
-                | Some textView ->
-                    // AgentWorkDisplayManagerからフォーマットされた作業状況を取得
-                    match workDisplayManager.GetAgentWorkInfo(agentId) with
-                    | Some workInfo ->
-                        let formattedStatus = workDisplayManager.FormatWorkStatus(workInfo)
-                        textView.Text <- formattedStatus
-                        textView.SetNeedsDisplay()
-                        logInfo "UI" (sprintf "Updated work display for %s: %s" agentId task.Title)
-                    | None ->
-                        // フォールバック: 従来の表示
-                        let currentText = textView.Text.ToString()
-                        let timestamp = System.DateTime.Now.ToString("HH:mm:ss")
-
-                        let newText =
-                            sprintf "%s\n[%s] 新しいタスク: %s\n説明: %s\n" currentText timestamp task.Title task.Description
-
-                        textView.Text <- newText
-                        textView.SetNeedsDisplay()
-                        logInfo "UI" (sprintf "Task assigned to %s: %s (fallback display)" agentId task.Title)
-                | None -> logWarning "UI" (sprintf "Agent pane not found for: %s" agentId)
+            // タスクをエージェントに配分
+            assignTasksToAgents assignments workDisplayManager
 
             // 画面更新
             Application.Refresh()
 
-            // 作業シミュレーションを開始（リアルタイム進捗表示のため）
-            let simulator = AgentWorkSimulatorGlobal.GetSimulator()
+            // 作業シミュレーション開始
+            startWorkSimulation assignments
 
-            let simulationAssignments =
-                assignments
-                |> List.map (fun (task, agentId) ->
-                    let durationMinutes = int (task.EstimatedDuration.TotalMinutes)
-                    (agentId, task.Title, durationMinutes))
-
-            try
-                simulator.StartWorkSimulation(simulationAssignments)
-                logInfo "PO" (sprintf "Started work simulation for %d tasks" assignments.Length)
-            with ex ->
-                logError "PO" (sprintf "Failed to start work simulation: %s" ex.Message)
-            // シミュレーション失敗はクリティカルではないため、処理を継続
-
-            // スプリント開始（18分タイマー開始）
-            let sprintTimeDisplayManager = SprintTimeDisplayGlobal.GetManager()
-            let sprintId = sprintf "sprint-%s" (System.DateTime.Now.ToString("yyyyMMdd-HHmmss"))
-
-            async {
-                try
-                    let! sprintResult = sprintTimeDisplayManager.StartSprint(sprintId)
-
-                    match sprintResult with
-                    | Result.Ok() ->
-                        logInfo "Sprint" (sprintf "18分スプリント開始: %s" sprintId)
-
-                        addSystemActivity "Sprint" SystemMessage (sprintf "🚀 18分スプリント開始: %s" sprintId)
-                        |> ignore
-                    | Result.Error error ->
-                        logError "Sprint" (sprintf "スプリント開始失敗: %A" error)
-
-                        addSystemActivity "Sprint" SystemMessage (sprintf "⚠️ スプリント開始失敗: %A" error)
-                        |> ignore
-                with ex ->
-                    logError "Sprint" (sprintf "スプリント開始例外: %s" ex.Message)
-            }
-            |> Async.Start
+            // スプリント実行開始
+            startSprintExecution ()
 
         | Result.Error errorMsg ->
             logError "PO" (sprintf "Failed to process instruction: %s" errorMsg)

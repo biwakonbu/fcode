@@ -77,19 +77,57 @@ let processPOInstruction (instruction: string) : unit =
         | Result.Ok assignments ->
             logInfo "PO" (sprintf "Successfully processed instruction - %d tasks assigned" assignments.Length)
 
-            // 会話ペインに結果を表示
-            let resultText =
-                assignments
-                |> List.map (fun (task, agentId) ->
-                    sprintf "✓ %s → %s (予定時間: %.0f分)" task.Title agentId task.EstimatedDuration.TotalMinutes)
-                |> String.concat "\n"
+            // UnifiedActivityViewに詳細なタスク分解結果を表示
+            let totalEstimatedTime =
+                assignments |> List.sumBy (fun (task, _) -> task.EstimatedDuration.TotalMinutes)
 
-            let timestamp = System.DateTime.Now.ToString("HH:mm:ss")
-            let displayText = sprintf "\n[%s] PO指示処理完了:\n%s\n" timestamp resultText
+            let uniqueAgents = assignments |> List.map snd |> List.distinct |> List.length
 
-            // 会話ペインに追加
-            addSystemActivity "PO" SystemMessage (sprintf "指示処理完了: %d個のタスクを配分しました" assignments.Length)
+            addSystemActivity
+                "PO"
+                SystemMessage
+                (sprintf
+                    "📋 タスク分解完了: %d個のタスクを%d人のエージェントに配分 (総予定時間: %.1f分)"
+                    assignments.Length
+                    uniqueAgents
+                    totalEstimatedTime)
             |> ignore
+
+            // タスク分解サマリーを表示
+            addSystemActivity "TaskSummary" SystemMessage "═══ タスク分解結果 ═══" |> ignore
+
+            // 各エージェント別にタスクをグループ化して表示
+            assignments
+            |> List.groupBy snd
+            |> List.iter (fun (agentId, agentTasks) ->
+                let agentTotalTime =
+                    agentTasks |> List.sumBy (fun (task, _) -> task.EstimatedDuration.TotalMinutes)
+
+                addSystemActivity "TaskSummary" TaskAssignment (sprintf "👤 %s (総時間: %.1f分)" agentId agentTotalTime)
+                |> ignore
+
+                // 各タスクの詳細を表示
+                agentTasks
+                |> List.iteri (fun i (task, _) ->
+                    let priorityIcon =
+                        match task.Priority with
+                        | TaskPriority.Critical -> "🟥"
+                        | TaskPriority.High -> "🔴"
+                        | TaskPriority.Medium -> "🟡"
+                        | TaskPriority.Low -> "🟢"
+
+                    addSystemActivity
+                        "TaskDetail"
+                        TaskAssignment
+                        (sprintf
+                            "   %d. %s %s (%.0f分)"
+                            (i + 1)
+                            priorityIcon
+                            task.Title
+                            task.EstimatedDuration.TotalMinutes)
+                    |> ignore))
+
+            addSystemActivity "TaskSummary" SystemMessage "═══════════════════" |> ignore
 
             // 各エージェントペインに作業内容を表示し、AgentWorkDisplayManagerでタスク開始を記録
             for (task, agentId) in assignments do
@@ -162,6 +200,7 @@ let processPOInstruction (instruction: string) : unit =
                     | None ->
                         // フォールバック: 従来の表示
                         let currentText = textView.Text.ToString()
+                        let timestamp = System.DateTime.Now.ToString("HH:mm:ss")
 
                         let newText =
                             sprintf "%s\n[%s] 新しいタスク: %s\n説明: %s\n" currentText timestamp task.Title task.Description
@@ -279,7 +318,7 @@ let main argv =
             conversationTextView.ReadOnly <- false
 
             conversationTextView.Text <-
-                "[会話ペイン] Claude Codeとの対話がここに表示されます\n\nPO指示の入力方法:\n\"> 指示内容\" と入力してEnterを押してください\n\nキーバインド:\nESC - 終了\nCtrl+X - Emacsスタイルコマンド\n\n> "
+                "[会話ペイン] Claude Code TUI - エージェント協調開発環境\n\nPO指示の入力方法:\n1. 「> 指示内容」の形式で入力してください\n2. Enterキーで指示を実行します\n3. タスクが自動的にエージェントに配分されます\n\n操作方法:\n• ESC: アプリケーション終了\n• Enter: PO指示実行\n\n準備完了 - PO指示を入力してください:\n\n> "
 
             // Terminal.Gui 1.15.0の推奨方法: Add()メソッド使用
             convo.Add(conversationTextView)
@@ -867,55 +906,116 @@ let main argv =
             // TEMPORARILY DISABLED for debugging
             // top.add_KeyDown keyHandler
 
-            // PO指示入力ハンドラー
-            let poInputHandler =
+            // 会話ペイン専用入力ハンドラー（TextView専用）
+            let conversationInputHandler =
                 System.Action<View.KeyEventEventArgs>(fun args ->
-                    // デバッグ: すべてのキーイベントをログ
-                    logInfo
-                        "KeyEvent"
-                        (sprintf
-                            "Key pressed: %A, KeyValue: %A, Handled: %b"
-                            args.KeyEvent.Key
-                            args.KeyEvent.KeyValue
-                            args.Handled)
+                    logInfo "ConversationInput" (sprintf "Key in conversation pane: %A" args.KeyEvent.Key)
 
+                    if args.KeyEvent.Key = Key.Enter then
+                        try
+                            // 現在のテキスト全体を取得
+                            let currentText = conversationTextView.Text.ToString()
+                            let lines = currentText.Split('\n')
+
+                            // 最後の非空行を探す
+                            let lastNonEmptyLine =
+                                lines
+                                |> Array.rev
+                                |> Array.tryFind (fun line -> not (System.String.IsNullOrWhiteSpace(line)))
+                                |> Option.defaultValue ""
+
+                            logInfo "ConversationInput" (sprintf "Last non-empty line: '%s'" lastNonEmptyLine)
+
+                            // 「>」で始まる行をPO指示として処理
+                            if lastNonEmptyLine.StartsWith(">") then
+                                let instruction = lastNonEmptyLine.Substring(1).Trim()
+
+                                if not (System.String.IsNullOrEmpty(instruction)) then
+                                    logInfo "PO" (sprintf "Processing PO instruction: %s" instruction)
+
+                                    // 処理中メッセージを追加
+                                    let timestamp = System.DateTime.Now.ToString("HH:mm:ss")
+                                    let processingText = sprintf "\n[%s] 処理中: %s\n" timestamp instruction
+
+                                    conversationTextView.Text <-
+                                        NStack.ustring.Make(conversationTextView.Text.ToString() + processingText)
+
+                                    conversationTextView.SetNeedsDisplay()
+                                    Application.Refresh()
+
+                                    // 非同期でPO指示処理実行
+                                    async {
+                                        try
+                                            processPOInstruction instruction
+
+                                            // 処理完了後に新しいプロンプトを追加
+                                            if not (isNull Application.MainLoop) then
+                                                Application.MainLoop.Invoke(fun () ->
+                                                    let completionText =
+                                                        sprintf
+                                                            "\n[%s] 処理完了\n\n> "
+                                                            (System.DateTime.Now.ToString("HH:mm:ss"))
+
+                                                    conversationTextView.Text <-
+                                                        NStack.ustring.Make(
+                                                            conversationTextView.Text.ToString() + completionText
+                                                        )
+
+                                                    conversationTextView.SetNeedsDisplay())
+                                        with ex ->
+                                            logError "PO" (sprintf "PO instruction processing error: %s" ex.Message)
+
+                                            if not (isNull Application.MainLoop) then
+                                                Application.MainLoop.Invoke(fun () ->
+                                                    let errorText =
+                                                        sprintf
+                                                            "\n[%s] エラー: %s\n\n> "
+                                                            (System.DateTime.Now.ToString("HH:mm:ss"))
+                                                            ex.Message
+
+                                                    conversationTextView.Text <-
+                                                        NStack.ustring.Make(
+                                                            conversationTextView.Text.ToString() + errorText
+                                                        )
+
+                                                    conversationTextView.SetNeedsDisplay())
+                                    }
+                                    |> Async.Start
+
+                                    args.Handled <- true
+                                else
+                                    // 空の指示の場合は新しいプロンプトを追加
+                                    conversationTextView.Text <-
+                                        NStack.ustring.Make(conversationTextView.Text.ToString() + "\n> ")
+
+                                    conversationTextView.SetNeedsDisplay()
+                                    args.Handled <- true
+                            else
+                                // 通常のEnter（改行）
+                                args.Handled <- false
+                        with ex ->
+                            logError "ConversationInput" (sprintf "Input processing error: %s" ex.Message)
+                            args.Handled <- false
+                    else
+                        // 他のキーはTextViewに委譲
+                        args.Handled <- false)
+
+            // 会話ペインのTextViewにキーハンドラーを追加
+            conversationTextView.add_KeyDown conversationInputHandler
+            logInfo "Application" "Conversation pane input handler enabled"
+
+            // Top-levelのESCキーハンドラー（アプリケーション終了用）
+            let globalKeyHandler =
+                System.Action<View.KeyEventEventArgs>(fun args ->
                     if args.KeyEvent.Key = Key.Esc then
                         logInfo "Application" "ESC pressed - requesting application stop"
                         Application.RequestStop()
                         args.Handled <- true
-                    elif args.KeyEvent.Key = Key.Enter then
-                        // PO指示入力処理
-                        let currentText = conversationTextView.Text.ToString()
-                        let lines = currentText.Split('\n')
-                        let lastLine = if Array.isEmpty lines then "" else lines |> Array.last
-
-                        // 「>」で始まる行をPO指示として処理
-                        if lastLine.StartsWith(">") then
-                            let instruction = lastLine.Substring(1).Trim()
-
-                            if not (System.String.IsNullOrEmpty(instruction)) then
-                                logInfo "PO" (sprintf "Processing PO instruction: %s" instruction)
-                                processPOInstruction instruction
-                                args.Handled <- true
-                            else
-                                args.Handled <- false
-                        else
-                            args.Handled <- false
                     else
-                        // 他のキーも一時的に処理してログ表示
-                        match args.KeyEvent.Key with
-                        | Key.CtrlMask when (args.KeyEvent.Key &&& Key.CharMask) = Key.C ->
-                            logInfo "KeyEvent" "Ctrl+C detected"
-                            args.Handled <- false
-                        | Key.CtrlMask when (args.KeyEvent.Key &&& Key.CharMask) = Key.X ->
-                            logInfo "KeyEvent" "Ctrl+X detected - waiting for second key"
-                            args.Handled <- false
-                        | _ ->
-                            logInfo "KeyEvent" (sprintf "Other key: %A" args.KeyEvent.Key)
-                            args.Handled <- false)
+                        args.Handled <- false)
 
-            top.add_KeyDown poInputHandler
-            logInfo "Application" "PO input handler with debug logging enabled"
+            top.add_KeyDown globalKeyHandler
+            logInfo "Application" "Global ESC key handler enabled"
 
             // Set initial focus - key-event-focus.md対応
             logDebug "Application" "Setting initial focus to conversation pane"

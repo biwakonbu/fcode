@@ -72,7 +72,7 @@ type QualityGateUIIntegrationTests() =
         Assert.That(entry.TaskTitle, Is.EqualTo("Test Task"))
         Assert.That(entry.DisplayStatus, Is.EqualTo(QualityGateDisplayStatus.Pending))
         Assert.That(entry.POApprovalRequired, Is.False)
-        Assert.That(entry.EscalationId, Is.EqualTo(None))
+        Assert.That(entry.EscalationId, Is.Null)
 
     [<Test>]
     member _.``getStatusDisplay 表示テスト``() =
@@ -191,7 +191,8 @@ type QualityGateUIIntegrationTests() =
         Assert.That(sampleEntry.TaskId, Is.EqualTo(taskId))
         Assert.That(sampleEntry.DisplayStatus, Is.EqualTo(QualityGateDisplayStatus.InProgress))
         Assert.That(sampleEntry.POApprovalRequired, Is.True)
-        Assert.That(sampleEntry.EscalationId, Is.EqualTo(Some "ESC-001"))
+        Assert.That(sampleEntry.EscalationId.IsSome, Is.True)
+        Assert.That(sampleEntry.EscalationId.Value, Is.EqualTo("ESC-001"))
 
     [<Test>]
     member _.``品質レベル判定ロジックテスト``() =

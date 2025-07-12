@@ -25,6 +25,7 @@ open FCode.QualityGateManager
 
 // グローバル変数として定義
 let mutable globalPaneTextViews: Map<string, TextView> = Map.empty
+let mutable agentStatusViews: Map<string, TextView> = Map.empty
 
 // タイムスタンプを取得するヘルパー関数
 let getCurrentTimestamp () =
@@ -40,6 +41,80 @@ let getPriorityIcon (priority: TaskPriority) =
     | unknownPriority ->
         logWarning "TaskDisplay" (sprintf "Unknown priority value: %A" unknownPriority)
         "❓" // 未知の優先度値に対するフォールバック
+
+// エージェント状況表示を更新するヘルパー関数
+let updateAgentStatusDisplay (agentId: string) (workDisplayManager: AgentWorkDisplayManager) =
+    match agentStatusViews.TryFind(agentId) with
+    | Some statusView ->
+        match workDisplayManager.GetAgentWorkInfo(agentId) with
+        | Some workInfo ->
+            let formattedStatus = workDisplayManager.FormatWorkStatus(workInfo)
+            statusView.Text <- NStack.ustring.Make(formattedStatus)
+            statusView.SetNeedsDisplay()
+            logDebug "AgentStatus" (sprintf "Updated status display for agent: %s" agentId)
+        | None -> logWarning "AgentStatus" (sprintf "Failed to get work info for agent: %s" agentId)
+    | None -> logDebug "AgentStatus" (sprintf "No status view found for agent: %s" agentId)
+
+// エージェント間情報共有サマリーを生成するヘルパー関数
+let generateTeamStatusSummary (workDisplayManager: AgentWorkDisplayManager) : string =
+    let allAgents = workDisplayManager.GetAllAgentWorkInfos()
+    let timestamp = getCurrentTimestamp ()
+
+    let activeAgents =
+        allAgents
+        |> List.filter (fun (_, workInfo) ->
+            match workInfo.CurrentStatus with
+            | AgentWorkStatus.Working(_, _, _) -> true
+            | _ -> false)
+
+    let completedTasks =
+        allAgents
+        |> List.filter (fun (_, workInfo) ->
+            match workInfo.CurrentStatus with
+            | AgentWorkStatus.Completed(_, _, _) -> true
+            | _ -> false)
+
+    let errorAgents =
+        allAgents
+        |> List.filter (fun (_, workInfo) ->
+            match workInfo.CurrentStatus with
+            | AgentWorkStatus.Error(_, _, _) -> true
+            | _ -> false)
+
+    // StringBuilderを使用したパフォーマンス最適化
+    let sb = System.Text.StringBuilder()
+
+    sb.AppendFormat("🤝 チーム状況サマリー [{0}]\n\n", timestamp) |> ignore
+
+    sb.AppendFormat(
+        "📊 アクティブ: {0}人 | ✅ 完了: {1}件 | ❌ エラー: {2}件\n\n",
+        activeAgents.Length,
+        completedTasks.Length,
+        errorAgents.Length
+    )
+    |> ignore
+
+    sb.Append("🔄 進行中タスク:\n") |> ignore
+
+    // アクティブタスクの追加
+    for (agentId, workInfo) in activeAgents do
+        match workInfo.CurrentStatus with
+        | AgentWorkStatus.Working(taskTitle, _, progress) ->
+            sb.AppendFormat("  • {0}: {1} ({2:F1}%)\n", agentId, taskTitle, progress)
+            |> ignore
+        | _ -> ()
+
+    // エラー状態のエージェントがある場合
+    if errorAgents.Length > 0 then
+        sb.Append("\n⚠️ 要注意:\n") |> ignore
+
+        for (agentId, workInfo) in errorAgents do
+            match workInfo.CurrentStatus with
+            | AgentWorkStatus.Error(taskTitle, errorMsg, _) ->
+                sb.AppendFormat("  • {0}: {1} - {2}\n", agentId, taskTitle, errorMsg) |> ignore
+            | _ -> ()
+
+    sb.ToString()
 
 // PO指示処理関数
 let processPOInstruction (instruction: string) : unit =
@@ -144,59 +219,83 @@ let processPOInstruction (instruction: string) : unit =
                 // AgentWorkDisplayManagerでタスク開始を記録
                 workDisplayManager.StartTask(agentId, task.Title, task.EstimatedDuration)
 
-                // 品質ゲート評価を自動実行（QAエージェントのタスクの場合）
-                if agentId = "qa1" || agentId = "qa2" then
-                    async {
-                        try
-                            // 少し遅延させてからエスカレーション評価実行
-                            do! Async.Sleep(2000)
-                            // 品質ゲート評価実行（簡易版）
-                            logInfo "QualityGate" (sprintf "QAタスク品質ゲート評価開始: %s" task.TaskId)
-                            // 実装時に品質ゲート評価ロジックを追加
+                // UI即座更新
+                updateAgentStatusDisplay agentId workDisplayManager
 
-                            // エスカレーション処理
-                            // タスクの複雑度・優先度・実行時間をエスカレーション判定に含める
-                            // 高優先度かつ長時間実行タスクはエスカレーション閾値を下げる
-                            let escalationThreshold =
-                                match task.Priority with
-                                | TaskPriority.High when task.EstimatedDuration.TotalHours > 2.0 -> 0.6
-                                | TaskPriority.High -> 0.7
-                                | _ -> 0.8
+                // 品質ゲート評価を自動実行
+                async {
+                    try
+                        // 品質ゲート評価の実行判定
+                        let shouldEvaluate =
+                            // 開発タスクの場合は品質ゲート評価を実行
+                            agentId = "dev1"
+                            || agentId = "dev2"
+                            || agentId = "dev3"
+                            ||
+                            // または明示的な品質確認タスクの場合
+                            task.Title.Contains("品質")
+                            || task.Title.Contains("テスト")
+                            || task.RequiredSpecialization = Testing [ "quality-assurance"; "testing" ]
 
-                            let escalationRequired =
-                                task.Title.Contains("critical")
-                                || task.Title.Contains("重要")
-                                || task.Priority = TaskPriority.Critical
-                                || (task.EstimatedDuration > System.TimeSpan.FromHours(8.0))
+                        if shouldEvaluate then
+                            // 少し遅延させてからタスク完了時に品質ゲート評価実行
+                            do! Async.Sleep(3000)
 
-                            if escalationRequired then
-                                let escalationId =
-                                    sprintf "ESC-%s" (System.DateTime.Now.ToString("yyyyMMdd-HHmmss"))
+                            logInfo "QualityGate" (sprintf "品質ゲート評価開始: %s (%s)" task.TaskId task.Title)
 
-                                let escalationContext =
-                                    { EscalationId = escalationId
-                                      TaskId = task.TaskId
-                                      AgentId = agentId
-                                      Severity = EscalationSeverity.Important
-                                      Factors =
-                                        { ImpactScope = RelatedTasks
-                                          TimeConstraint = SoonDeadline(System.TimeSpan.FromHours(4.0))
-                                          RiskLevel = ModerateRisk
-                                          BlockerType = BlockerType.QualityGate
-                                          AutoRecoveryAttempts = 0
-                                          DependentTaskCount = 1 }
-                                      Description = sprintf "品質ゲート評価: %s" task.Title
-                                      DetectedAt = System.DateTime.UtcNow
-                                      AutoRecoveryAttempted = false
-                                      RequiredActions = [ "品質改善"; "PO判断要求" ]
-                                      EstimatedResolutionTime = Some(System.TimeSpan.FromHours(2.0)) }
+                            // 品質ゲート評価実行
+                            let! evaluationResult = FCode.QualityGateUIIntegration.executeQualityGateEvaluation task
 
-                                // エスカレーション通知作成（簡易版）
-                                logInfo "EscalationHandler" (sprintf "品質ゲートエスカレーション発生: %s" escalationId)
-                        with ex ->
-                            logError "QualityGate" (sprintf "QAタスク品質ゲート評価例外: %s" ex.Message)
-                    }
-                    |> Async.Start
+                            match evaluationResult with
+                            | Result.Ok entry ->
+                                logInfo "QualityGate" (sprintf "品質ゲート評価完了: %s - 状態: %A" task.TaskId entry.DisplayStatus)
+
+                                // 品質ゲート結果に基づいてエスカレーション判定
+                                let requiresEscalation =
+                                    entry.DisplayStatus = FCode.QualityGateUIIntegration.Failed
+                                    || entry.DisplayStatus = FCode.QualityGateUIIntegration.EscalationTriggered
+                                    || entry.POApprovalRequired
+
+                                if requiresEscalation then
+                                    // エスカレーション通知作成
+                                    let urgency =
+                                        if task.Priority = TaskPriority.Critical then
+                                            FCode.EscalationNotificationUI.Urgent
+                                        else
+                                            FCode.EscalationNotificationUI.Normal
+
+                                    FCode.EscalationNotificationUI.createEscalationNotification
+                                        (sprintf "品質ゲート要対応: %s" task.Title)
+                                        (sprintf "タスク '%s' の品質評価でPO判断が必要です" task.Title)
+                                        FCode.EscalationNotificationUI.QualityGate
+                                        urgency
+                                        agentId
+                                        "PO"
+                                        [ task.TaskId ]
+                                        None
+                                    |> ignore
+
+                                    logInfo "EscalationHandler" (sprintf "品質ゲートエスカレーション作成: %s" task.TaskId)
+
+                            | Result.Error error ->
+                                logError "QualityGate" (sprintf "品質ゲート評価失敗: %s - %s" task.TaskId error)
+
+                                // 評価失敗時もエスカレーション通知作成
+                                FCode.EscalationNotificationUI.createEscalationNotification
+                                    (sprintf "品質ゲート評価失敗: %s" task.Title)
+                                    (sprintf "タスク '%s' の品質評価でエラーが発生しました: %s" task.Title error)
+                                    FCode.EscalationNotificationUI.TechnicalDecision
+                                    FCode.EscalationNotificationUI.Urgent
+                                    agentId
+                                    "PO"
+                                    [ task.TaskId ]
+                                    None
+                                |> ignore
+
+                    with ex ->
+                        logError "QualityGate" (sprintf "品質ゲート評価処理例外: %s - %s" task.TaskId ex.Message)
+                }
+                |> Async.Start
 
                 match globalPaneTextViews.TryFind(agentId) with
                 | Some textView ->
@@ -225,6 +324,10 @@ let processPOInstruction (instruction: string) : unit =
 
             // 作業シミュレーションを開始（リアルタイム進捗表示のため）
             let simulator = AgentWorkSimulatorGlobal.GetSimulator()
+
+            // チーム状況サマリーを会話ペインに表示
+            let teamSummary = generateTeamStatusSummary workDisplayManager
+            addSystemActivity "TeamStatus" SystemMessage teamSummary |> ignore
 
             let simulationAssignments =
                 assignments
@@ -378,36 +481,56 @@ let main argv =
                 // エージェントペインの場合はTextViewを追加
                 if title <> "会話" then
                     logDebug "UI" (sprintf "Adding TextView to pane: %s" title)
+
+                    // メイン作業エリア（上部75%）
                     let textView = new TextView()
                     textView.X <- 0
                     textView.Y <- 0
                     textView.Width <- Dim.Fill()
-                    textView.Height <- Dim.Fill()
+                    textView.Height <- Dim.Percent(75f)
                     textView.ReadOnly <- true
 
-                    // AgentWorkDisplayManagerでエージェントを初期化
-                    // ペイン名とエージェントIDのマッピング定義
-                    let paneToAgentIdMapping = Map.ofList [ ("PM / PdM タイムライン", "pm") ]
+                    // 作業状況表示エリア（下部25%）
+                    let statusView = new TextView()
+                    statusView.X <- 0
+                    statusView.Y <- Pos.Percent(75f)
+                    statusView.Width <- Dim.Fill()
+                    statusView.Height <- Dim.Percent(25f)
+                    statusView.ReadOnly <- true
 
-                    let agentId = paneToAgentIdMapping |> Map.tryFind title |> Option.defaultValue title
+                    // AgentWorkDisplayManagerでエージェントを初期化
+                    // ペイン名とエージェントIDのマッピング
+                    let agentId =
+                        match title with
+                        | "PM / PdM タイムライン" -> "pm"
+                        | _ -> title
+
                     workDisplayManager.InitializeAgent(agentId)
 
                     // 初期表示をAgentWorkDisplayManagerから取得
+                    // 初期表示設定
+                    textView.Text <-
+                        NStack.ustring.Make(
+                            sprintf "[%sペイン] Claude Code TUI\n\nエージェント作業エリア\n\nClaude Code初期化準備中..." title
+                        )
+
+                    // 作業状況表示をAgentWorkDisplayManagerから取得して設定
                     match workDisplayManager.GetAgentWorkInfo(agentId) with
                     | Some workInfo ->
                         let formattedStatus = workDisplayManager.FormatWorkStatus(workInfo)
-                        textView.Text <- formattedStatus
-                        logInfo "UI" (sprintf "Initialized agent work display for: %s" agentId)
+                        statusView.Text <- NStack.ustring.Make(formattedStatus)
+                        logInfo "UI" (sprintf "Initialized agent work status display for: %s" agentId)
                     | None ->
-                        textView.Text <-
-                            NStack.ustring.Make(
-                                sprintf "[DEBUG] %sペイン - TextView初期化完了\n[DEBUG] Claude Code初期化準備中..." title
-                            )
-
+                        statusView.Text <- NStack.ustring.Make("🤖 エージェント初期化中...")
                         logWarning "UI" (sprintf "Failed to get work info for agent: %s" agentId)
 
                     // Terminal.Gui 1.15.0の推奨方法: Add()メソッド使用
                     fv.Add(textView)
+                    fv.Add(statusView)
+
+                    // ステータスビューをグローバルマップに登録
+                    agentStatusViews <- agentStatusViews |> Map.add agentId statusView
+                    logInfo "UI" (sprintf "Registered status view for agent: %s" agentId)
 
                     // 追加後に適切にレイアウト
                     textView.SetNeedsDisplay()
@@ -557,7 +680,14 @@ let main argv =
             match (paneTextViews.TryFind("qa1"), paneTextViews.TryFind("qa2")) with
             | (Some qa1TextView, Some qa2TextView) ->
                 logInfo "UI" "Quality gate integration configured for QA1 and QA2 panes"
-                // 実装時に品質ゲートUI統合機能を追加
+
+                // QualityGateUIIntegrationManagerを初期化してQAペインに統合
+                FCode.QualityGateUIIntegration.setQATextViews qa1TextView qa2TextView
+                logInfo "UI" "QualityGateUIIntegrationManager integrated with QA1 and QA2 panes"
+
+                // EscalationNotificationUIをQA1ペインに統合
+                FCode.EscalationNotificationUI.setNotificationTextView qa1TextView
+                logInfo "UI" "EscalationNotificationUI integrated with QA1 pane"
 
                 // サンプルタスクで品質ゲート評価をテスト
                 try
@@ -568,17 +698,38 @@ let main argv =
                           RequiredSpecialization = Testing [ "quality-assurance"; "testing" ]
                           EstimatedDuration = System.TimeSpan.FromHours(1.0)
                           Dependencies = []
-                          Priority = TaskPriority.Medium
-                        // EstimatedComplexity = 0.5 // ParsedTaskに存在しないフィールドを削除
-                        // RequiredSkills = ["quality-evaluation"; "testing"] // ParsedTaskに存在しないフィールドを削除
-                        // CreatedAt = System.DateTime.UtcNow // ParsedTaskに存在しないフィールドを削除
-                        }
+                          Priority = TaskPriority.Medium }
 
                     async {
                         try
-                            // サンプル品質ゲート評価（簡易版）
+                            // 品質ゲート評価の実行
                             logInfo "UI" (sprintf "Sample quality gate evaluation started: %s" sampleTask.TaskId)
-                        // 実装時に品質ゲート評価ロジックを追加
+
+                            let! evaluationResult =
+                                FCode.QualityGateUIIntegration.executeQualityGateEvaluation sampleTask
+
+                            match evaluationResult with
+                            | Result.Ok entry ->
+                                logInfo
+                                    "UI"
+                                    (sprintf
+                                        "Quality gate evaluation completed: %s - Status: %A"
+                                        sampleTask.TaskId
+                                        entry.DisplayStatus)
+
+                                // エスカレーション通知のサンプル作成
+                                FCode.EscalationNotificationUI.createEscalationNotification
+                                    "品質ゲート統合テスト完了"
+                                    "SC-1-4品質ゲート連携機能が正常に動作しています"
+                                    FCode.EscalationNotificationUI.QualityGate
+                                    FCode.EscalationNotificationUI.Normal
+                                    "quality_gate_system"
+                                    "PO"
+                                    [ sampleTask.TaskId ]
+                                    None
+                                |> ignore
+
+                            | Result.Error error -> logError "UI" (sprintf "Quality gate evaluation failed: %s" error)
                         with ex ->
                             logError "UI" (sprintf "Sample quality gate evaluation exception: %s" ex.Message)
                     }
@@ -715,6 +866,21 @@ let main argv =
 
                         logError "AutoStart" "=== ROOT CAUSE: UI structure investigation completed ==="
                         |> ignore
+
+            // SC-1-2: エージェント作業表示リアルタイム更新設定
+            logInfo "Application" "=== SC-1-2: エージェント作業表示リアルタイム更新初期化 ==="
+
+            // AgentWorkDisplayManagerにリアルタイム更新ハンドラーを登録
+            workDisplayManager.RegisterDisplayUpdateHandler(fun updatedAgentId updatedWorkInfo ->
+                // メインUIスレッドで実行
+                if not (isNull Application.MainLoop) then
+                    Application.MainLoop.Invoke(fun () ->
+                        updateAgentStatusDisplay updatedAgentId workDisplayManager
+                        logDebug "UI" (sprintf "Real-time status update applied for agent: %s" updatedAgentId))
+                else
+                    logWarning "UI" "Cannot update display - MainLoop not available")
+
+            logInfo "Application" "Real-time display update handler registered successfully"
 
             // FC-015: Phase 4 UI統合・フルフロー機能初期化（堅牢版）
             logInfo "Application" "=== FC-015 Phase 4 UI統合・フルフロー初期化開始 ==="

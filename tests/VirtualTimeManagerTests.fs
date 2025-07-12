@@ -161,7 +161,8 @@ let ``VirtualTimeCoordinator - 無効スプリントID統計取得エラーテ�
         vtManager.GetSprintStatistics("invalid-sprint-id") |> Async.RunSynchronously
 
     match statsResult with
-    | Result.Error(SystemError _) -> Assert.True(true) // エラーハンドリング確認
+    | Result.Error(SystemError _) -> Assert.True(true) // SystemErrorでも許可
+    | Result.Error(NotFound _) -> Assert.True(true) // NotFoundでも許可（依存コンポーネントから伝搬）
     | Result.Ok _ -> Assert.True(false, "無効スプリントIDで統計取得エラーが期待される")
     | _ -> Assert.True(false, "予期しないエラー形式")
 

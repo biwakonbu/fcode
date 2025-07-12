@@ -26,6 +26,21 @@ open FCode.QualityGateManager
 // グローバル変数として定義
 let mutable globalPaneTextViews: Map<string, TextView> = Map.empty
 
+// タイムスタンプを取得するヘルパー関数
+let getCurrentTimestamp () =
+    System.DateTime.Now.ToString("HH:mm:ss")
+
+// 優先度アイコンを取得するヘルパー関数
+let getPriorityIcon (priority: TaskPriority) =
+    match priority with
+    | TaskPriority.Critical -> "🟥"
+    | TaskPriority.High -> "🔴"
+    | TaskPriority.Medium -> "🟡"
+    | TaskPriority.Low -> "🟢"
+    | unknownPriority ->
+        logWarning "TaskDisplay" (sprintf "Unknown priority value: %A" unknownPriority)
+        "❓" // 未知の優先度値に対するフォールバック
+
 // PO指示処理関数
 let processPOInstruction (instruction: string) : unit =
     try
@@ -109,13 +124,7 @@ let processPOInstruction (instruction: string) : unit =
                 // 各タスクの詳細を表示
                 agentTasks
                 |> List.iteri (fun i (task, _) ->
-                    let priorityIcon =
-                        match task.Priority with
-                        | TaskPriority.Critical -> "🟥"
-                        | TaskPriority.High -> "🔴"
-                        | TaskPriority.Medium -> "🟡"
-                        | TaskPriority.Low -> "🟢"
-                        | _ -> "❓" // 未知の優先度値に対するフォールバック
+                    let priorityIcon = getPriorityIcon task.Priority
 
                     addSystemActivity
                         "TaskDetail"
@@ -910,7 +919,7 @@ let main argv =
             // 会話ペイン専用入力ハンドラー（TextView専用）
             let conversationInputHandler =
                 System.Action<View.KeyEventEventArgs>(fun args ->
-                    logInfo "ConversationInput" (sprintf "Key in conversation pane: %A" args.KeyEvent.Key)
+                    logDebug "ConversationInput" (sprintf "Key in conversation pane: %A" args.KeyEvent.Key)
 
                     if args.KeyEvent.Key = Key.Enter then
                         try
@@ -935,7 +944,7 @@ let main argv =
                                     logInfo "PO" (sprintf "Processing PO instruction: %s" instruction)
 
                                     // 処理中メッセージを追加
-                                    let timestamp = System.DateTime.Now.ToString("HH:mm:ss")
+                                    let timestamp = getCurrentTimestamp ()
                                     let processingText = sprintf "\n[%s] 処理中: %s\n" timestamp instruction
 
                                     conversationTextView.Text <-
@@ -953,9 +962,7 @@ let main argv =
                                             if not (isNull Application.MainLoop) then
                                                 Application.MainLoop.Invoke(fun () ->
                                                     let completionText =
-                                                        sprintf
-                                                            "\n[%s] 処理完了\n\n> "
-                                                            (System.DateTime.Now.ToString("HH:mm:ss"))
+                                                        sprintf "\n[%s] 処理完了\n\n> " (getCurrentTimestamp ())
 
                                                     conversationTextView.Text <-
                                                         NStack.ustring.Make(
@@ -971,7 +978,7 @@ let main argv =
                                                     let errorText =
                                                         sprintf
                                                             "\n[%s] エラー: %s\n\n> "
-                                                            (System.DateTime.Now.ToString("HH:mm:ss"))
+                                                            (getCurrentTimestamp ())
                                                             ex.Message
 
                                                     conversationTextView.Text <-

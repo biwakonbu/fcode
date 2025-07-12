@@ -7,9 +7,29 @@ open FCode.VirtualTimeCoordinator
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.MeetingScheduler
 
+// スプリント管理関連の定数
+[<Literal>]
+let StandupIntervalMinutes = 6
+
+[<Literal>]
+let SprintDurationMinutes = 18
+
+[<Literal>]
+let QualityScoreExcellent = 90.0
+
+[<Literal>]
+let QualityScoreGood = 80.0
+
+[<Literal>]
+let CompletionRateThreshold = 90.0
+
+[<Literal>]
+let MinimumStandupIntervalMinutes = 5.0
+
 /// スプリント時間表示管理クラス
 type SprintTimeDisplayManager(virtualTimeCoordinator: VirtualTimeCoordinator) =
 
+    let syncRoot = obj ()
     let mutable displayUpdateHandlers: (string -> unit) list = []
     let mutable currentSprintId: string option = None
     let mutable isSprintActive = false
@@ -19,13 +39,54 @@ type SprintTimeDisplayManager(virtualTimeCoordinator: VirtualTimeCoordinator) =
 
     /// 表示更新ハンドラーを登録
     member this.RegisterDisplayUpdateHandler(handler: string -> unit) =
-        displayUpdateHandlers <- handler :: displayUpdateHandlers
+        lock syncRoot (fun () -> displayUpdateHandlers <- handler :: displayUpdateHandlers)
         logInfo "SprintTimeDisplay" "表示更新ハンドラーを登録しました"
 
     /// スタンドアップ通知ハンドラーを登録
     member this.RegisterStandupNotificationHandler(handler: string -> unit) =
-        standupNotificationHandlers <- handler :: standupNotificationHandlers
+        lock syncRoot (fun () -> standupNotificationHandlers <- handler :: standupNotificationHandlers)
         logInfo "SprintTimeDisplay" "スタンドアップ通知ハンドラーを登録しました"
+
+    /// アクティブスプリントの時間情報をフォーマット
+    member private this.FormatActiveSprintTimeInfo(sprintId: string, startTime: DateTime, now: DateTime) =
+        let elapsed = now - startTime
+        let totalMinutes = int elapsed.TotalMinutes
+        let remainingMinutes = Math.Max(0, SprintDurationMinutes - totalMinutes)
+
+        // 6分間隔でのスタンドアップ表示
+        let nextStandupMinutes =
+            StandupIntervalMinutes - (totalMinutes % StandupIntervalMinutes)
+
+        let isStandupTime = (totalMinutes % StandupIntervalMinutes) = 0 && totalMinutes > 0
+
+        let standupInfo =
+            if isStandupTime then
+                "🔔 スタンドアップ時間です！"
+            elif nextStandupMinutes = StandupIntervalMinutes then
+                "スタンドアップ直後"
+            else
+                sprintf "次回スタンドアップまで: %d分" nextStandupMinutes
+
+        sprintf
+            """
+🚀 スプリント: %s
+⏱️ 経過時間: %d分 / %d分
+⏳ 残り時間: %d分
+📊 %s
+
+🎯 進捗概要:
+- 開始時刻: %s
+- 現在時刻: %s
+- スプリント完了予定: %s
+            """
+            sprintId
+            totalMinutes
+            SprintDurationMinutes
+            remainingMinutes
+            standupInfo
+            (startTime.ToString("HH:mm:ss"))
+            (now.ToString("HH:mm:ss"))
+            (startTime.AddMinutes(float SprintDurationMinutes).ToString("HH:mm:ss"))
 
     /// 現在のスプリント情報をフォーマットして表示テキストを生成
     member this.FormatSprintStatus() =
@@ -35,39 +96,7 @@ type SprintTimeDisplayManager(virtualTimeCoordinator: VirtualTimeCoordinator) =
 
             let timeInfo =
                 match (currentSprintId, sprintStartTime, isSprintActive) with
-                | (Some sprintId, Some startTime, true) ->
-                    let elapsed = now - startTime
-                    let totalMinutes = int elapsed.TotalMinutes
-                    let remainingMinutes = Math.Max(0, 18 - totalMinutes)
-
-                    // 6分間隔でのスタンドアップ表示
-                    let nextStandupMinutes = 6 - (totalMinutes % 6)
-                    let isStandupTime = (totalMinutes % 6) = 0 && totalMinutes > 0
-
-                    let standupInfo =
-                        if isStandupTime then "🔔 スタンドアップ時間です！"
-                        elif nextStandupMinutes = 6 then "スタンドアップ直後"
-                        else sprintf "次回スタンドアップまで: %d分" nextStandupMinutes
-
-                    sprintf
-                        """
-🚀 スプリント: %s
-⏱️ 経過時間: %d分 / 18分
-⏳ 残り時間: %d分
-📊 %s
-
-🎯 進捗概要:
-- 開始時刻: %s
-- 現在時刻: %s
-- スプリント完了予定: %s
-                    """
-                        sprintId
-                        totalMinutes
-                        remainingMinutes
-                        standupInfo
-                        (startTime.ToString("HH:mm:ss"))
-                        (now.ToString("HH:mm:ss"))
-                        (startTime.AddMinutes(18.0).ToString("HH:mm:ss"))
+                | (Some sprintId, Some startTime, true) -> this.FormatActiveSprintTimeInfo(sprintId, startTime, now)
 
                 | (Some sprintId, None, false) ->
                     sprintf
@@ -82,15 +111,17 @@ POが指示を入力することでスプリントが自動開始されます
                         sprintId
 
                 | _ ->
-                    """
+                    sprintf
+                        """
 ⚪ スプリント未開始
 📋 待機状態
 
 🚀 スプリント開始手順:
 1. POが会話ペインで指示を入力
 2. タスク分解・エージェント配分
-3. 18分スプリント自動開始
+3. %d分スプリント自動開始
                     """
+                        SprintDurationMinutes
 
             sprintf
                 "[%s] PM タイムライン - スプリント管理\n\n状態: %s\n%s\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -110,9 +141,10 @@ POが指示を入力することでスプリントが自動開始されます
 
                 match result with
                 | Result.Ok context ->
-                    currentSprintId <- Some sprintId
-                    isSprintActive <- true
-                    sprintStartTime <- Some DateTime.Now
+                    lock syncRoot (fun () ->
+                        currentSprintId <- Some sprintId
+                        isSprintActive <- true
+                        sprintStartTime <- Some DateTime.Now)
 
                     let displayText = this.FormatSprintStatus()
 
@@ -146,8 +178,9 @@ POが指示を入力することでスプリントが自動開始されます
 
                     match result with
                     | Result.Ok() ->
-                        isSprintActive <- false
-                        sprintStartTime <- None
+                        lock syncRoot (fun () ->
+                            isSprintActive <- false
+                            sprintStartTime <- None)
 
                         let displayText = this.FormatSprintStatus()
 
@@ -182,16 +215,20 @@ POが指示を入力することでスプリントが自動開始されます
                 let now = DateTime.Now
                 let elapsed = now - startTime
                 let totalMinutes = int elapsed.TotalMinutes
-                let isStandupTime = (totalMinutes % 6) = 0 && totalMinutes > 0 && totalMinutes <= 18
+
+                let isStandupTime =
+                    (totalMinutes % StandupIntervalMinutes) = 0
+                    && totalMinutes > 0
+                    && totalMinutes < SprintDurationMinutes
 
                 // 新しいスタンドアップ時間かチェック
                 let isNewStandupTime =
                     match lastStandupTime with
-                    | Some lastTime -> (now - lastTime).TotalMinutes >= 5.0 // 最低5分間隔
+                    | Some lastTime -> (now - lastTime).TotalMinutes >= MinimumStandupIntervalMinutes
                     | None -> true
 
                 if isStandupTime && isNewStandupTime then
-                    lastStandupTime <- Some now
+                    lock syncRoot (fun () -> lastStandupTime <- Some now)
 
                     let standupNotification =
                         sprintf
@@ -209,7 +246,7 @@ POが指示を入力することでスプリントが自動開始されます
                     logInfo "SprintTimeDisplay" (sprintf "%d分経過でスタンドアップ通知を送信しました" totalMinutes)
 
                 // 18分経過時の完成確認フロー
-                if totalMinutes >= 18 then
+                if totalMinutes >= SprintDurationMinutes then
                     this.TriggerSprintCompletion()
 
             | _ -> ()
@@ -257,7 +294,7 @@ POが指示を入力することでスプリントが自動開始されます
                         logError "SprintTimeDisplay" (sprintf "完成確認通知ハンドラーエラー: %s" ex.Message))
 
                 // スプリント状態を非アクティブに設定
-                isSprintActive <- false
+                lock syncRoot (fun () -> isSprintActive <- false)
 
                 logInfo
                     "SprintTimeDisplay"
@@ -296,8 +333,8 @@ POが指示を入力することでスプリントが自動開始されます
                 else
                     85.0 // デフォルト値
 
-            let isCompleted = completionRate >= 90.0
-            let testsPassed = completionRate >= 80.0 // テスト通過判定
+            let isCompleted = completionRate >= CompletionRateThreshold
+            let testsPassed = completionRate >= QualityScoreGood // テスト通過判定
             let documentationComplete = completionRate >= 75.0 // ドキュメント完成判定
 
             logInfo "SprintTimeDisplay" (sprintf "完成度評価: %d/%d タスク完了 (%.1f%%)" completedTasks totalTasks completionRate)
@@ -344,9 +381,9 @@ POが指示を入力することでスプリントが自動開始されます
             qualityScore: float
         ) =
         try
-            if assessment.IsCompleted && qualityScore >= 90.0 then
+            if assessment.IsCompleted && qualityScore >= QualityScoreExcellent then
                 "AutoContinue" // 高品質完成・自動継続
-            elif assessment.CompletionRate >= 80.0 && qualityScore >= 75.0 then
+            elif assessment.CompletionRate >= QualityScoreGood && qualityScore >= 75.0 then
                 "RequirePOApproval" // 標準品質・PO承認要求
             elif assessment.CompletionRate < 50.0 then
                 "ExtendSprint" // 大幅未完成・スプリント延長推奨

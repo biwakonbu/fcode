@@ -24,6 +24,12 @@
       },
       "parameters": {
         "enabled": true
+      },
+      "types": {
+        "enabled": true
+      },
+      "modules": {
+        "enabled": true
       }
     },
     "suggestions": {

@@ -26,7 +26,7 @@ let mutable globalPaneTextViews: Map<string, TextView> = Map.empty
 // PO指示処理関数
 let processPOInstruction (instruction: string) : unit =
     try
-        logInfo "PO" $"Starting PO instruction processing: {instruction}"
+        logInfo "PO" (sprintf "Starting PO instruction processing: %s" instruction)
 
         // TaskAssignmentManagerの初期化
         let nlp = NaturalLanguageProcessor()
@@ -72,20 +72,20 @@ let processPOInstruction (instruction: string) : unit =
         // 指示をタスクに分解して配分
         match taskAssignmentManager.ProcessInstructionAndAssign(instruction) with
         | Result.Ok assignments ->
-            logInfo "PO" $"Successfully processed instruction - {assignments.Length} tasks assigned"
+            logInfo "PO" (sprintf "Successfully processed instruction - %d tasks assigned" assignments.Length)
 
             // 会話ペインに結果を表示
             let resultText =
                 assignments
                 |> List.map (fun (task, agentId) ->
-                    $"✓ {task.Title} → {agentId} (予定時間: {task.EstimatedDuration.TotalMinutes:F0}分)")
+                    sprintf "✓ %s → %s (予定時間: %.0f分)" task.Title agentId task.EstimatedDuration.TotalMinutes)
                 |> String.concat "\n"
 
             let timestamp = System.DateTime.Now.ToString("HH:mm:ss")
-            let displayText = $"\n[{timestamp}] PO指示処理完了:\n{resultText}\n"
+            let displayText = sprintf "\n[%s] PO指示処理完了:\n%s\n" timestamp resultText
 
             // 会話ペインに追加
-            addSystemActivity "PO" SystemMessage $"指示処理完了: {assignments.Length}個のタスクを配分しました"
+            addSystemActivity "PO" SystemMessage (sprintf "指示処理完了: %d個のタスクを配分しました" assignments.Length)
             |> ignore
 
             // 各エージェントペインに作業内容を表示し、AgentWorkDisplayManagerでタスク開始を記録
@@ -101,18 +101,18 @@ let processPOInstruction (instruction: string) : unit =
                         let formattedStatus = workDisplayManager.FormatWorkStatus(workInfo)
                         textView.Text <- formattedStatus
                         textView.SetNeedsDisplay()
-                        logInfo "UI" $"Updated work display for {agentId}: {task.Title}"
+                        logInfo "UI" (sprintf "Updated work display for %s: %s" agentId task.Title)
                     | None ->
                         // フォールバック: 従来の表示
                         let currentText = textView.Text.ToString()
 
                         let newText =
-                            $"{currentText}\n[{timestamp}] 新しいタスク: {task.Title}\n説明: {task.Description}\n"
+                            sprintf "%s\n[%s] 新しいタスク: %s\n説明: %s\n" currentText timestamp task.Title task.Description
 
                         textView.Text <- newText
                         textView.SetNeedsDisplay()
-                        logInfo "UI" $"Task assigned to {agentId}: {task.Title} (fallback display)"
-                | None -> logWarning "UI" $"Agent pane not found for: {agentId}"
+                        logInfo "UI" (sprintf "Task assigned to %s: %s (fallback display)" agentId task.Title)
+                | None -> logWarning "UI" (sprintf "Agent pane not found for: %s" agentId)
 
             // 画面更新
             Application.Refresh()
@@ -127,26 +127,28 @@ let processPOInstruction (instruction: string) : unit =
                     (agentId, task.Title, durationMinutes))
 
             simulator.StartWorkSimulation(simulationAssignments)
-            logInfo "PO" $"Started work simulation for {assignments.Length} tasks"
+            logInfo "PO" (sprintf "Started work simulation for %d tasks" assignments.Length)
 
         | Result.Error errorMsg ->
-            logError "PO" $"Failed to process instruction: {errorMsg}"
-            addSystemActivity "PO" SystemMessage $"指示処理エラー: {errorMsg}" |> ignore
+            logError "PO" (sprintf "Failed to process instruction: %s" errorMsg)
+            addSystemActivity "PO" SystemMessage (sprintf "指示処理エラー: %s" errorMsg) |> ignore
 
     with ex ->
-        logError "PO" $"Exception in PO instruction processing: {ex.Message}"
-        addSystemActivity "PO" SystemMessage $"システムエラー: {ex.Message}" |> ignore
+        logError "PO" (sprintf "Exception in PO instruction processing: %s" ex.Message)
+
+        addSystemActivity "PO" SystemMessage (sprintf "システムエラー: %s" ex.Message)
+        |> ignore
 
 [<EntryPoint>]
 let main argv =
     try
         logInfo "Application" "=== fcode TUI Application Starting ==="
         let argsString = System.String.Join(" ", argv)
-        logInfo "Application" $"Command line args: {argsString}"
+        logInfo "Application" (sprintf "Command line args: %s" argsString)
 
         // 軽量メモリ監視初期化
         let initialMemoryReport = getMemoryReport ()
-        logInfo "MemoryMonitor" $"起動時メモリ状態: {initialMemoryReport}"
+        logInfo "MemoryMonitor" (sprintf "起動時メモリ状態: %s" initialMemoryReport)
 
 
         // Check if running in CI environment
@@ -230,7 +232,7 @@ let main argv =
 
             // Helper function to create a pane with a given title and TextView
             let makePane title =
-                logDebug "UI" $"Creating pane: {title}"
+                logDebug "UI" (sprintf "Creating pane: %s" title)
                 let fv = new FrameView(title: string)
                 fv.Border.Effect3D <- false
                 // Apply color scheme based on title
@@ -238,7 +240,7 @@ let main argv =
 
                 // エージェントペインの場合はTextViewを追加
                 if title <> "会話" then
-                    logDebug "UI" $"Adding TextView to pane: {title}"
+                    logDebug "UI" (sprintf "Adding TextView to pane: %s" title)
                     let textView = new TextView()
                     textView.X <- 0
                     textView.Y <- 0
@@ -255,10 +257,14 @@ let main argv =
                     | Some workInfo ->
                         let formattedStatus = workDisplayManager.FormatWorkStatus(workInfo)
                         textView.Text <- formattedStatus
-                        logInfo "UI" $"Initialized agent work display for: {agentId}"
+                        logInfo "UI" (sprintf "Initialized agent work display for: %s" agentId)
                     | None ->
-                        textView.Text <- $"[DEBUG] {title}ペイン - TextView初期化完了\n[DEBUG] Claude Code初期化準備中..."
-                        logWarning "UI" $"Failed to get work info for agent: {agentId}"
+                        textView.Text <-
+                            NStack.ustring.Make(
+                                sprintf "[DEBUG] %sペイン - TextView初期化完了\n[DEBUG] Claude Code初期化準備中..." title
+                            )
+
+                        logWarning "UI" (sprintf "Failed to get work info for agent: %s" agentId)
 
                     // Terminal.Gui 1.15.0の推奨方法: Add()メソッド使用
                     fv.Add(textView)
@@ -281,19 +287,25 @@ let main argv =
                                     textView.Text <- formattedStatus
                                     textView.SetNeedsDisplay())
 
-                                logDebug "UI" $"Display updated for agent: {agentId}"
+                                logDebug "UI" (sprintf "Display updated for agent: %s" agentId)
                             with ex ->
-                                logError "UI" $"Failed to update display for agent {agentId}: {ex.Message}")
+                                logError "UI" (sprintf "Failed to update display for agent %s: %s" agentId ex.Message))
 
-                    logInfo "UI" $"TextView added to pane: {title} - Subviews count: {fv.Subviews.Count}"
-                    logDebug "UI" $"TextView type: {textView.GetType().Name}"
-                    logInfo "UI" $"TextView stored in direct reference map for pane: {title}"
+                    logInfo "UI" (sprintf "TextView added to pane: %s - Subviews count: %d" title fv.Subviews.Count)
+                    logDebug "UI" (sprintf "TextView type: %s" (textView.GetType().Name))
+                    logInfo "UI" (sprintf "TextView stored in direct reference map for pane: %s" title)
 
                     // 追加の検証: 追加されたTextViewが実際に見つかるかテスト
                     let verifyTextViews = getTextViewsFromPane fv
-                    logInfo "UI" $"Verification: Found {verifyTextViews.Length} TextViews in newly created pane {title}"
 
-                logDebug "UI" $"Pane created: {title}"
+                    logInfo
+                        "UI"
+                        (sprintf
+                            "Verification: Found %d TextViews in newly created pane %s"
+                            verifyTextViews.Length
+                            title)
+
+                logDebug "UI" (sprintf "Pane created: %s" title)
                 fv
 
             // Row heights (percentage of right-hand container)
@@ -451,14 +463,14 @@ let main argv =
                   ("pm", timeline) ]
 
             let startClaudeCodeForPane (paneId: string, pane: FrameView) =
-                logInfo "AutoStart" $"Starting Claude Code for pane: {paneId}"
+                logInfo "AutoStart" (sprintf "Starting Claude Code for pane: %s" paneId)
 
                 // 直接参照マップからTextViewを取得
                 match paneTextViews.TryFind(paneId) with
                 | Some textView ->
-                    logInfo "AutoStart" $"TextView found via direct reference for pane: {paneId}"
+                    logInfo "AutoStart" (sprintf "TextView found via direct reference for pane: %s" paneId)
 
-                    textView.Text <- $"[DEBUG] {paneId}ペイン - TextView発見、Claude Code起動開始..."
+                    textView.Text <- NStack.ustring.Make(sprintf "[DEBUG] %sペイン - TextView発見、Claude Code起動開始..." paneId)
                     textView.SetNeedsDisplay()
                     Application.Refresh()
 
@@ -468,45 +480,51 @@ let main argv =
                     let success = sessionManager.StartSession(paneId, workingDir, textView)
 
                     if success then
-                        logInfo "AutoStart" $"Successfully started Claude Code for pane: {paneId}"
+                        logInfo "AutoStart" (sprintf "Successfully started Claude Code for pane: %s" paneId)
                         |> ignore
                     else
-                        logError "AutoStart" $"Failed to start Claude Code for pane: {paneId}" |> ignore
-                        textView.Text <- $"[ERROR] {paneId}ペイン - Claude Code起動失敗\n詳細: {logger.LogPath}"
+                        logError "AutoStart" (sprintf "Failed to start Claude Code for pane: %s" paneId)
+                        |> ignore
+
+                        textView.Text <-
+                            NStack.ustring.Make(sprintf "[ERROR] %sペイン - Claude Code起動失敗\n詳細: %s" paneId logger.LogPath)
+
                         textView.SetNeedsDisplay()
                         Application.Refresh()
 
                 | None ->
                     // TextViewが見つからない場合（直接参照マップにない）
-                    let debugMsg = $"[ERROR] {paneId}ペイン - TextView direct reference not found"
+                    let debugMsg = sprintf "[ERROR] %sペイン - TextView direct reference not found" paneId
                     logError "AutoStart" debugMsg |> ignore
                     System.Console.WriteLine(debugMsg)
 
                     // 根本調査: UI構造の詳細ダンプ
-                    logInfo "AutoStart" $"=== ROOT CAUSE INVESTIGATION for {paneId} ==="
-                    logInfo "AutoStart" $"Dumping complete UI structure for pane: {paneId}"
+                    logInfo "AutoStart" (sprintf "=== ROOT CAUSE INVESTIGATION for %s ===" paneId)
+                    logInfo "AutoStart" (sprintf "Dumping complete UI structure for pane: %s" paneId)
                     dumpViewHierarchy pane 0
 
                     // 改良されたfindTextViews関数でフォールバック検索
-                    logInfo "AutoStart" $"Attempting improved TextView search for pane: {paneId}"
+                    logInfo "AutoStart" (sprintf "Attempting improved TextView search for pane: %s" paneId)
                     let textViews = getTextViewsFromPane pane
 
                     match textViews with
                     | textView :: _ ->
-                        logInfo "AutoStart" $"TextView found via improved search for pane: {paneId}"
+                        logInfo "AutoStart" (sprintf "TextView found via improved search for pane: %s" paneId)
 
                         try
-                            textView.Text <- $"[IMPROVED] {paneId}ペイン - TextView発見（改良検索）"
+                            textView.Text <- NStack.ustring.Make(sprintf "[IMPROVED] %sペイン - TextView発見（改良検索）" paneId)
                             textView.SetNeedsDisplay()
                             Application.Refresh()
                         with ex ->
-                            logError "AutoStart" $"Improved TextView access failed for {paneId}: {ex.Message}"
+                            logError
+                                "AutoStart"
+                                (sprintf "Improved TextView access failed for %s: %s" paneId ex.Message)
                             |> ignore
                     | [] ->
-                        logError "AutoStart" $"No TextView found even with improved search for pane: {paneId}"
+                        logError "AutoStart" (sprintf "No TextView found even with improved search for pane: %s" paneId)
                         |> ignore
 
-                        logError "AutoStart" $"=== ROOT CAUSE: UI structure investigation completed ==="
+                        logError "AutoStart" "=== ROOT CAUSE: UI structure investigation completed ==="
                         |> ignore
 
             // FC-015: Phase 4 UI統合・フルフロー機能初期化（堅牢版）
@@ -544,7 +562,7 @@ let main argv =
                             )
                         with
                         | Result.Ok() -> ()
-                        | Result.Error error -> logError "Application" $"UI registration failed: {error}"
+                        | Result.Error error -> logError "Application" (sprintf "UI registration failed: %s" error)
 
                         logInfo "Application" "UI統合マネージャー登録完了"
 
@@ -558,7 +576,7 @@ let main argv =
                         integrationTask.ContinueWith(fun (task: System.Threading.Tasks.Task) ->
                             if task.IsFaulted then
                                 let ex = task.Exception.GetBaseException()
-                                logError "Application" $"統合イベントループエラー: {ex.Message}"
+                                logError "Application" (sprintf "統合イベントループエラー: %s" ex.Message)
                             elif task.IsCanceled then
                                 logInfo "Application" "統合イベントループキャンセル完了"
                             else
@@ -597,13 +615,13 @@ let main argv =
                         System.AppDomain.CurrentDomain.ProcessExit.AddHandler(processExitHandler)
 
                     with ex ->
-                        logError "Application" $"UI統合マネージャー登録エラー: {ex.Message}"
+                        logError "Application" (sprintf "UI統合マネージャー登録エラー: %s" ex.Message)
 
                 | _ -> logError "Application" "UI統合に必要なTextViewが見つかりません"
 
             with ex ->
-                logError "Application" $"FC-015 Phase 4 初期化致命的エラー: {ex.Message}"
-                logError "Application" $"スタックトレース: {ex.StackTrace}"
+                logError "Application" (sprintf "FC-015 Phase 4 初期化致命的エラー: %s" ex.Message)
+                logError "Application" (sprintf "スタックトレース: %s" ex.StackTrace)
 
             // UI初期化完了後の遅延自動起動機能で実行するため、即座の自動起動は削除
             logInfo "AutoStart" "Immediate auto-start disabled - will use delayed auto-start after UI completion"
@@ -632,7 +650,11 @@ let main argv =
                     // デバッグ: すべてのキーイベントをログ
                     logInfo
                         "KeyEvent"
-                        $"Key pressed: {args.KeyEvent.Key}, KeyValue: {args.KeyEvent.KeyValue}, Handled: {args.Handled}"
+                        (sprintf
+                            "Key pressed: %A, KeyValue: %A, Handled: %b"
+                            args.KeyEvent.Key
+                            args.KeyEvent.KeyValue
+                            args.Handled)
 
                     if args.KeyEvent.Key = Key.Esc then
                         logInfo "Application" "ESC pressed - requesting application stop"
@@ -649,7 +671,7 @@ let main argv =
                             let instruction = lastLine.Substring(1).Trim()
 
                             if not (System.String.IsNullOrEmpty(instruction)) then
-                                logInfo "PO" $"Processing PO instruction: {instruction}"
+                                logInfo "PO" (sprintf "Processing PO instruction: %s" instruction)
                                 processPOInstruction instruction
                                 args.Handled <- true
                             else
@@ -666,7 +688,7 @@ let main argv =
                             logInfo "KeyEvent" "Ctrl+X detected - waiting for second key"
                             args.Handled <- false
                         | _ ->
-                            logInfo "KeyEvent" $"Other key: {args.KeyEvent.Key}"
+                            logInfo "KeyEvent" (sprintf "Other key: %A" args.KeyEvent.Key)
                             args.Handled <- false)
 
             top.add_KeyDown poInputHandler
@@ -697,12 +719,12 @@ let main argv =
 
                         logInfo
                             "AutoStart"
-                            $"Found {activeAgentPanes.Length} active agent panes for delayed auto-start"
+                            (sprintf "Found %d active agent panes for delayed auto-start" activeAgentPanes.Length)
 
                         // 各ペインの状態を事前チェック
                         activeAgentPanes
                         |> List.iter (fun (paneId, pane) ->
-                            logInfo "AutoStart" $"Pre-check pane {paneId}: Subviews={pane.Subviews.Count}")
+                            logInfo "AutoStart" (sprintf "Pre-check pane %s: Subviews=%d" paneId pane.Subviews.Count))
 
                         activeAgentPanes
                         |> List.iteri (fun i (paneId, pane) ->
@@ -712,13 +734,19 @@ let main argv =
                                 Application.MainLoop.Invoke(fun () ->
                                     logInfo
                                         "AutoStart"
-                                        $"Starting delayed auto-start for {paneId} (step {i + 1}/{activeAgentPanes.Length})"
+                                        (sprintf
+                                            "Starting delayed auto-start for %s (step %d/%d)"
+                                            paneId
+                                            (i + 1)
+                                            activeAgentPanes.Length)
 
                                     startClaudeCodeForPane (paneId, pane)
-                                    logInfo "AutoStart" $"Delayed auto-start completed for {paneId}"))
+                                    logInfo "AutoStart" (sprintf "Delayed auto-start completed for %s" paneId)))
                             |> ignore)
 
-                        logInfo "AutoStart" $"Delayed auto-start initiated for {activeAgentPanes.Length} active panes"))
+                        logInfo
+                            "AutoStart"
+                            (sprintf "Delayed auto-start initiated for %d active panes" activeAgentPanes.Length)))
                 |> ignore
 
             // Run application
@@ -759,6 +787,6 @@ let main argv =
         with _ ->
             ()
 
-        printfn "FATAL ERROR - Check log file: %s" logger.LogPath
-        printfn "Error: %s" ex.Message
+        printf "FATAL ERROR - Check log file: %s\n" logger.LogPath
+        printf "Error: %s\n" ex.Message
         1 // return error exit code

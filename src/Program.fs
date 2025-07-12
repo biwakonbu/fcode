@@ -378,17 +378,24 @@ let processPOInstruction (instruction: string) : unit =
             with ex ->
                 logError "PO" (sprintf "Failed to start work simulation: %s" ex.Message)
 
-            // 定期的なチーム状況更新（30秒間隔）
+            // 定期的なチーム状況更新の設定
+            let updateIntervalSeconds = 30
+            let updateIterations = 10
+
+            // 定期的なチーム状況更新
             async {
-                for i in 1..10 do
-                    do! Async.Sleep(30000) // 30秒待機
+                for i in 1..updateIterations do
+                    do! Async.Sleep(updateIntervalSeconds * 1000) // 指定間隔で待機
 
                     let updatedTeamSummary = generateTeamStatusSummary workDisplayManager
 
                     addSystemActivity
                         "TeamUpdate"
                         SystemMessage
-                        (sprintf "🔄 チーム状況更新 (%2.1f分経過)\n%s" (float i * 0.5) updatedTeamSummary)
+                        (sprintf
+                            "🔄 チーム状況更新 (%2.1f分経過)\n%s"
+                            (float i * float updateIntervalSeconds / 60.0)
+                            updatedTeamSummary)
                     |> ignore
 
                     logInfo "TeamStatus" (sprintf "Team status updated - iteration %d" i)

@@ -75,6 +75,8 @@
     <Compile Include="Collaboration/TaskStorageFactory.fs" />
     <Compile Include="Collaboration/TaskStorageMigration.fs" />
     <Compile Include="Collaboration/TaskStorageConfiguration.fs" />
+    <Compile Include="AgentWorkDisplayManager.fs" />
+    <Compile Include="AgentWorkSimulator.fs" />
     <Compile Include="TaskAssignmentManager.fs" />
     <Compile Include="QualityGateManager.fs" />
     <!-- WorkflowCore - Minimal Working Architecture -->

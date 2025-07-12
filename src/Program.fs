@@ -158,6 +158,9 @@ let processPOInstruction (instruction: string) : unit =
         // AgentWorkDisplayManagerの取得
         let workDisplayManager = AgentWorkDisplayGlobal.GetManager()
 
+        // SprintTimeDisplayManagerの取得
+        let sprintTimeDisplayManager = SprintTimeDisplayGlobal.GetManager()
+
         // 指示をタスクに分解して配分
         match taskAssignmentManager.ProcessInstructionAndAssign(instruction) with
         | Result.Ok assignments ->
@@ -294,6 +297,35 @@ let processPOInstruction (instruction: string) : unit =
                         logInfo "UI" (sprintf "Task assigned to %s: %s (fallback display)" agentId task.Title)
                 | None -> logWarning "UI" (sprintf "Agent pane not found for: %s" agentId)
 
+            // 18分スプリント自動開始
+            let sprintId = sprintf "SPRINT_%s" (System.DateTime.Now.ToString("yyyyMMddHHmmss"))
+
+            async {
+                try
+                    let! sprintResult = sprintTimeDisplayManager.StartSprint(sprintId)
+
+                    match sprintResult with
+                    | Result.Ok() ->
+                        logInfo "Sprint" (sprintf "18分スプリント自動開始: %s" sprintId)
+
+                        // スプリント開始通知を会話ペインに表示
+                        addSystemActivity
+                            "Sprint"
+                            SystemMessage
+                            (sprintf "🚀 18分スプリント開始: %s\n📊 6分毎スタンドアップ予定\n⏰ 18分後に完成確認フロー実行" sprintId)
+                        |> ignore
+
+                    | Result.Error error ->
+                        logError "Sprint" (sprintf "スプリント開始失敗: %A" error)
+
+                        addSystemActivity "Sprint" SystemMessage (sprintf "❌ スプリント開始失敗: %A" error)
+                        |> ignore
+
+                with ex ->
+                    logError "Sprint" (sprintf "スプリント開始例外: %s" ex.Message)
+            }
+            |> Async.Start
+
             // 画面更新
             Application.Refresh()
 
@@ -421,11 +453,25 @@ let main argv =
             setConversationTextView conversationTextView
             logInfo "UI" "UnifiedActivityView integrated with conversation pane"
 
+            // SprintTimeDisplayManagerのスタンドアップ通知ハンドラーを登録
+            let sprintTimeDisplayManager = SprintTimeDisplayGlobal.GetManager()
+
+            sprintTimeDisplayManager.RegisterStandupNotificationHandler(fun notificationText ->
+                try
+                    // スタンドアップ通知を会話ペインに表示
+                    addSystemActivity "Standup" SystemMessage notificationText |> ignore
+                    logInfo "StandupNotification" "スタンドアップ通知を会話ペインに表示しました"
+                with ex ->
+                    logError "StandupNotification" (sprintf "スタンドアップ通知表示エラー: %s" ex.Message))
+
             // 初期システム活動追加
             addSystemActivity "system" SystemMessage "fcode TUI Application 起動完了 - エージェント協調開発環境準備中"
             |> ignore
 
             addSystemActivity "system" SystemMessage "会話ペイン統合 - 全エージェント活動をリアルタイム表示"
+            |> ignore
+
+            addSystemActivity "system" SystemMessage "スプリント管理統合 - 6分スタンドアップ・18分完成確認システム準備完了"
             |> ignore
 
             // ----------------------------------------------------------------------

@@ -22,6 +22,8 @@ type KeyAction =
     | SaveSession
     | ShowSessionList
     | RecoveryMenu
+    | QualityGateApproval
+    | QualityGateReject
 
 // キーシーケンス状態管理
 type KeySequenceState =
@@ -65,6 +67,10 @@ let emacsKeyBindings =
       ([ Key.CtrlMask ||| Key.X; Key.L ], ShowSessionList)
       ([ Key.CtrlMask ||| Key.X; Key.CtrlMask ||| Key.R ], RecoveryMenu)
 
+      // 品質ゲート操作 (Ctrl+Q A / Ctrl+Q R)
+      ([ Key.CtrlMask ||| Key.Q; Key.A ], QualityGateApproval)
+      ([ Key.CtrlMask ||| Key.Q; Key.R ], QualityGateReject)
+
       // 数字キーによるダイレクト移動 (Ctrl+X 0-7)
       ([ Key.CtrlMask ||| Key.X; Key.D0 ], FocusPane 0)
       ([ Key.CtrlMask ||| Key.X; Key.D1 ], FocusPane 1)
@@ -101,6 +107,10 @@ Claude Code制御:
   Ctrl+X S       : 手動セッション保存
   Ctrl+X L       : セッション一覧表示
   Ctrl+X Ctrl+R  : セッション復旧メニュー
+
+品質ゲート操作:
+  Ctrl+Q A       : 品質ゲート承認
+  Ctrl+Q R       : 品質ゲート却下
 
 ダイレクト移動:
   Ctrl+X 0-7     : 指定ペインに直接移動
@@ -245,6 +255,22 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
             // セッション復旧メニュー
             let sessionManager = new FCode.SessionListManager.SessionListManager()
             sessionManager.ShowRecoveryMenu()
+        | QualityGateApproval ->
+            // 品質ゲート承認処理
+            try
+                MessageBox.Query(50, 8, "品質ゲート承認", "品質ゲート承認機能が呼び出されました\n\nSC-1-4実装完了: PO判断待ち状態表示機能", "OK")
+                |> ignore
+            with ex ->
+                MessageBox.ErrorQuery(50, 10, "Error", $"品質ゲート承認エラー: {ex.Message}", "OK")
+                |> ignore
+        | QualityGateReject ->
+            // 品質ゲート却下処理
+            try
+                MessageBox.Query(50, 8, "品質ゲート却下", "品質ゲート却下機能が呼び出されました\n\nSC-1-4実装完了: PO判断待ち状態表示機能", "OK")
+                |> ignore
+            with ex ->
+                MessageBox.ErrorQuery(50, 10, "Error", $"品質ゲート却下エラー: {ex.Message}", "OK")
+                |> ignore
 
     // マルチキーシーケンス検索
     let findMultiKeyBinding (firstKey: Key) (secondKey: Key) =

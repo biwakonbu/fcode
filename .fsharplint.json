@@ -2,6 +2,35 @@
   "rules": {
     "redundantNewKeyword": {
       "enabled": false
+    },
+    "functionLength": {
+      "enabled": true,
+      "maxLength": 80
+    },
+    "cyclomaticComplexity": {
+      "enabled": true,
+      "maxComplexity": 15
+    },
+    "unusedValue": {
+      "enabled": true
+    },
+    "unusedOpenStatement": {
+      "enabled": true
+    },
+    "naming": {
+      "enabled": true,
+      "capitals": {
+        "enabled": true
+      },
+      "parameters": {
+        "enabled": true
+      }
+    },
+    "suggestions": {
+      "enabled": true
+    },
+    "formatting": {
+      "enabled": true
     }
   }
 }

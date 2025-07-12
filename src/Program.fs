@@ -103,7 +103,7 @@ let processPOInstruction (instruction: string) : unit =
                             // 少し遅延させてからエスカレーション評価実行
                             do! Async.Sleep(2000)
                             // 品質ゲート評価実行（簡易版）
-                            logInfo "QualityGate" $"QAタスク品質ゲート評価開始: {task.TaskId}"
+                            logInfo "QualityGate" (sprintf "QAタスク品質ゲート評価開始: %s" task.TaskId)
                             // 実装時に品質ゲート評価ロジックを追加
 
                             // エスカレーション処理
@@ -144,9 +144,9 @@ let processPOInstruction (instruction: string) : unit =
                                       EstimatedResolutionTime = Some(System.TimeSpan.FromHours(2.0)) }
 
                                 // エスカレーション通知作成（簡易版）
-                                logInfo "EscalationHandler" $"品質ゲートエスカレーション発生: {escalationId}"
+                                logInfo "EscalationHandler" (sprintf "品質ゲートエスカレーション発生: %s" escalationId)
                         with ex ->
-                            logError "QualityGate" $"QAタスク品質ゲート評価例外: {ex.Message}"
+                            logError "QualityGate" (sprintf "QAタスク品質ゲート評価例外: %s" ex.Message)
                     }
                     |> Async.Start
 
@@ -528,15 +528,15 @@ let main argv =
                     async {
                         try
                             // サンプル品質ゲート評価（簡易版）
-                            logInfo "UI" $"Sample quality gate evaluation started: {sampleTask.TaskId}"
+                            logInfo "UI" (sprintf "Sample quality gate evaluation started: %s" sampleTask.TaskId)
                         // 実装時に品質ゲート評価ロジックを追加
                         with ex ->
-                            logError "UI" $"Sample quality gate evaluation exception: {ex.Message}"
+                            logError "UI" (sprintf "Sample quality gate evaluation exception: %s" ex.Message)
                     }
                     |> Async.Start
 
                 with ex ->
-                    logError "UI" $"Failed to create sample quality gate evaluation: {ex.Message}"
+                    logError "UI" (sprintf "Failed to create sample quality gate evaluation: %s" ex.Message)
 
             | _ -> logWarning "UI" "QA1 or QA2 TextView not found for QualityGateUIIntegration"
 
@@ -571,9 +571,9 @@ let main argv =
                         with
                         | Result.Ok overallKPIId ->
                             logInfo "UI" $"Sample metrics and KPIs created for progress dashboard"
-                        | Result.Error error -> logError "UI" $"Failed to create overall KPI: {error}"
-                    | Result.Error error -> logError "UI" $"Failed to create code quality metric: {error}"
-                | Result.Error error -> logError "UI" $"Failed to create task completion metric: {error}"
+                        | Result.Error error -> logError "UI" (sprintf "Failed to create overall KPI: %s" error)
+                    | Result.Error error -> logError "UI" (sprintf "Failed to create code quality metric: %s" error)
+                | Result.Error error -> logError "UI" (sprintf "Failed to create task completion metric: %s" error)
 
             | None -> logWarning "UI" "UX TextView not found for ProgressDashboard integration"
 
@@ -833,7 +833,7 @@ let main argv =
 
                                     logInfo "Application" "統合イベントループ正常停止完了"
                                 with ex ->
-                                    logError "Application" $"統合イベントループ停止時エラー: {ex.Message}")
+                                    logError "Application" (sprintf "統合イベントループ停止時エラー: %s" ex.Message))
 
                         System.AppDomain.CurrentDomain.ProcessExit.AddHandler(processExitHandler)
 

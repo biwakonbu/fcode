@@ -70,7 +70,7 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
     member this.ExecuteQualityGateEvaluation(task: ParsedTask) =
         async {
             try
-                logInfo "QualityGateUIIntegration" $"品質ゲート評価開始: {task.TaskId} - {task.Title}"
+                logInfo "QualityGateUIIntegration" (sprintf "品質ゲート評価開始: %s - %s" task.TaskId task.Title)
 
                 // 評価エントリ初期化
                 let initialEntry =
@@ -99,7 +99,7 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
                     let escalationId =
                         if not reviewResult.Approved && reviewResult.ConsensusScore < 0.5 then
                             // エスカレーション必要時のID生成（簡易版）
-                            Some(sprintf "ESC-QG-%s-%s" task.TaskId (System.DateTime.Now.ToString("yyyyMMddHHmmss")))
+                            Some(sprintf "ESC-QG-%s-%s" task.TaskId (DateTime.UtcNow.ToString("yyyyMMddHHmmss")))
                         else
                             None
 
@@ -121,8 +121,11 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
                     match escalationId with
                     | Some escId ->
                         createEscalationNotification
-                            $"品質ゲート評価: {task.Title}"
-                            $"品質スコア {reviewResult.ConsensusScore:F2} - 改善要求 {reviewResult.RequiredImprovements.Length}件"
+                            (sprintf "品質ゲート評価: %s" task.Title)
+                            (sprintf
+                                "品質スコア %.2f - 改善要求 %d件"
+                                reviewResult.ConsensusScore
+                                reviewResult.RequiredImprovements.Length)
                             TechnicalDecision
                             (if reviewResult.ConsensusScore < 0.4 then Urgent else Normal)
                             "quality_gate"
@@ -132,7 +135,7 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
                         |> ignore
                     | None -> ()
 
-                    logInfo "QualityGateUIIntegration" $"品質ゲート評価完了: {task.TaskId} - 状態: {qualityLevel}"
+                    logInfo "QualityGateUIIntegration" (sprintf "品質ゲート評価完了: %s - 状態: %A" task.TaskId qualityLevel)
                     return Result.Ok updatedEntry
 
                 | Result.Error error ->
@@ -144,11 +147,11 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
                     evaluationEntries.[task.TaskId] <- errorEntry
                     this.UpdateQADisplay()
 
-                    logError "QualityGateUIIntegration" $"品質ゲート評価失敗: {task.TaskId} - {error}"
+                    logError "QualityGateUIIntegration" (sprintf "品質ゲート評価失敗: %s - %s" task.TaskId error)
                     return Result.Error error
 
             with ex ->
-                let errorMsg = $"品質ゲート評価例外: {ex.Message}"
+                let errorMsg = sprintf "品質ゲート評価例外: %s" ex.Message
                 logError "QualityGateUIIntegration" errorMsg
                 return Result.Error errorMsg
         }
@@ -181,7 +184,7 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
             try
                 match evaluationEntries.TryGetValue(taskId) with
                 | true, entry ->
-                    logInfo "QualityGateUIIntegration" $"PO承認処理開始: {taskId} - {action}"
+                    logInfo "QualityGateUIIntegration" (sprintf "PO承認処理開始: %s - %A" taskId action)
 
                     let (newStatus, actionDescription) =
                         match action with
@@ -211,20 +214,20 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
                         let! poDecisionResult = escalationManager.ProcessPODecision(escId, approved, actionDescription)
 
                         match poDecisionResult with
-                        | Result.Ok _ -> logInfo "QualityGateUIIntegration" $"エスカレーション解決: {escId}"
-                        | Result.Error err -> logError "QualityGateUIIntegration" $"エスカレーション処理失敗: {err}"
+                        | Result.Ok _ -> logInfo "QualityGateUIIntegration" (sprintf "エスカレーション解決: %s" escId)
+                        | Result.Error err -> logError "QualityGateUIIntegration" (sprintf "エスカレーション処理失敗: %A" err)
                     | None -> ()
 
-                    logInfo "QualityGateUIIntegration" $"PO承認処理完了: {taskId} - {actionDescription}"
+                    logInfo "QualityGateUIIntegration" (sprintf "PO承認処理完了: %s - %s" taskId actionDescription)
                     return Result.Ok updatedEntry
 
                 | false, _ ->
-                    let errorMsg = $"評価エントリが見つかりません: {taskId}"
+                    let errorMsg = sprintf "評価エントリが見つかりません: %s" taskId
                     logError "QualityGateUIIntegration" errorMsg
                     return Result.Error errorMsg
 
             with ex ->
-                let errorMsg = $"PO承認処理例外: {ex.Message}"
+                let errorMsg = sprintf "PO承認処理例外: %s" ex.Message
                 logError "QualityGateUIIntegration" errorMsg
                 return Result.Error errorMsg
         }
@@ -278,7 +281,7 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
 
                 logDebug
                     "QualityGateUIIntegration"
-                    $"QA表示更新完了: アクティブ {activeEvaluations.Length}件, 履歴 {recentEvaluations.Length}件"
+                    (sprintf "QA表示更新完了: アクティブ %d件, 履歴 %d件" activeEvaluations.Length recentEvaluations.Length)
 
             with ex ->
                 logException "QualityGateUIIntegration" "Failed to update QA display" ex
@@ -315,7 +318,7 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
                         sprintf "[%s] %s %s スコア:%s 改善:%d件" timeStr statusStr titlePreview scoreStr improvementCount)
                     |> String.concat "\n"
 
-                $"🔍 評価中・承認待ち ({activeEvaluations.Length}件)\n{activeLines}\n\n"
+                sprintf "🔍 評価中・承認待ち (%d件)\n%s\n\n" activeEvaluations.Length activeLines
             else
                 "✅ 評価待ちタスクなし\n\n"
 
@@ -326,7 +329,7 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
                 |> Array.length
 
             if poApprovalTasks > 0 then
-                $"📋 PO承認要求: {poApprovalTasks}件\n\n"
+                sprintf "📋 PO承認要求: %d件\n\n" poApprovalTasks
             else
                 ""
 
@@ -361,7 +364,7 @@ type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, esc
                         sprintf "[%s] %s %s (%s)" timeStr statusStr titlePreview scoreStr)
                     |> String.concat "\n"
 
-                $"📊 最新評価結果 ({recentEvaluations.Length}件)\n{recentLines}\n\n"
+                sprintf "📊 最新評価結果 (%d件)\n%s\n\n" recentEvaluations.Length recentLines
             else
                 "📊 評価履歴なし\n\n"
 

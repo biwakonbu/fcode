@@ -318,9 +318,8 @@ type ScrumEventsManager() =
                 if not (sprints.ContainsKey(sprintId)) then
                     return Result.Error(NotFound <| sprintf "スプリント %s が見つかりません" sprintId)
                 else
-                    let mutable sprint = sprints.[sprintId]
-                    sprint <- { sprint with Status = Completed }
-                    sprints.[sprintId] <- sprint
+                    let sprint = sprints.[sprintId]
+                    sprints.[sprintId] <- { sprint with Status = Completed }
 
                     logInfo "ScrumEventsManager" <| sprintf "スプリント完了: %s" sprintId
                     return Result.Ok sprintId

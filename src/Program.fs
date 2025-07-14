@@ -837,6 +837,32 @@ let main argv =
 
             | None -> logWarning "UI" "PM timeline TextView not found for DecisionTimelineView integration"
 
+            // EscalationNotificationUIとの統合設定（PMペイン用）- SC-1-4実装
+            match paneTextViews.TryFind("pm") with
+            | Some pmTextView ->
+                // PMペインでのエスカレーション通知表示統合
+                FCode.EscalationNotificationUI.setNotificationTextView pmTextView
+                logInfo "UI" "EscalationNotificationUI integrated with PM pane for SC-1-4"
+
+                // PMペイン用エスカレーション通知テストデータ作成
+                try
+                    FCode.EscalationNotificationUI.createEscalationNotification
+                        "SC-1-4品質ゲート連携実装完了"
+                        "品質ゲート連携・エスカレーション通知・PO判断待ち状態表示機能が統合されました"
+                        FCode.EscalationNotificationUI.QualityGate
+                        FCode.EscalationNotificationUI.Urgent
+                        "sc_14_implementation"
+                        "PO"
+                        [ "SC-1-4" ]
+                        None
+                    |> ignore
+
+                    logInfo "UI" "SC-1-4 sample escalation notification created for PM pane"
+                with ex ->
+                    logError "UI" $"Failed to create SC-1-4 escalation notification: {ex.Message}"
+
+            | None -> logWarning "UI" "PM TextView not found for EscalationNotificationUI integration"
+
             // EscalationNotificationUIとの統合設定（QA1ペイン用）
             match paneTextViews.TryFind("qa1") with
             | Some qa1TextView ->

@@ -8,43 +8,87 @@ open System.Text.RegularExpressions
 /// Terminal.GuiのANSI制御コード・制御文字がJSON解析を破綻させる問題の根本解決
 module JsonSanitizer =
 
-    /// 制御文字・エスケープシーケンス・ANSI制御コード完全除去パターン
+    /// 制御文字・エスケープシーケンス・ANSI制御コード完全除去パターン（強化版）
     let private sanitizePatterns =
         [|
-           // ANSI エスケープシーケンス全般 - 最優先除去
+           // 最も包括的なESCシーケンス除去（優先適用）
+           @"\u001b\[[?!>]*[0-9;]*[A-Za-z@]", " " // 包括的CSI
+           @"\u001b\][^\u0007\u001b]*[\u0007\u001b\\]", " " // OSC完全版
+           @"\u001b[NOPQRSTUVWXYZ\[\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~]", " " // ESC + 制御文字
+
+           // ANSI カラー・制御シーケンス
            @"\u001b\[[0-9;]*[mK]", " " // カラー・クリア
-           @"\u001b\[[0-9;]*[A-Za-z]", " " // 汎用CSI
-           @"\u001b\[\?[0-9;]*[hl]", " " // プライベートモード
-           @"\u001b\[[\d;]*[a-zA-Z]", " " // 全般CSI
+           @"\u001b\[\?[0-9;]*[hl]", " " // プライベートモード設定
+           @"\u001b\[[0-9;]*[ABCDHJ]", " " // カーソル制御
+           @"\u001b\[[0-9]+[;,][0-9]*[HfGr]", " " // 位置制御
 
-           // Terminal.Gui特有制御シーケンス
-           @"\[[0-9;]*[a-zA-Z]", " " // ブラケット制御
-           @"\u001b\][\d;]*[^\u0007]*\u0007", " " // OSC シーケンス
-           @"\][0-9]*[a-zA-Z]", " " // OSC簡易版
+           // Terminal.Gui特有制御シーケンス（強化）
+           @"\u001b\[\?[0-9]+[hl]", " " // モード設定
+           @"\u001b\[\d+[;,]\d*[a-zA-Z]", " " // パラメータ付き制御
+           @"\u001b\][0-9;]*[^\u0007]*", " " // OSC不完全版
+           @"\][0-9]+[a-zA-Z]", " " // 残存OSC断片
 
-           // より包括的なESCシーケンス
-           @"\u001b[A-Za-z]", " " // 単一制御文字
-           @"\u001b\([012AB]", " " // 文字セット
-           @"\u001b\*[012AB]", " " // 文字セット指定
+           // 基本制御文字・null文字・非印刷文字
+           @"[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]", " " // 制御文字（TAB・LF保持）
+           @"[\uFEFF]", " " // BOM文字
 
-           // 基本制御文字（最後に適用）
-           @"[\x00-\x08\x0E-\x1F\x7F]", " " |]
+           // JSON特有の問題文字（日本語文字は保持）
+           @"[^\x09\x0A\x0D\x20-\x7E\u00A0-\uFFFF]", " " // ASCII+Unicode印刷可能文字以外
+           @"\\x[0-9a-fA-F]{2}", " " |] // 16進エスケープ残存
 
-    /// 入力文字列から制御文字・エスケープシーケンスを完全除去
+    /// 入力文字列から制御文字・エスケープシーケンスを完全除去（強化版）
     let sanitizeForJson (input: string) : string =
         if String.IsNullOrEmpty(input) then
             ""
         else
-            // 複数パターンを順次適用してエスケープシーケンス完全除去
-            let sanitized =
-                sanitizePatterns
-                |> Array.fold
-                    (fun acc (pattern, replacement) -> Regex.Replace(acc, pattern, replacement, RegexOptions.Compiled))
-                    (input.Trim())
+            try
+                // 段階的サニタイズで確実に除去
+                let step1 = input.Trim()
 
-            // 連続する空白・改行を正規化
-            let normalized = Regex.Replace(sanitized, @"\s+", " ", RegexOptions.Compiled)
-            normalized.Trim()
+                // Step 1: 最も危険なエスケープシーケンス優先除去
+                let step2 =
+                    sanitizePatterns
+                    |> Array.fold
+                        (fun acc (pattern, replacement) ->
+                            try
+                                Regex.Replace(
+                                    acc,
+                                    pattern,
+                                    replacement,
+                                    RegexOptions.Compiled ||| RegexOptions.Multiline
+                                )
+                            with
+                            | :? ArgumentException -> acc // 無効な正規表現はスキップ
+                            | _ -> acc)
+                        step1
+
+                // Step 2: 残存制御文字の徹底除去
+                let step3 =
+                    step2.ToCharArray()
+                    |> Array.map (fun c ->
+                        let code = int c
+                        // 安全なASCII+Unicode文字保持（日本語対応）
+                        if (code >= 32 && code <= 126) || code = 9 || code = 10 || code = 13 || code >= 160 then
+                            c
+                        else
+                            ' ')
+                    |> System.String
+
+                // Step 3: 連続空白・改行正規化
+                let step4 = Regex.Replace(step3, @"\s+", " ", RegexOptions.Compiled)
+
+                // Step 4: 前後の空白・改行除去
+                let result = step4.Trim()
+
+                // 結果検証: 最小限のJSON構造要件チェック
+                if result.Length > 0 && not (result.Contains("\u001b")) then
+                    result
+                else
+                    // エスケープシーケンスが残存している場合は空文字を返す
+                    ""
+            with ex ->
+                // サニタイズ失敗時は空文字で安全側に
+                ""
 
     /// JSON解析安全実行（ジェネリック版）
     let tryParseJson<'T> (input: string) : Result<'T, string> =

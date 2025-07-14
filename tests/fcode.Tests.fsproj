@@ -12,9 +12,12 @@
     <VSTestUseMSBuildOutput>false</VSTestUseMSBuildOutput>
     
     <!-- テストタイムアウト設定（FC-027で最適化） -->
-    <VSTestTimeout>60000</VSTestTimeout>   <!-- 2分→1分短縮 -->
+    <VSTestTimeout>30000</VSTestTimeout>   <!-- 1分→30秒短縮 -->
     <VSTestLogger>trx</VSTestLogger>
     <VSTestParallel>false</VSTestParallel>  <!-- 並行実行無効でハング回避 -->
+    <VSTestCollectCodeCoverage>false</VSTestCollectCodeCoverage>
+    <VSTestUseMSBuildOutput>false</VSTestUseMSBuildOutput>
+    <VSTestBlameCollectAlways>false</VSTestBlameCollectAlways>  <!-- Blame機能無効でCI安定化 -->
     
     <!-- Terminal.Gui CI対応（FC-027） -->
     <DefineConstants>CI_ENVIRONMENT</DefineConstants>

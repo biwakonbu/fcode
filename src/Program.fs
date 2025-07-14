@@ -402,10 +402,6 @@ let processPOInstruction (instruction: string) : unit =
             // 作業シミュレーションを開始（リアルタイム進捗表示のため）
             let simulator = AgentWorkSimulatorGlobal.GetSimulator()
 
-            // チーム状況サマリーを会話ペインに表示
-            let teamSummary = generateTeamStatusSummary workDisplayManager
-            addSystemActivity "TeamStatus" SystemMessage teamSummary |> ignore
-
             // AgentWorkSimulatorが期待する形式に変換
             let simulationAssignments =
                 assignments
@@ -444,32 +440,10 @@ let processPOInstruction (instruction: string) : unit =
             }
             |> Async.Start
 
-            // 画面更新
+            // 画面更新とチーム状況表示
+            let finalTeamSummary = generateTeamStatusSummary workDisplayManager
+            addSystemActivity "TeamStatus" SystemMessage finalTeamSummary |> ignore
             Application.Refresh()
-
-            // スプリント開始（18分タイマー開始）
-            let sprintTimeDisplayManager = SprintTimeDisplayGlobal.GetManager()
-            let sprintId = sprintf "sprint-%s" (System.DateTime.Now.ToString("yyyyMMdd-HHmmss"))
-
-            async {
-                try
-                    let! sprintResult = sprintTimeDisplayManager.StartSprint(sprintId)
-
-                    match sprintResult with
-                    | Result.Ok() ->
-                        logInfo "Sprint" (sprintf "18分スプリント開始: %s" sprintId)
-
-                        addSystemActivity "Sprint" SystemMessage (sprintf "🚀 18分スプリント開始: %s" sprintId)
-                        |> ignore
-                    | Result.Error error ->
-                        logError "Sprint" (sprintf "スプリント開始失敗: %A" error)
-
-                        addSystemActivity "Sprint" SystemMessage (sprintf "⚠️ スプリント開始失敗: %A" error)
-                        |> ignore
-                with ex ->
-                    logError "Sprint" (sprintf "スプリント開始例外: %s" ex.Message)
-            }
-            |> Async.Start
 
         | Result.Error errorMsg ->
             logError "PO" (sprintf "Failed to process instruction: %s" errorMsg)
@@ -859,7 +833,7 @@ let main argv =
 
                     logInfo "UI" "SC-1-4 sample escalation notification created for PM pane"
                 with ex ->
-                    logError "UI" $"Failed to create SC-1-4 escalation notification: {ex.Message}"
+                    logError "UI" (sprintf "Failed to create SC-1-4 escalation notification: %s" ex.Message)
 
             | None -> logWarning "UI" "PM TextView not found for EscalationNotificationUI integration"
 
@@ -965,7 +939,7 @@ let main argv =
                                 [ taskCompletionId; codeQualityId ]
                         with
                         | Result.Ok overallKPIId ->
-                            logInfo "UI" $"Sample metrics and KPIs created for progress dashboard"
+                            logInfo "UI" "Sample metrics and KPIs created for progress dashboard"
                         | Result.Error error -> logError "UI" (sprintf "Failed to create overall KPI: %s" error)
                     | Result.Error error -> logError "UI" (sprintf "Failed to create code quality metric: %s" error)
                 | Result.Error error -> logError "UI" (sprintf "Failed to create task completion metric: %s" error)

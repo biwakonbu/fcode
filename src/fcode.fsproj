@@ -87,6 +87,9 @@
     <Compile Include="QualityGateManager.fs" />
     <Compile Include="QualityGateUIIntegration.fs" />
     <Compile Include="EscalationUIHandler.fs" />
+    <!-- FC-029 Scrum Events Integration -->
+    <Compile Include="ScrumEventsManager.fs" />
+    <Compile Include="ScrumEventsUI.fs" />
     <!-- WorkflowCore - Minimal Working Architecture -->
     <Compile Include="WorkflowCore/WorkflowTypes.fs" />
     <Compile Include="WorkflowCore/MinimalWorkflowCoordinator.fs" />

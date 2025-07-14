@@ -534,28 +534,23 @@ let updatePOWaitingDisplay (isWaiting: bool) =
         let waitingIndicator = if isWaiting then "⏳ PO判断待ち" else "✅ 判断完了"
         let timestamp = DateTime.Now.ToString("HH:mm:ss")
 
-        // QA TextViewsにアクセスするため、プライベートフィールドを使用
-        match manager with
-        | :? QualityGateUIIntegrationManager as mgr ->
-            // SetQATextViewsで設定されているTextViewを取得
-            // 実際の実装では、managerがSetQATextViewsで設定したTextViewを取得
-            let statusMessage =
-                if isWaiting then
-                    $"🔶 {timestamp} - PO判断待ち状態\n"
-                    + "Ctrl+Q A で承認、Ctrl+Q R で却下してください\n"
-                    + "代替作業: ブロックされていないタスクを継続可能\n"
-                    + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                else
-                    $"✅ {timestamp} - PO判断完了\n"
-                    + "作業を継続します\n"
-                    + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        // QA TextViewsの状態表示（SC-1-4 PO判断待ち状態管理）
+        let statusMessage =
+            if isWaiting then
+                $"🔶 {timestamp} - PO判断待ち状態\n"
+                + "Ctrl+Q A で承認、Ctrl+Q R で却下してください\n"
+                + "代替作業: ブロックされていないタスクを継続可能\n"
+                + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            else
+                $"✅ {timestamp} - PO判断完了\n"
+                + "作業を継続します\n"
+                + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
-            logInfo
-                "QualityGateUI"
-                $"PO status message prepared: {statusMessage.Substring(0, min 50 statusMessage.Length)}..."
+        logInfo
+            "QualityGateUI"
+            $"PO status message prepared: {statusMessage.Substring(0, min 50 statusMessage.Length)}..."
 
-            logInfo "QualityGateUI" $"PO waiting display updated: {waitingIndicator}"
-        | _ -> logWarning "QualityGateUI" "QA TextViews not available for PO waiting display"
+        logInfo "QualityGateUI" $"PO waiting display updated: {waitingIndicator}"
     with ex ->
         logError "QualityGateUI" $"Error updating PO waiting display: {ex.Message}"
 

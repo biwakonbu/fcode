@@ -5,6 +5,7 @@ open FCode.Logger
 
 /// キー入力をfcodeホットキーとClaude透過キーに振り分けるルーター
 type KeyRouter(sessionBridge: SessionBridge) =
+    let mutable bridge: SessionBridge option = Some sessionBridge
 
     /// キー入力をルーティングし、透過キーかfcodeホットキーかを判定
     /// Returns: true = Claude透過キー、false = fcodeホットキー
@@ -37,11 +38,16 @@ type KeyRouter(sessionBridge: SessionBridge) =
 
     /// PTYへキー入力を送信
     member private this.SendToPty(keyEvent: KeyEvent) : bool =
-        try
-            let keySequence = this.ConvertToEscapeSequence(keyEvent)
-            sessionBridge.SendInput(keySequence)
-        with ex ->
-            logError "KeyRouter" (sprintf "PTY送信例外: %s" ex.Message)
+        match bridge with
+        | Some activeBridge ->
+            try
+                let keySequence = this.ConvertToEscapeSequence(keyEvent)
+                activeBridge.SendInput(keySequence)
+            with ex ->
+                logError "KeyRouter" (sprintf "PTY送信例外: %s" ex.Message)
+                false
+        | None ->
+            logWarning "KeyRouter" "SessionBridgeが既に解放されています"
             false
 
     /// KeyEventをエスケープシーケンスに変換
@@ -52,6 +58,7 @@ type KeyRouter(sessionBridge: SessionBridge) =
         | Key.Tab -> "\t"
         | Key.Backspace -> "\b"
         | Key.Delete -> "\u001b[3~"
+        | Key.InsertChar -> "\u001b[2~"
         | Key.Esc -> "\u001b"
 
         // カーソルキー
@@ -59,6 +66,12 @@ type KeyRouter(sessionBridge: SessionBridge) =
         | Key.CursorDown -> "\u001b[B"
         | Key.CursorLeft -> "\u001b[D"
         | Key.CursorRight -> "\u001b[C"
+
+        // Shift+カーソルキー（テキスト選択用）
+        | k when k = (Key.ShiftMask ||| Key.CursorUp) -> "\u001b[1;2A"
+        | k when k = (Key.ShiftMask ||| Key.CursorDown) -> "\u001b[1;2B"
+        | k when k = (Key.ShiftMask ||| Key.CursorLeft) -> "\u001b[1;2D"
+        | k when k = (Key.ShiftMask ||| Key.CursorRight) -> "\u001b[1;2C"
 
         // ファンクションキー
         | Key.F1 -> "\u001bOP"
@@ -119,3 +132,7 @@ type KeyRouter(sessionBridge: SessionBridge) =
     /// デバッグ用キー説明を取得
     member private this.GetKeyDescription(keyEvent: KeyEvent) : string =
         sprintf "Key=%A, KeyValue=%d" keyEvent.Key keyEvent.KeyValue
+
+    /// リソース解放
+    interface System.IDisposable with
+        member this.Dispose() = bridge <- None

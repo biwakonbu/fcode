@@ -117,6 +117,12 @@ type KeyRouter(sessionBridge: SessionBridge) =
         | k when k = (Key.CtrlMask ||| Key.Y) -> "\u0019" // Ctrl+Y
         | k when k = (Key.CtrlMask ||| Key.Z) -> "\u001A" // Ctrl+Z
 
+        // Alt+文字キー（よく使用されるもののみ）
+        | k when k = (Key.AltMask ||| Key.A) -> "\u001b\u0061" // Alt+A
+        | k when k = (Key.AltMask ||| Key.B) -> "\u001b\u0062" // Alt+B
+        | k when k = (Key.AltMask ||| Key.F) -> "\u001b\u0066" // Alt+F
+        | k when k = (Key.AltMask ||| Key.D) -> "\u001b\u0064" // Alt+D
+
         // 通常文字キー
         | _ ->
             // KeyValueから文字を取得

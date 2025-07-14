@@ -173,7 +173,7 @@ type SessionBridge(pane: TextView) =
     /// フォールバックモード通知をUI表示
     member private this.ShowFallbackNotification() : unit =
         Application.MainLoop.Invoke(fun () ->
-            let notification = "[FALLBACK MODE] PTY unavailable, using standard process\n\n"
+            let notification = "[フォールバックモード] PTYが利用できないため、標準プロセスを使用しています\n\n"
             pane.Text <- NStack.ustring.Make(notification)
             pane.SetNeedsDisplay())
 

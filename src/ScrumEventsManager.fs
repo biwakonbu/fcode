@@ -5,8 +5,38 @@ open System.Collections.Generic
 open FCode.Collaboration.CollaborationTypes
 open FCode.TaskAssignmentManager
 open FCode.QualityGateManager
-open FCode.VirtualTimeCoordinator
 open FCode.Logger
+
+// スクラムイベント設定定数
+[<Literal>]
+let InitialTeamVelocity = 0.0
+
+[<Literal>]
+let DefaultPlannedCapacity = 100.0
+
+[<Literal>]
+let SprintPlanningDurationMinutes = 60.0
+
+[<Literal>]
+let DailyStandUpDurationMinutes = 15.0
+
+[<Literal>]
+let SprintReviewDurationMinutes = 120.0
+
+[<Literal>]
+let RetrospectiveDurationMinutes = 90.0
+
+// スクラムイベント設定リスト
+let DefaultParticipants = [ "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux"; "pm" ]
+
+let PlanningArtifacts =
+    [ "product-backlog"; "sprint-backlog"; "definition-of-done" ]
+
+let DailyArtifacts = [ "burndown-chart"; "task-board" ]
+let ReviewArtifacts = [ "product-increment"; "demo-script"; "acceptance-criteria" ]
+
+let RetrospectiveArtifacts =
+    [ "retrospective-board"; "action-items"; "team-metrics" ]
 
 /// スクラムイベントタイプ
 type ScrumEventType =
@@ -96,8 +126,8 @@ type ScrumEventsManager() =
                       EndTime = endTime
                       Goal = goal
                       Status = InProgress
-                      TeamVelocity = 0.0
-                      PlannedCapacity = 100.0 }
+                      TeamVelocity = InitialTeamVelocity
+                      PlannedCapacity = DefaultPlannedCapacity }
 
                 sprints.[sprintId] <- sprintInfo
 
@@ -129,10 +159,10 @@ type ScrumEventsManager() =
                           EventType = SprintPlanning
                           ScheduledTime = sprint.StartTime
                           ActualStartTime = Some DateTime.UtcNow
-                          Duration = TimeSpan.FromMinutes(60.0)
+                          Duration = TimeSpan.FromMinutes(SprintPlanningDurationMinutes)
                           Status = InProgress
-                          Participants = [ "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux"; "pm" ]
-                          Artifacts = [ "product-backlog"; "sprint-backlog"; "definition-of-done" ]
+                          Participants = DefaultParticipants
+                          Artifacts = PlanningArtifacts
                           Outcomes = [] }
 
                     events.[eventId] <- planningEvent
@@ -163,10 +193,10 @@ type ScrumEventsManager() =
                           EventType = DailyStandUp
                           ScheduledTime = DateTime.UtcNow
                           ActualStartTime = Some DateTime.UtcNow
-                          Duration = TimeSpan.FromMinutes(15.0)
+                          Duration = TimeSpan.FromMinutes(DailyStandUpDurationMinutes)
                           Status = InProgress
-                          Participants = [ "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux"; "pm" ]
-                          Artifacts = [ "burndown-chart"; "task-board" ]
+                          Participants = DefaultParticipants
+                          Artifacts = DailyArtifacts
                           Outcomes = [] }
 
                     events.[eventId] <- dailyEvent
@@ -201,10 +231,10 @@ type ScrumEventsManager() =
                           EventType = SprintReview
                           ScheduledTime = DateTime.UtcNow
                           ActualStartTime = Some DateTime.UtcNow
-                          Duration = TimeSpan.FromMinutes(120.0)
+                          Duration = TimeSpan.FromMinutes(SprintReviewDurationMinutes)
                           Status = InProgress
-                          Participants = [ "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux"; "pm"; "po" ]
-                          Artifacts = [ "product-increment"; "demo-script"; "acceptance-criteria" ]
+                          Participants = DefaultParticipants @ [ "po" ]
+                          Artifacts = ReviewArtifacts
                           Outcomes = [] }
 
                     events.[eventId] <- reviewEvent
@@ -239,10 +269,10 @@ type ScrumEventsManager() =
                           EventType = Retrospective
                           ScheduledTime = DateTime.UtcNow
                           ActualStartTime = Some DateTime.UtcNow
-                          Duration = TimeSpan.FromMinutes(90.0)
+                          Duration = TimeSpan.FromMinutes(RetrospectiveDurationMinutes)
                           Status = InProgress
-                          Participants = [ "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux"; "pm" ]
-                          Artifacts = [ "retrospective-board"; "action-items"; "team-metrics" ]
+                          Participants = DefaultParticipants
+                          Artifacts = RetrospectiveArtifacts
                           Outcomes = [] }
 
                     events.[eventId] <- retroEvent
@@ -263,6 +293,7 @@ type ScrumEventsManager() =
         }
 
     /// エージェント進捗レポート収集
+    /// TODO: 実際のエージェントデータと統合する必要があります
     member private this.CollectAgentReports(sprintId: string) =
         [ { AgentId = "dev1"
             Yesterday = [ "実装完了: ユーザー認証機能"; "テスト作成: API単体テスト" ]
@@ -296,14 +327,16 @@ type ScrumEventsManager() =
             ProgressPercent = 90.0 } ]
 
     /// スプリントレビュー情報生成
+    /// TODO: TaskAssignmentManagerとの統合が必要です
     member private this.GenerateSprintReviewInfo(sprintId: string) =
-        { CompletedTasks = [] // TaskAssignmentManagerから取得
+        { CompletedTasks = [] // TODO: TaskAssignmentManagerから取得
           DemoItems = [ "ユーザー認証デモ"; "新機能プロトタイプ"; "パフォーマンス改善" ]
           StakeholderFeedback = [ "使いやすいUI"; "レスポンス速度改善必要"; "セキュリティ要件追加" ]
           ProductIncrement = "Sprint " + sprintId + " 完成版"
           AcceptanceCriteria = [ "全テスト通過"; "パフォーマンス基準達成"; "セキュリティ監査完了" ] }
 
     /// レトロスペクティブ情報生成
+    /// TODO: 実際のチームフィードバック収集機能の実装が必要です
     member private this.GenerateRetrospectiveInfo(sprintId: string) =
         { WentWell = [ "チーム協調良好"; "品質向上"; "自動化推進" ]
           CouldImprove = [ "コミュニケーション効率"; "技術的負債解決"; "テスト早期化" ]

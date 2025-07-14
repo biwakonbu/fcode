@@ -21,11 +21,13 @@ open FCode.VirtualTimeCoordinator
 open FCode.Collaboration.CollaborationTypes
 open FCode.SprintTimeDisplayManager
 open FCode.QualityGateManager
+open FCode
 // AgentWorkDisplayManager and AgentWorkSimulator are in FCode namespace
 
 // グローバル変数として定義
 let mutable globalPaneTextViews: Map<string, TextView> = Map.empty
 let mutable agentStatusViews: Map<string, TextView> = Map.empty
+let mutable sessionBridges: Map<string, SessionBridge> = Map.empty
 
 // タイムスタンプを取得するヘルパー関数
 let getCurrentTimestamp () =
@@ -971,6 +973,41 @@ let main argv =
                   ("ux", ux)
                   ("pm", timeline) ]
 
+            let startClaudeCodeWithSessionBridge (paneId: string) (textView: TextView) =
+                async {
+                    try
+                        logInfo "SessionBridge" $"dev1ペイン用SessionBridge起動開始: {paneId}"
+
+                        textView.Text <- NStack.ustring.Make($"[DEBUG] {paneId}ペイン - SessionBridge起動中...")
+                        textView.SetNeedsDisplay()
+
+                        let sessionBridge = new SessionBridge(textView)
+                        sessionBridges <- sessionBridges.Add(paneId, sessionBridge)
+
+                        let workingDir = System.Environment.CurrentDirectory
+                        let claudeCommand = "claude"
+                        let claudeArgs = [| "--chat" |]
+
+                        let! result =
+                            sessionBridge.StartSession(paneId, claudeCommand, claudeArgs, workingDir)
+                            |> Async.AwaitTask
+
+                        match result with
+                        | Result.Ok() ->
+                            logInfo "SessionBridge" $"SessionBridge起動成功: {paneId}"
+                            textView.Text <- NStack.ustring.Make($"✅ {paneId}ペイン - Claude Code接続完了")
+                        | Result.Error errorMsg ->
+                            logError "SessionBridge" $"SessionBridge起動エラー: {errorMsg}"
+                            textView.Text <- NStack.ustring.Make($"❌ {paneId}ペイン - 接続エラー: {errorMsg}")
+
+                        textView.SetNeedsDisplay()
+
+                    with ex ->
+                        logError "SessionBridge" $"SessionBridge起動例外: {ex.Message}"
+                        textView.Text <- NStack.ustring.Make($"❌ {paneId}ペイン - 起動例外: {ex.Message}")
+                        textView.SetNeedsDisplay()
+                }
+
             let startClaudeCodeForPane (paneId: string, pane: FrameView) =
                 logInfo "AutoStart" (sprintf "Starting Claude Code for pane: %s" paneId)
 
@@ -979,27 +1016,37 @@ let main argv =
                 | Some textView ->
                     logInfo "AutoStart" (sprintf "TextView found via direct reference for pane: %s" paneId)
 
-                    textView.Text <- NStack.ustring.Make(sprintf "[DEBUG] %sペイン - TextView発見、Claude Code起動開始..." paneId)
-                    textView.SetNeedsDisplay()
-                    Application.Refresh()
-
-                    let workingDir = System.Environment.CurrentDirectory
-                    let sessionManager = new SessionManager()
-
-                    let success = sessionManager.StartSession(paneId, workingDir, textView)
-
-                    if success then
-                        logInfo "AutoStart" (sprintf "Successfully started Claude Code for pane: %s" paneId)
-                        |> ignore
+                    // dev1ペインの場合はSessionBridgeを使用
+                    if paneId = "dev1" then
+                        logInfo "AutoStart" "dev1ペイン用SessionBridge起動"
+                        startClaudeCodeWithSessionBridge paneId textView |> Async.Start
                     else
-                        logError "AutoStart" (sprintf "Failed to start Claude Code for pane: %s" paneId)
-                        |> ignore
-
+                        // 他のペインは従来のSessionManagerを使用
                         textView.Text <-
-                            NStack.ustring.Make(sprintf "[ERROR] %sペイン - Claude Code起動失敗\n詳細: %s" paneId logger.LogPath)
+                            NStack.ustring.Make(sprintf "[DEBUG] %sペイン - TextView発見、Claude Code起動開始..." paneId)
 
                         textView.SetNeedsDisplay()
                         Application.Refresh()
+
+                        let workingDir = System.Environment.CurrentDirectory
+                        let sessionManager = new SessionManager()
+
+                        let success = sessionManager.StartSession(paneId, workingDir, textView)
+
+                        if success then
+                            logInfo "AutoStart" (sprintf "Successfully started Claude Code for pane: %s" paneId)
+                            |> ignore
+                        else
+                            logError "AutoStart" (sprintf "Failed to start Claude Code for pane: %s" paneId)
+                            |> ignore
+
+                            textView.Text <-
+                                NStack.ustring.Make(
+                                    sprintf "[ERROR] %sペイン - Claude Code起動失敗\n詳細: %s" paneId logger.LogPath
+                                )
+
+                            textView.SetNeedsDisplay()
+                            Application.Refresh()
 
                 | None ->
                     // TextViewが見つからない場合（直接参照マップにない）

@@ -135,4 +135,12 @@ type KeyRouter(sessionBridge: SessionBridge) =
 
     /// リソース解放
     interface System.IDisposable with
-        member this.Dispose() = bridge <- None
+        member this.Dispose() =
+            match bridge with
+            | Some b ->
+                match box b with
+                | :? System.IDisposable as disposable -> disposable.Dispose()
+                | _ -> ()
+            | None -> ()
+
+            bridge <- None

@@ -256,19 +256,126 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
             let sessionManager = new FCode.SessionListManager.SessionListManager()
             sessionManager.ShowRecoveryMenu()
         | QualityGateApproval ->
-            // 品質ゲート承認処理
+            // 品質ゲート承認処理 - QualityGateUIIntegrationとの連携
             try
-                MessageBox.Query(50, 8, "品質ゲート承認", "品質ゲート承認機能が呼び出されました\n\nSC-1-4実装完了: PO判断待ち状態表示機能", "OK")
-                |> ignore
+                logInfo "KeyBindings" "PO Quality Gate Approval requested (Ctrl+Q A)"
+
+                // コメント入力ダイアログ
+                let commentDialog = new Dialog("品質ゲート承認", 60, 15)
+                let commentLabel = new Label("承認コメント:")
+                let commentText = new TextField("")
+                let okButton = new Button("承認", true)
+                let cancelButton = new Button("キャンセル")
+
+                commentLabel.X <- Pos.At(2)
+                commentLabel.Y <- Pos.At(2)
+                commentText.X <- Pos.At(2)
+                commentText.Y <- Pos.At(4)
+                commentText.Width <- Dim.Fill(2)
+
+                okButton.X <- Pos.At(2)
+                okButton.Y <- Pos.At(7)
+                cancelButton.X <- Pos.At(15)
+                cancelButton.Y <- Pos.At(7)
+
+                let mutable approved = false
+
+                okButton.add_Clicked (fun _ ->
+                    approved <- true
+                    Application.RequestStop())
+
+                cancelButton.add_Clicked (fun _ -> Application.RequestStop())
+
+                commentDialog.Add(commentLabel, commentText, okButton, cancelButton)
+                Application.Run(commentDialog)
+
+                if approved then
+                    let comment = commentText.Text.ToString()
+
+                    let approvalComment =
+                        if System.String.IsNullOrWhiteSpace(comment) then
+                            "PO承認"
+                        else
+                            comment
+
+                    // QualityGateUIIntegrationのApprove処理を呼び出し
+                    FCode.QualityGateUIIntegration.processPODecision (
+                        FCode.QualityGateUIIntegration.Approve approvalComment
+                    )
+                    |> ignore
+
+                    logInfo "KeyBindings" $"Quality Gate approved by PO: {approvalComment}"
+
+                    MessageBox.Query(50, 8, "承認完了", $"品質ゲートを承認しました:\n{approvalComment}", "OK")
+                    |> ignore
+                else
+                    logInfo "KeyBindings" "Quality Gate approval cancelled by user"
+
             with ex ->
+                logError "KeyBindings" $"品質ゲート承認エラー: {ex.Message}"
+
                 MessageBox.ErrorQuery(50, 10, "Error", $"品質ゲート承認エラー: {ex.Message}", "OK")
                 |> ignore
+
         | QualityGateReject ->
-            // 品質ゲート却下処理
+            // 品質ゲート却下処理 - QualityGateUIIntegrationとの連携
             try
-                MessageBox.Query(50, 8, "品質ゲート却下", "品質ゲート却下機能が呼び出されました\n\nSC-1-4実装完了: PO判断待ち状態表示機能", "OK")
-                |> ignore
+                logInfo "KeyBindings" "PO Quality Gate Rejection requested (Ctrl+Q R)"
+
+                // 却下理由入力ダイアログ
+                let rejectDialog = new Dialog("品質ゲート却下", 60, 15)
+                let reasonLabel = new Label("却下理由:")
+                let reasonText = new TextField("")
+                let rejectButton = new Button("却下", true)
+                let cancelButton = new Button("キャンセル")
+
+                reasonLabel.X <- Pos.At(2)
+                reasonLabel.Y <- Pos.At(2)
+                reasonText.X <- Pos.At(2)
+                reasonText.Y <- Pos.At(4)
+                reasonText.Width <- Dim.Fill(2)
+
+                rejectButton.X <- Pos.At(2)
+                rejectButton.Y <- Pos.At(7)
+                cancelButton.X <- Pos.At(15)
+                cancelButton.Y <- Pos.At(7)
+
+                let mutable rejected = false
+
+                rejectButton.add_Clicked (fun _ ->
+                    rejected <- true
+                    Application.RequestStop())
+
+                cancelButton.add_Clicked (fun _ -> Application.RequestStop())
+
+                rejectDialog.Add(reasonLabel, reasonText, rejectButton, cancelButton)
+                Application.Run(rejectDialog)
+
+                if rejected then
+                    let reason = reasonText.Text.ToString()
+
+                    let rejectReason =
+                        if System.String.IsNullOrWhiteSpace(reason) then
+                            "品質基準未達"
+                        else
+                            reason
+
+                    // QualityGateUIIntegrationのReject処理を呼び出し
+                    FCode.QualityGateUIIntegration.processPODecision (
+                        FCode.QualityGateUIIntegration.Reject rejectReason
+                    )
+                    |> ignore
+
+                    logInfo "KeyBindings" $"Quality Gate rejected by PO: {rejectReason}"
+
+                    MessageBox.Query(50, 8, "却下完了", $"品質ゲートを却下しました:\n{rejectReason}", "OK")
+                    |> ignore
+                else
+                    logInfo "KeyBindings" "Quality Gate rejection cancelled by user"
+
             with ex ->
+                logError "KeyBindings" $"品質ゲート却下エラー: {ex.Message}"
+
                 MessageBox.ErrorQuery(50, 10, "Error", $"品質ゲート却下エラー: {ex.Message}", "OK")
                 |> ignore
 

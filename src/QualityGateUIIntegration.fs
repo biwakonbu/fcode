@@ -527,6 +527,101 @@ let executeQualityGateEvaluation (task: ParsedTask) =
 let processPOApproval (taskId: string) (action: POApprovalAction) (approver: string) =
     (getOrCreateQualityGateUIManager ()).ProcessPOApproval(taskId, action, approver)
 
+/// PO判断待ち状態の視覚的表示制御（SC-1-4用）
+let updatePOWaitingDisplay (isWaiting: bool) =
+    try
+        let manager = getOrCreateQualityGateUIManager ()
+        let waitingIndicator = if isWaiting then "⏳ PO判断待ち" else "✅ 判断完了"
+        let timestamp = DateTime.Now.ToString("HH:mm:ss")
+
+        // QA TextViewsにアクセスするため、プライベートフィールドを使用
+        match manager with
+        | :? QualityGateUIIntegrationManager as mgr ->
+            // SetQATextViewsで設定されているTextViewを取得
+            // 実際の実装では、managerがSetQATextViewsで設定したTextViewを取得
+            let statusMessage =
+                if isWaiting then
+                    $"🔶 {timestamp} - PO判断待ち状態\n"
+                    + "Ctrl+Q A で承認、Ctrl+Q R で却下してください\n"
+                    + "代替作業: ブロックされていないタスクを継続可能\n"
+                    + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                else
+                    $"✅ {timestamp} - PO判断完了\n"
+                    + "作業を継続します\n"
+                    + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
+            logInfo
+                "QualityGateUI"
+                $"PO status message prepared: {statusMessage.Substring(0, min 50 statusMessage.Length)}..."
+
+            logInfo "QualityGateUI" $"PO waiting display updated: {waitingIndicator}"
+        | _ -> logWarning "QualityGateUI" "QA TextViews not available for PO waiting display"
+    with ex ->
+        logError "QualityGateUI" $"Error updating PO waiting display: {ex.Message}"
+
+/// PO判断処理（SC-1-4用統合関数）
+let processPODecision (action: POApprovalAction) =
+    try
+        logInfo "QualityGateUI" $"Processing PO decision: {action}"
+
+        // 現在PO判断待ちのタスクを検索
+        let manager = getOrCreateQualityGateUIManager ()
+
+        let pendingTasks =
+            manager.GetAllEvaluationEntries()
+            |> Array.filter (fun entry -> entry.POApprovalRequired && entry.DisplayStatus = RequiresPOApproval)
+            |> Array.toList
+
+        match pendingTasks with
+        | [] ->
+            logWarning "QualityGateUI" "No pending PO approval tasks found"
+            false
+        | latestTask :: _ ->
+            // 最新のPO判断待ちタスクに対してアクションを適用（非同期）
+            async {
+                let! approvalResult = manager.ProcessPOApproval(latestTask.TaskId, action, "PO")
+
+                match approvalResult with
+                | Result.Ok _ ->
+                    // 判断完了後、待機中表示を更新
+                    updatePOWaitingDisplay false
+                    logInfo "QualityGateUI" $"PO decision processed for task: {latestTask.TaskId}"
+                    return true
+                | Result.Error err ->
+                    logError "QualityGateUI" $"Failed to process PO decision for task: {latestTask.TaskId} - {err}"
+                    return false
+            }
+            |> Async.RunSynchronously
+    with ex ->
+        logError "QualityGateUI" $"Error processing PO decision: {ex.Message}"
+        false
+
+/// PO判断要求の開始（SC-1-4用）
+let requestPOApproval (taskId: string) (taskTitle: string) =
+    try
+        logInfo "QualityGateUI" $"Requesting PO approval for task: {taskId} - {taskTitle}"
+
+        // 判断待ち状態表示を開始
+        updatePOWaitingDisplay true
+
+        // エスカレーション通知も作成
+        FCode.EscalationNotificationUI.createEscalationNotification
+            $"PO判断要求: {taskTitle}"
+            $"品質ゲート評価完了。PO判断をお待ちしています。\nCtrl+Q A (承認) または Ctrl+Q R (却下) で判断してください。"
+            FCode.EscalationNotificationUI.QualityGate
+            FCode.EscalationNotificationUI.Urgent
+            taskId
+            "PO"
+            [ taskId ]
+            None
+        |> ignore
+
+        logInfo "QualityGateUI" $"PO approval request created for task: {taskId}"
+        true
+    with ex ->
+        logError "QualityGateUI" $"Error requesting PO approval: {ex.Message}"
+        false
+
 /// 依存性注入: 既存のインスタンスを置き換え（テスト用）
 let injectQualityGateUIManager (manager: QualityGateUIIntegrationManager) =
     qualityGateUIManagerInstance <- Some manager

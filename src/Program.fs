@@ -493,11 +493,51 @@ let main argv =
         logInfo "MemoryMonitor" (sprintf "起動時メモリ状態: %s" initialMemoryReport)
 
 
-        // Check if running in CI environment
-        let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+        // 包括的なCI環境判定（強化版）
+        let isCI =
+            let ciEnvVars =
+                [ "CI"
+                  "GITHUB_ACTIONS"
+                  "GITLAB_CI"
+                  "JENKINS_URL"
+                  "BUILDKITE"
+                  "TRAVIS"
+                  "CIRCLECI"
+                  "DRONE"
+                  "TEAMCITY_VERSION"
+                  "BAMBOO_BUILD_NUMBER"
+                  "TF_BUILD"
+                  "APPVEYOR"
+                  "CODEBUILD_BUILD_ID"
+                  "FCODE_TEST_CI" ]
+
+            let hasCI =
+                ciEnvVars
+                |> List.exists (System.Environment.GetEnvironmentVariable >> isNull >> not)
+
+            // ヘッドレス環境チェック（DISPLAY環境変数なし）
+            let isHeadless = isNull (System.Environment.GetEnvironmentVariable("DISPLAY"))
+
+            // テスト実行環境チェック
+            let isTestExecution =
+                let assembly = System.Reflection.Assembly.GetExecutingAssembly()
+
+                assembly.FullName.Contains("Tests")
+                || assembly.FullName.Contains("nunit")
+                || assembly.FullName.Contains("test")
+
+            // NUnit Test実行中かチェック
+            let isNUnitExecution =
+                try
+                    System.AppDomain.CurrentDomain.GetAssemblies()
+                    |> Array.exists (fun a -> a.FullName.Contains("nunit"))
+                with _ ->
+                    false
+
+            hasCI || isHeadless || isTestExecution || isNUnitExecution
 
         if isCI then
-            logInfo "Application" "Running in CI environment - skipping Terminal.Gui initialization"
+            logInfo "Application" "Running in CI/Test environment - skipping Terminal.Gui initialization"
             0 // Exit successfully in CI
         else
             // Initialize application

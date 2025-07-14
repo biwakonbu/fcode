@@ -178,5 +178,4 @@ type SC1DetailedValidationTests() =
             Assert.Pass("基本動作確認が成功しました")
 
         with ex ->
-            printfn "基本動作確認でエラーが発生: %s" ex.Message
             Assert.Fail(sprintf "基本動作確認でエラーが発生: %s" ex.Message)

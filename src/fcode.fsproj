@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
+    <!-- Suppress PTY.Net platform-specific binary warnings on Linux CI -->
+    <NoWarn>$(NoWarn);MSB3246</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SecurityUtils.fs" />

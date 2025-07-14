@@ -20,6 +20,8 @@
     <DefineConstants>CI_ENVIRONMENT</DefineConstants>
     <DebugType>portable</DebugType>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Suppress PTY.Net platform-specific binary warnings on Linux CI -->
+    <NoWarn>$(NoWarn);MSB3246</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -105,6 +107,8 @@
     <Compile Include="DevOpsIntegrationTests.fs"/>
     <!-- Issue #94: TUI Internal API Tests (将来実装) -->
     <Compile Include="TUIInternalAPITests.fs"/>
+    <!-- SC-1-2: Agent Work Display Integration Tests -->
+    <Compile Include="SC12IntegrationTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

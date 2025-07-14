@@ -63,7 +63,7 @@ type SessionBridge(pane: TextView) =
                             pane.SetNeedsDisplay())
 
                         lastOutput <- currentOutput
-                        logDebug "SessionBridge" $"TextView更新: {currentOutput.Length}文字"
+                        logDebug "SessionBridge" (sprintf "TextView更新: %d文字" currentOutput.Length)
 
                     // CPU使用率制御（100ms間隔）
                     do! Task.Delay(100)

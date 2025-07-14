@@ -106,6 +106,8 @@
     <Compile Include="DevOpsIntegration.fs" />
     <!-- Issue #94: TUI Internal API (基本型定義のみ実装) -->
     <Compile Include="TUIInternalAPI.fs" />
+    <!-- Issue #108: SC-1 Integration Test -->
+    <Compile Include="SC1IntegrationTest.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

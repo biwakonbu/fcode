@@ -537,27 +537,27 @@ let updatePOWaitingDisplay (isWaiting: bool) =
         // QA TextViewsの状態表示（SC-1-4 PO判断待ち状態管理）
         let statusMessage =
             if isWaiting then
-                $"🔶 {timestamp} - PO判断待ち状態\n"
+                sprintf "🔶 %s - PO判断待ち状態\n" timestamp
                 + "Ctrl+Q A で承認、Ctrl+Q R で却下してください\n"
                 + "代替作業: ブロックされていないタスクを継続可能\n"
                 + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             else
-                $"✅ {timestamp} - PO判断完了\n"
+                sprintf "✅ %s - PO判断完了\n" timestamp
                 + "作業を継続します\n"
                 + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
         logInfo
             "QualityGateUI"
-            $"PO status message prepared: {statusMessage.Substring(0, min 50 statusMessage.Length)}..."
+            (sprintf "PO status message prepared: %s..." (statusMessage.Substring(0, min 50 statusMessage.Length)))
 
-        logInfo "QualityGateUI" $"PO waiting display updated: {waitingIndicator}"
+        logInfo "QualityGateUI" (sprintf "PO waiting display updated: %s" waitingIndicator)
     with ex ->
-        logError "QualityGateUI" $"Error updating PO waiting display: {ex.Message}"
+        logError "QualityGateUI" (sprintf "Error updating PO waiting display: %s" ex.Message)
 
 /// PO判断処理（SC-1-4用統合関数）
 let processPODecision (action: POApprovalAction) =
     try
-        logInfo "QualityGateUI" $"Processing PO decision: {action}"
+        logInfo "QualityGateUI" (sprintf "Processing PO decision: %A" action)
 
         // 現在PO判断待ちのタスクを検索
         let manager = getOrCreateQualityGateUIManager ()
@@ -580,29 +580,32 @@ let processPODecision (action: POApprovalAction) =
                 | Result.Ok _ ->
                     // 判断完了後、待機中表示を更新
                     updatePOWaitingDisplay false
-                    logInfo "QualityGateUI" $"PO decision processed for task: {latestTask.TaskId}"
+                    logInfo "QualityGateUI" (sprintf "PO decision processed for task: %s" latestTask.TaskId)
                     return true
                 | Result.Error err ->
-                    logError "QualityGateUI" $"Failed to process PO decision for task: {latestTask.TaskId} - {err}"
+                    logError
+                        "QualityGateUI"
+                        (sprintf "Failed to process PO decision for task: %s - %s" latestTask.TaskId err)
+
                     return false
             }
             |> Async.RunSynchronously
     with ex ->
-        logError "QualityGateUI" $"Error processing PO decision: {ex.Message}"
+        logError "QualityGateUI" (sprintf "Error processing PO decision: %s" ex.Message)
         false
 
 /// PO判断要求の開始（SC-1-4用）
 let requestPOApproval (taskId: string) (taskTitle: string) =
     try
-        logInfo "QualityGateUI" $"Requesting PO approval for task: {taskId} - {taskTitle}"
+        logInfo "QualityGateUI" (sprintf "Requesting PO approval for task: %s - %s" taskId taskTitle)
 
         // 判断待ち状態表示を開始
         updatePOWaitingDisplay true
 
         // エスカレーション通知も作成
         FCode.EscalationNotificationUI.createEscalationNotification
-            $"PO判断要求: {taskTitle}"
-            $"品質ゲート評価完了。PO判断をお待ちしています。\nCtrl+Q A (承認) または Ctrl+Q R (却下) で判断してください。"
+            (sprintf "PO判断要求: %s" taskTitle)
+            (sprintf "品質ゲート評価完了。PO判断をお待ちしています。\nCtrl+Q A (承認) または Ctrl+Q R (却下) で判断してください。")
             FCode.EscalationNotificationUI.QualityGate
             FCode.EscalationNotificationUI.Urgent
             taskId
@@ -611,10 +614,10 @@ let requestPOApproval (taskId: string) (taskTitle: string) =
             None
         |> ignore
 
-        logInfo "QualityGateUI" $"PO approval request created for task: {taskId}"
+        logInfo "QualityGateUI" (sprintf "PO approval request created for task: %s" taskId)
         true
     with ex ->
-        logError "QualityGateUI" $"Error requesting PO approval: {ex.Message}"
+        logError "QualityGateUI" (sprintf "Error requesting PO approval: %s" ex.Message)
         false
 
 /// 依存性注入: 既存のインスタンスを置き換え（テスト用）

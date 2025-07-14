@@ -28,6 +28,8 @@ open FCode
 let mutable globalPaneTextViews: Map<string, TextView> = Map.empty
 let mutable agentStatusViews: Map<string, TextView> = Map.empty
 let mutable sessionBridges: Map<string, SessionBridge> = Map.empty
+let mutable keyRouters: Map<string, KeyRouter> = Map.empty
+let mutable currentFocusedPane: string = "conversation"
 
 // タイムスタンプを取得するヘルパー関数
 let getCurrentTimestamp () =
@@ -976,13 +978,17 @@ let main argv =
             let startClaudeCodeWithSessionBridge (paneId: string) (textView: TextView) =
                 async {
                     try
-                        logInfo "SessionBridge" $"dev1ペイン用SessionBridge起動開始: {paneId}"
+                        logInfo "SessionBridge" (sprintf "dev1ペイン用SessionBridge起動開始: %s" paneId)
 
                         textView.Text <- NStack.ustring.Make($"[DEBUG] {paneId}ペイン - SessionBridge起動中...")
                         textView.SetNeedsDisplay()
 
                         let sessionBridge = new SessionBridge(textView)
                         sessionBridges <- sessionBridges.Add(paneId, sessionBridge)
+
+                        // KeyRouterを作成・登録
+                        let keyRouter = new KeyRouter(sessionBridge)
+                        keyRouters <- keyRouters.Add(paneId, keyRouter)
 
                         let workingDir = System.Environment.CurrentDirectory
                         let claudeCommand = "claude"
@@ -994,17 +1000,17 @@ let main argv =
 
                         match result with
                         | Result.Ok() ->
-                            logInfo "SessionBridge" $"SessionBridge起動成功: {paneId}"
+                            logInfo "SessionBridge" (sprintf "SessionBridge起動成功: %s" paneId)
                             textView.Text <- NStack.ustring.Make($"✅ {paneId}ペイン - Claude Code接続完了")
                         | Result.Error errorMsg ->
-                            logError "SessionBridge" $"SessionBridge起動エラー: {errorMsg}"
-                            textView.Text <- NStack.ustring.Make($"❌ {paneId}ペイン - 接続エラー: {errorMsg}")
+                            logError "SessionBridge" (sprintf "SessionBridge起動エラー: %s" errorMsg)
+                            textView.Text <- NStack.ustring.Make(sprintf "❌ %sペイン - 接続エラー: %s" paneId errorMsg)
 
                         textView.SetNeedsDisplay()
 
                     with ex ->
-                        logError "SessionBridge" $"SessionBridge起動例外: {ex.Message}"
-                        textView.Text <- NStack.ustring.Make($"❌ {paneId}ペイン - 起動例外: {ex.Message}")
+                        logError "SessionBridge" (sprintf "SessionBridge起動例外: %s" ex.Message)
+                        textView.Text <- NStack.ustring.Make(sprintf "❌ %sペイン - 起動例外: %s" paneId ex.Message)
                         textView.SetNeedsDisplay()
                 }
 
@@ -1283,20 +1289,67 @@ let main argv =
             // Create focus management for panes
             let focusablePanes = [| convo; dev1; dev2; dev3; qa1; qa2; ux; timeline |]
 
+            // フォーカス追跡のためのイベントハンドラー
+            let setupFocusTracking () =
+                let paneNames =
+                    [ ("conversation", convo)
+                      ("dev1", dev1)
+                      ("dev2", dev2)
+                      ("dev3", dev3)
+                      ("qa1", qa1)
+                      ("qa2", qa2)
+                      ("ux", ux)
+                      ("pm", timeline) ]
+
+                paneNames
+                |> List.iter (fun (paneName, pane) ->
+                    pane.add_Enter (
+                        System.Action<View.FocusEventArgs>(fun _ ->
+                            currentFocusedPane <- paneName
+                            logDebug "FocusTracking" (sprintf "フォーカス移動: %s" paneName))
+                    ))
+
+            setupFocusTracking ()
+
             // Create Emacs key handler
-            // TEMPORARILY DISABLED for debugging
-            // let emacsKeyHandler = EmacsKeyHandler(focusablePanes, sessionManager)
+            let emacsKeyHandler = EmacsKeyHandler(focusablePanes, sessionManager)
 
-            // Add Emacs-style key handling
-            // TEMPORARILY DISABLED for debugging
-            // let keyHandler =
-            //     System.Action<View.KeyEventEventArgs>(fun args ->
-            //         let handled = emacsKeyHandler.HandleKey(args.KeyEvent)
-            //         args.Handled <- handled)
+            // 統合キーハンドリング: Emacsキーバインド + KeyRouter透過処理
+            let unifiedKeyHandler =
+                System.Action<View.KeyEventEventArgs>(fun args ->
+                    try
+                        // dev1ペインでのキー入力をKeyRouterで処理
+                        if currentFocusedPane = "dev1" then
+                            match keyRouters.TryFind("dev1") with
+                            | Some keyRouter ->
+                                let isTransparentKey = keyRouter.RouteKey(args.KeyEvent)
 
-            // Override key processing
-            // TEMPORARILY DISABLED for debugging
-            // top.add_KeyDown keyHandler
+                                if isTransparentKey then
+                                    // Claude透過キーの場合は処理済みとマーク
+                                    args.Handled <- true
+                                    logDebug "KeyHandler" (sprintf "dev1ペイン透過キー処理: %A" args.KeyEvent.Key)
+                                else
+                                    // fcodeホットキーの場合はEmacsハンドラーに委譲
+                                    let handled = emacsKeyHandler.HandleKey(args.KeyEvent)
+                                    args.Handled <- handled
+
+                                    logDebug
+                                        "KeyHandler"
+                                        (sprintf "dev1ペインfcodeキー処理: %A, handled=%b" args.KeyEvent.Key handled)
+                            | None ->
+                                // KeyRouterが存在しない場合は通常のEmacsハンドラー
+                                let handled = emacsKeyHandler.HandleKey(args.KeyEvent)
+                                args.Handled <- handled
+                        else
+                            // 他のペインは通常のEmacsキーバインド処理
+                            let handled = emacsKeyHandler.HandleKey(args.KeyEvent)
+                            args.Handled <- handled
+                    with ex ->
+                        logError "KeyHandler" (sprintf "キーハンドリング例外: %s" ex.Message)
+                        args.Handled <- false)
+
+            // 統合キーハンドラーを登録
+            top.add_KeyDown unifiedKeyHandler
 
             // 会話ペイン専用入力ハンドラー（TextView専用）
             let conversationInputHandler =

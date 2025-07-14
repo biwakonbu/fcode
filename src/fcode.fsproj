@@ -29,6 +29,7 @@
     <Compile Include="ResourceMonitor.fs" />
     <Compile Include="ResourceController.fs" />
     <Compile Include="PtyNetManager.fs" />
+    <Compile Include="SessionBridge.fs" />
     <Compile Include="QAPromptManager.fs" />
     <Compile Include="UXPromptManager.fs" />
     <Compile Include="PMPromptManager.fs" />

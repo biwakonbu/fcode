@@ -20,6 +20,8 @@
     <DefineConstants>CI_ENVIRONMENT</DefineConstants>
     <DebugType>portable</DebugType>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Suppress PTY.Net platform-specific binary warnings on Linux CI -->
+    <NoWarn>$(NoWarn);MSB3246</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

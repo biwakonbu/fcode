@@ -363,6 +363,9 @@ let processPOInstruction (instruction: string) : unit =
                         textView.Text <- newText
                         textView.SetNeedsDisplay()
                         logInfo "UI" (sprintf "Task assigned to %s: %s (fallback display)" agentId task.Title)
+                | None ->
+                    // エージェントのペインが見つからない場合のログ
+                    logWarning "UI" (sprintf "TextView not found for agent: %s, task: %s" agentId task.Title)
 
             // 18分スプリント自動開始
             let sprintId = sprintf "SPRINT_%s" (System.DateTime.Now.ToString("yyyyMMddHHmmss"))

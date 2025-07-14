@@ -14,11 +14,6 @@ open FCode.SC1IntegrationTest
 [<Category("Integration")>]
 type SC1IntegrationTestFixture() =
 
-    [<SetUp>]
-    member _.Setup() =
-        // テスト前の初期化
-        ()
-
     [<Test>]
     [<Category("Integration")>]
     member _.``SC-1-1 PO指示入力機能テスト``() =

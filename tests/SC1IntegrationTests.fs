@@ -9,6 +9,48 @@ open FCode.QualityGateManager
 open FCode.Collaboration.CollaborationTypes
 open FCode.SC1IntegrationTest
 
+// 安全な型キャストヘルパー関数
+let safeCastInt (key: string) (value: obj) : int =
+    match value with
+    | :? int as i -> i
+    | :? string as s ->
+        match Int32.TryParse(s) with
+        | (true, i) -> i
+        | (false, _) ->
+            Assert.Fail(sprintf "キー '%s' の値 '%s' をintに変換できませんでした" key s)
+            0
+    | _ ->
+        Assert.Fail(sprintf "キー '%s' の値の型が不正です。期待型: int, 実際型: %s" key (value.GetType().Name))
+        0
+
+let safeCastFloat (key: string) (value: obj) : float =
+    match value with
+    | :? double as d -> d
+    | :? float32 as f -> float f
+    | :? int as i -> float i
+    | :? string as s ->
+        match Double.TryParse(s) with
+        | (true, f) -> f
+        | (false, _) ->
+            Assert.Fail(sprintf "キー '%s' の値 '%s' をfloatに変換できませんでした" key s)
+            0.0
+    | _ ->
+        Assert.Fail(sprintf "キー '%s' の値の型が不正です。期待型: float, 実際型: %s" key (value.GetType().Name))
+        0.0
+
+let safeCastBool (key: string) (value: obj) : bool =
+    match value with
+    | :? bool as b -> b
+    | :? string as s ->
+        match Boolean.TryParse(s) with
+        | (true, b) -> b
+        | (false, _) ->
+            Assert.Fail(sprintf "キー '%s' の値 '%s' をboolに変換できませんでした" key s)
+            false
+    | _ ->
+        Assert.Fail(sprintf "キー '%s' の値の型が不正です。期待型: bool, 実際型: %s" key (value.GetType().Name))
+        false
+
 /// SC-1統合テストクラス
 [<TestFixture>]
 [<Category("Integration")>]
@@ -21,7 +63,7 @@ type SC1IntegrationTestFixture() =
         match testPOInstructionInput () with
         | Result.Ok details ->
             Assert.That(details.ContainsKey("assignmentCount"), Is.True, "タスク配分数が記録されていること")
-            let assignmentCount = details.["assignmentCount"] :?> int
+            let assignmentCount = safeCastInt "assignmentCount" details.["assignmentCount"]
             Assert.That(assignmentCount, Is.GreaterThan(0), "1つ以上のタスクが配分されること")
         | Result.Error errorMsg -> Assert.Fail(sprintf "PO指示入力テスト失敗: %s" errorMsg)
 
@@ -33,7 +75,7 @@ type SC1IntegrationTestFixture() =
         | Result.Ok details ->
             Assert.That(details.ContainsKey("agentId"), Is.True, "エージェントIDが記録されていること")
             Assert.That(details.ContainsKey("taskTitle"), Is.True, "タスクタイトルが記録されていること")
-            let statusLength = details.["statusLength"] :?> int
+            let statusLength = safeCastInt "statusLength" details.["statusLength"]
             Assert.That(statusLength, Is.GreaterThan(0), "作業状況が表示されること")
         | Result.Error errorMsg -> Assert.Fail(sprintf "エージェント作業表示テスト失敗: %s" errorMsg)
 
@@ -45,7 +87,7 @@ type SC1IntegrationTestFixture() =
         | Result.Ok details ->
             Assert.That(details.ContainsKey("sprintId"), Is.True, "スプリントIDが記録されていること")
             Assert.That(details.ContainsKey("managerInitialized"), Is.True, "スプリントマネージャーが初期化されていること")
-            let initialized = details.["managerInitialized"] :?> bool
+            let initialized = safeCastBool "managerInitialized" details.["managerInitialized"]
             Assert.That(initialized, Is.True, "スプリントマネージャーが正常に初期化されること")
         | Result.Error errorMsg -> Assert.Fail(sprintf "スプリント連携テスト失敗: %s" errorMsg)
 
@@ -69,9 +111,9 @@ type SC1IntegrationTestFixture() =
             Assert.That(details.ContainsKey("assignmentCount"), Is.True, "タスク配分数が記録されていること")
             Assert.That(details.ContainsKey("registeredAgents"), Is.True, "登録エージェント数が記録されていること")
 
-            let assignmentCount = details.["assignmentCount"] :?> int
-            let registeredAgents = details.["registeredAgents"] :?> int
-            let workflowDuration = details.["workflowDuration"] :?> float
+            let assignmentCount = safeCastInt "assignmentCount" details.["assignmentCount"]
+            let registeredAgents = safeCastInt "registeredAgents" details.["registeredAgents"]
+            let workflowDuration = safeCastFloat "workflowDuration" details.["workflowDuration"]
 
             Assert.That(assignmentCount, Is.GreaterThan(0), "タスクが配分されること")
             Assert.That(registeredAgents, Is.GreaterThan(0), "エージェントが登録されること")
@@ -85,9 +127,9 @@ type SC1IntegrationTestFixture() =
         // パフォーマンスと安定性のテスト
         match testPerformanceAndStability () with
         | Result.Ok details ->
-            let successRate = details.["successRate"] :?> float
-            let executionTime = details.["executionTime"] :?> float
-            let avgOperationTime = details.["avgOperationTime"] :?> float
+            let successRate = safeCastFloat "successRate" details.["successRate"]
+            let executionTime = safeCastFloat "executionTime" details.["executionTime"]
+            let avgOperationTime = safeCastFloat "avgOperationTime" details.["avgOperationTime"]
 
             Assert.That(successRate, Is.GreaterThanOrEqualTo(90.0), "90%以上の成功率を維持すること")
             Assert.That(executionTime, Is.LessThan(10.0), "実行時間が10秒以内であること")

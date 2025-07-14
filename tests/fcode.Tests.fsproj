@@ -112,6 +112,8 @@
     <Compile Include="TUIInternalAPITests.fs"/>
     <!-- SC-1-2: Agent Work Display Integration Tests -->
     <Compile Include="SC12IntegrationTests.fs"/>
+    <!-- Issue #108: SC-1 Integration Tests -->
+    <Compile Include="SC1IntegrationTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

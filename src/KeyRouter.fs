@@ -29,9 +29,9 @@ type KeyRouter(sessionBridge: SessionBridge) =
             let success = this.SendToPty(keyEvent)
 
             if success then
-                logDebug "KeyRouter" $"Claude透過キー送信成功: {this.GetKeyDescription(keyEvent)}"
+                logDebug "KeyRouter" (sprintf "Claude透過キー送信成功: %s" (this.GetKeyDescription(keyEvent)))
             else
-                logWarning "KeyRouter" $"Claude透過キー送信失敗: {this.GetKeyDescription(keyEvent)}"
+                logWarning "KeyRouter" (sprintf "Claude透過キー送信失敗: %s" (this.GetKeyDescription(keyEvent)))
 
             true
 
@@ -41,7 +41,7 @@ type KeyRouter(sessionBridge: SessionBridge) =
             let keySequence = this.ConvertToEscapeSequence(keyEvent)
             sessionBridge.SendInput(keySequence)
         with ex ->
-            logError "KeyRouter" $"PTY送信例外: {ex.Message}"
+            logError "KeyRouter" (sprintf "PTY送信例外: %s" ex.Message)
             false
 
     /// KeyEventをエスケープシーケンスに変換

@@ -978,7 +978,7 @@ let main argv =
             let startClaudeCodeWithSessionBridge (paneId: string) (textView: TextView) =
                 async {
                     try
-                        logInfo "SessionBridge" $"dev1ペイン用SessionBridge起動開始: {paneId}"
+                        logInfo "SessionBridge" (sprintf "dev1ペイン用SessionBridge起動開始: %s" paneId)
 
                         textView.Text <- NStack.ustring.Make($"[DEBUG] {paneId}ペイン - SessionBridge起動中...")
                         textView.SetNeedsDisplay()
@@ -1000,17 +1000,17 @@ let main argv =
 
                         match result with
                         | Result.Ok() ->
-                            logInfo "SessionBridge" $"SessionBridge起動成功: {paneId}"
+                            logInfo "SessionBridge" (sprintf "SessionBridge起動成功: %s" paneId)
                             textView.Text <- NStack.ustring.Make($"✅ {paneId}ペイン - Claude Code接続完了")
                         | Result.Error errorMsg ->
-                            logError "SessionBridge" $"SessionBridge起動エラー: {errorMsg}"
-                            textView.Text <- NStack.ustring.Make($"❌ {paneId}ペイン - 接続エラー: {errorMsg}")
+                            logError "SessionBridge" (sprintf "SessionBridge起動エラー: %s" errorMsg)
+                            textView.Text <- NStack.ustring.Make(sprintf "❌ %sペイン - 接続エラー: %s" paneId errorMsg)
 
                         textView.SetNeedsDisplay()
 
                     with ex ->
-                        logError "SessionBridge" $"SessionBridge起動例外: {ex.Message}"
-                        textView.Text <- NStack.ustring.Make($"❌ {paneId}ペイン - 起動例外: {ex.Message}")
+                        logError "SessionBridge" (sprintf "SessionBridge起動例外: %s" ex.Message)
+                        textView.Text <- NStack.ustring.Make(sprintf "❌ %sペイン - 起動例外: %s" paneId ex.Message)
                         textView.SetNeedsDisplay()
                 }
 
@@ -1306,7 +1306,7 @@ let main argv =
                     pane.add_Enter (
                         System.Action<View.FocusEventArgs>(fun _ ->
                             currentFocusedPane <- paneName
-                            logDebug "FocusTracking" $"フォーカス移動: {paneName}")
+                            logDebug "FocusTracking" (sprintf "フォーカス移動: %s" paneName))
                     ))
 
             setupFocusTracking ()
@@ -1327,12 +1327,15 @@ let main argv =
                                 if isTransparentKey then
                                     // Claude透過キーの場合は処理済みとマーク
                                     args.Handled <- true
-                                    logDebug "KeyHandler" $"dev1ペイン透過キー処理: {args.KeyEvent.Key}"
+                                    logDebug "KeyHandler" (sprintf "dev1ペイン透過キー処理: %A" args.KeyEvent.Key)
                                 else
                                     // fcodeホットキーの場合はEmacsハンドラーに委譲
                                     let handled = emacsKeyHandler.HandleKey(args.KeyEvent)
                                     args.Handled <- handled
-                                    logDebug "KeyHandler" $"dev1ペインfcodeキー処理: {args.KeyEvent.Key}, handled={handled}"
+
+                                    logDebug
+                                        "KeyHandler"
+                                        (sprintf "dev1ペインfcodeキー処理: %A, handled=%b" args.KeyEvent.Key handled)
                             | None ->
                                 // KeyRouterが存在しない場合は通常のEmacsハンドラー
                                 let handled = emacsKeyHandler.HandleKey(args.KeyEvent)
@@ -1342,7 +1345,7 @@ let main argv =
                             let handled = emacsKeyHandler.HandleKey(args.KeyEvent)
                             args.Handled <- handled
                     with ex ->
-                        logError "KeyHandler" $"キーハンドリング例外: {ex.Message}"
+                        logError "KeyHandler" (sprintf "キーハンドリング例外: %s" ex.Message)
                         args.Handled <- false)
 
             // 統合キーハンドラーを登録

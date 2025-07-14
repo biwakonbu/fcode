@@ -29,6 +29,7 @@
     <Compile Include="ResourceMonitor.fs" />
     <Compile Include="ResourceController.fs" />
     <Compile Include="PtyNetManager.fs" />
+    <Compile Include="FallbackProcessManager.fs" />
     <Compile Include="SessionBridge.fs" />
     <Compile Include="KeyRouter.fs" />
     <Compile Include="QAPromptManager.fs" />

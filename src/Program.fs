@@ -28,6 +28,8 @@ open FCode
 let mutable globalPaneTextViews: Map<string, TextView> = Map.empty
 let mutable agentStatusViews: Map<string, TextView> = Map.empty
 let mutable sessionBridges: Map<string, SessionBridge> = Map.empty
+// Terminal.GuiのイベントはすべてUIスレッドで実行されるため、
+// これらのグローバル変数へのアクセスは同期化不要
 let mutable keyRouters: Map<string, KeyRouter> = Map.empty
 let mutable currentFocusedPane: string = "conversation"
 
@@ -980,7 +982,7 @@ let main argv =
                     try
                         logInfo "SessionBridge" (sprintf "dev1ペイン用SessionBridge起動開始: %s" paneId)
 
-                        textView.Text <- NStack.ustring.Make($"[DEBUG] {paneId}ペイン - SessionBridge起動中...")
+                        textView.Text <- NStack.ustring.Make(sprintf "[DEBUG] %sペイン - SessionBridge起動中..." paneId)
                         textView.SetNeedsDisplay()
 
                         let sessionBridge = new SessionBridge(textView)
@@ -1001,7 +1003,7 @@ let main argv =
                         match result with
                         | Result.Ok() ->
                             logInfo "SessionBridge" (sprintf "SessionBridge起動成功: %s" paneId)
-                            textView.Text <- NStack.ustring.Make($"✅ {paneId}ペイン - Claude Code接続完了")
+                            textView.Text <- NStack.ustring.Make(sprintf "✅ %sペイン - Claude Code接続完了" paneId)
                         | Result.Error errorMsg ->
                             logError "SessionBridge" (sprintf "SessionBridge起動エラー: %s" errorMsg)
                             textView.Text <- NStack.ustring.Make(sprintf "❌ %sペイン - 接続エラー: %s" paneId errorMsg)

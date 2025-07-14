@@ -32,8 +32,8 @@ module JsonSanitizer =
            @"[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]", " " // 制御文字（TAB・LF保持）
            @"[\uFEFF]", " " // BOM文字
 
-           // JSON特有の問題文字
-           @"[^\x09\x0A\x0D\x20-\x7E\x80-\uFFFF]", " " // ASCII印刷可能文字以外
+           // JSON特有の問題文字（日本語文字は保持）
+           @"[^\x09\x0A\x0D\x20-\x7E\u00A0-\uFFFF]", " " // ASCII+Unicode印刷可能文字以外
            @"\\x[0-9a-fA-F]{2}", " " |] // 16進エスケープ残存
 
     /// 入力文字列から制御文字・エスケープシーケンスを完全除去（強化版）
@@ -67,8 +67,8 @@ module JsonSanitizer =
                     step2.ToCharArray()
                     |> Array.map (fun c ->
                         let code = int c
-                        // 安全なASCII文字のみ保持
-                        if (code >= 32 && code <= 126) || code = 9 || code = 10 || code = 13 then
+                        // 安全なASCII+Unicode文字保持（日本語対応）
+                        if (code >= 32 && code <= 126) || code = 9 || code = 10 || code = 13 || code >= 160 then
                             c
                         else
                             ' ')

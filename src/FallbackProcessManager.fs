@@ -11,6 +11,7 @@ type FallbackProcessManager() =
     let mutable currentProcess: Process option = None
     let mutable isActive = false
     let mutable outputBuffer = System.Text.StringBuilder()
+    let outputLock = obj ()
 
     /// フォールバックプロセスの開始
     member this.StartProcess
@@ -34,21 +35,28 @@ type FallbackProcessManager() =
                         CreateNoWindow = true
                     )
 
-                let newProcess = Process.Start(psi)
-                currentProcess <- Some newProcess
-                isActive <- true
+                let newProcess = new Process()
+                newProcess.StartInfo <- psi
+                let started = newProcess.Start()
 
-                // 標準出力・エラー出力の非同期読み取り開始
-                newProcess.OutputDataReceived.Add(this.OnOutputReceived)
-                newProcess.ErrorDataReceived.Add(this.OnErrorReceived)
-                newProcess.BeginOutputReadLine()
-                newProcess.BeginErrorReadLine()
+                if not started then
+                    newProcess.Dispose()
+                    Result.Error "プロセスの開始に失敗しました"
+                else
+                    currentProcess <- Some newProcess
+                    isActive <- true
 
-                logInfo
-                    "FallbackProcessManager"
-                    (sprintf "フォールバックプロセス開始成功: sessionId=%s, PID=%d" sessionId newProcess.Id)
+                    // 標準出力・エラー出力の非同期読み取り開始
+                    newProcess.OutputDataReceived.Add(this.OnOutputReceived)
+                    newProcess.ErrorDataReceived.Add(this.OnErrorReceived)
+                    newProcess.BeginOutputReadLine()
+                    newProcess.BeginErrorReadLine()
 
-                Result.Ok()
+                    logInfo
+                        "FallbackProcessManager"
+                        (sprintf "フォールバックプロセス開始成功: sessionId=%s, PID=%d" sessionId newProcess.Id)
+
+                    Result.Ok()
 
         with ex ->
             logError "FallbackProcessManager" (sprintf "フォールバックプロセス開始失敗: %s" ex.Message)
@@ -57,13 +65,13 @@ type FallbackProcessManager() =
     /// 標準出力受信イベントハンドラ
     member private this.OnOutputReceived(e: DataReceivedEventArgs) : unit =
         if not (isNull e.Data) then
-            outputBuffer.AppendLine(e.Data) |> ignore
+            lock outputLock (fun () -> outputBuffer.AppendLine(e.Data) |> ignore)
             logDebug "FallbackProcessManager" (sprintf "標準出力受信: %s" e.Data)
 
     /// 標準エラー受信イベントハンドラ
     member private this.OnErrorReceived(e: DataReceivedEventArgs) : unit =
         if not (isNull e.Data) then
-            outputBuffer.AppendLine(sprintf "[STDERR] %s" e.Data) |> ignore
+            lock outputLock (fun () -> outputBuffer.AppendLine(sprintf "[STDERR] %s" e.Data) |> ignore)
             logWarning "FallbackProcessManager" (sprintf "標準エラー受信: %s" e.Data)
 
     /// プロセスへの入力送信
@@ -83,10 +91,12 @@ type FallbackProcessManager() =
             false
 
     /// 現在の出力バッファを取得
-    member this.GetOutput() : string = outputBuffer.ToString()
+    member this.GetOutput() : string =
+        lock outputLock (fun () -> outputBuffer.ToString())
 
     /// 出力バッファをクリア
-    member this.ClearOutput() : unit = outputBuffer.Clear() |> ignore
+    member this.ClearOutput() : unit =
+        lock outputLock (fun () -> outputBuffer.Clear() |> ignore)
 
     /// プロセスの停止
     member this.StopProcess() : unit =

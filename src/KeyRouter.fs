@@ -118,4 +118,4 @@ type KeyRouter(sessionBridge: SessionBridge) =
 
     /// デバッグ用キー説明を取得
     member private this.GetKeyDescription(keyEvent: KeyEvent) : string =
-        $"Key={keyEvent.Key}, KeyValue={keyEvent.KeyValue}"
+        sprintf "Key=%A, KeyValue=%d" keyEvent.Key keyEvent.KeyValue

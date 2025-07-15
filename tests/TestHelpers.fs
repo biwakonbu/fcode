@@ -83,16 +83,46 @@ let createTestableFrameView (title: string) : ITestableView =
 let initializeTerminalGui () =
     if not (isCI ()) then
         try
-            Application.Init()
+            // 完全にサイレントな初期化
+            let originalOut = System.Console.Out
+            let originalErr = System.Console.Error
+
+            try
+                System.Console.SetOut(System.IO.TextWriter.Null)
+                System.Console.SetError(System.IO.TextWriter.Null)
+                Application.Init()
+            finally
+                System.Console.SetOut(originalOut)
+                System.Console.SetError(originalErr)
         with _ ->
             () // Already initialized
+    else
+        // CI環境では一切の出力を抑制
+        System.Console.SetOut(System.IO.TextWriter.Null)
+        System.Console.SetError(System.IO.TextWriter.Null)
 
 let shutdownTerminalGui () =
     if not (isCI ()) then
         try
-            Application.Shutdown()
+            let originalOut = System.Console.Out
+            let originalErr = System.Console.Error
+
+            try
+                System.Console.SetOut(System.IO.TextWriter.Null)
+                System.Console.SetError(System.IO.TextWriter.Null)
+                Application.Shutdown()
+            finally
+                System.Console.SetOut(originalOut)
+                System.Console.SetError(originalErr)
         with _ ->
             () // Not initialized or already shutdown
+    else
+        // CI環境では標準出力を復元
+        try
+            System.Console.SetOut(new System.IO.StreamWriter(System.Console.OpenStandardOutput()))
+            System.Console.SetError(new System.IO.StreamWriter(System.Console.OpenStandardError()))
+        with _ ->
+            ()
 
 // CI安全なFrameView配列作成（KeyBindingsTests対応）
 // CI環境では実際のFrameViewを作成せず、テスト専用実装を返す
@@ -116,8 +146,17 @@ let createMockFrameViews (count: int) =
         Array.init count (fun i -> new CIMockFrameView($"mock-pane{i}") :> View)
     else
         // 開発環境：実際のTerminal.Gui FrameViewを使用
-        initializeTerminalGui ()
-        Array.init count (fun i -> new FrameView($"pane{i}") :> View)
+        let originalOut = System.Console.Out
+        let originalErr = System.Console.Error
+
+        try
+            System.Console.SetOut(System.IO.TextWriter.Null)
+            System.Console.SetError(System.IO.TextWriter.Null)
+            initializeTerminalGui ()
+            Array.init count (fun i -> new FrameView($"pane{i}") :> View)
+        finally
+            System.Console.SetOut(originalOut)
+            System.Console.SetError(originalErr)
 
 // MockFrameViewの配列作成（テスト専用）
 let createMockFrameViewArray (count: int) (prefix: string) =

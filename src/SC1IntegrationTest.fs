@@ -187,27 +187,37 @@ let testQualityGateIntegration () : Result<Map<string, obj>, string> =
             async {
                 try
                     let! result = FCode.QualityGateUIIntegration.executeQualityGateEvaluation testTask
-                    return result
+                    return Some result
                 with ex ->
-                    return Result.Error(sprintf "品質ゲート評価例外: %s" ex.Message)
+                    let detailedErrorMsg =
+                        sprintf
+                            "品質ゲート評価例外: %s | スタックトレース: %s | 内部例外: %s"
+                            ex.Message
+                            ex.StackTrace
+                            (match ex.InnerException with
+                             | null -> "なし"
+                             | inner -> inner.Message)
+
+                    logError "SC1IntegrationTest" detailedErrorMsg
+                    return None
             }
 
         // 同期的実行（テスト用）
         let evaluationResult = Async.RunSynchronously(evaluationTask, timeout = 5000)
 
         match evaluationResult with
-        | Result.Ok entry ->
+        | Some entry ->
             let details =
                 Map.ofList
                     [ ("taskId", testTask.TaskId :> obj)
                       ("taskTitle", testTask.Title :> obj)
-                      ("evaluationStatus", entry.DisplayStatus.ToString() :> obj)
-                      ("poApprovalRequired", entry.POApprovalRequired :> obj) ]
+                      ("approved", entry.Approved :> obj)
+                      ("requiresEscalation", entry.RequiresEscalation :> obj) ]
 
             logInfo "SC1IntegrationTest" (sprintf "品質ゲート連携テスト成功: %s" testTask.TaskId)
             Result.Ok details
 
-        | Result.Error errorMsg -> Result.Error(sprintf "品質ゲート評価失敗: %s" errorMsg)
+        | None -> Result.Error("品質ゲート評価失敗")
 
     with ex ->
         Result.Error(sprintf "品質ゲート連携テスト例外: %s" ex.Message)

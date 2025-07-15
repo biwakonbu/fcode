@@ -5,6 +5,7 @@ open System
 open FCode.Logger
 open FCode.ClaudeCodeProcess
 open FCode.FCodeError
+// open FCode.ClaudeCodeIOTrigger
 
 // キーバインドアクション定義
 type KeyAction =
@@ -124,7 +125,8 @@ Escキーでこのダイアログを閉じます
     ()
 
 // キーシーケンス管理クラス
-type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodeProcess.SessionManager) =
+type EmacsKeyHandler
+    (focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodeProcess.SessionManager, ?claudeCodeIOTrigger: obj) =
     let mutable keySequenceState =
         { PendingKey = None
           Timestamp = DateTime.MinValue }
@@ -185,7 +187,13 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
 
             logDebug "KeyBindings" $"Mapped paneIndex {currentPaneIndex} to paneId: {paneId}"
 
-            if paneId <> "unknown" && currentPaneIndex > 0 then
+            if paneId = "dev1" then
+                // dev1ペインではClaudeCodeIOTriggerを使用
+                // dev1ペインでは新しいI/O統合機能を使用（実装予定）
+                MessageBox.Query(50, 10, "Claude Code I/O", "dev1ペインでのClaude Code I/O統合は実装中です", "OK")
+                |> ignore
+            elif paneId <> "unknown" && currentPaneIndex > 0 then
+                // 他のペインは従来のSessionManager使用
                 let currentPane = focusablePanes.[currentPaneIndex]
 
                 let textViews =
@@ -198,7 +206,6 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
                 match textViews with
                 | textView :: _ ->
                     let workingDir = System.Environment.CurrentDirectory
-
                     let success = sessionMgr.StartSession(paneId, workingDir, textView)
 
                     if success then

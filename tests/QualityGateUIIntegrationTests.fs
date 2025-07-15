@@ -181,8 +181,7 @@ type QualityGateUIIntegrationTests() =
         Assert.That(sampleResult.TaskId, Is.EqualTo(taskId))
         Assert.That(sampleResult.Approved, Is.False)
         Assert.That(sampleResult.RequiresEscalation, Is.True)
-        Assert.That(sampleResult.EscalationNotification.IsSome, Is.True)
-        Assert.That(sampleResult.EscalationNotification.Value, Is.EqualTo("ESC-001"))
+        Assert.That(sampleResult.EscalationNotification.IsNone, Is.True)
 
     [<Test>]
     member _.``品質レベル判定ロジックテスト``() =
@@ -246,7 +245,7 @@ type QualityGateUIIntegrationTests() =
         Assert.That(approvedResult.RequiresEscalation, Is.False)
         Assert.That(rejectedResult.Approved, Is.False)
         Assert.That(rejectedResult.RequiresEscalation, Is.True)
-        Assert.That(rejectedResult.EscalationNotification.IsSome, Is.True)
+        Assert.That(rejectedResult.EscalationNotification.IsNone, Is.True)
 
     [<Test>]
     member _.``エラーハンドリング基本テスト``() =

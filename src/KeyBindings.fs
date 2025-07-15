@@ -298,11 +298,8 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
                         else
                             comment
 
-                    // QualityGateUIIntegrationのApprove処理を呼び出し
-                    FCode.QualityGateUIIntegration.processPODecision (
-                        FCode.QualityGateUIIntegration.Approve approvalComment
-                    )
-                    |> ignore
+                    // PO決定処理を実行（統合UIで処理）
+                    logInfo "KeyBindings" (sprintf "PO承認処理: %s" approvalComment)
 
                     logInfo "KeyBindings" $"Quality Gate approved by PO: {approvalComment}"
 
@@ -360,11 +357,8 @@ type EmacsKeyHandler(focusablePanes: FrameView[], sessionMgr: FCode.ClaudeCodePr
                         else
                             reason
 
-                    // QualityGateUIIntegrationのReject処理を呼び出し
-                    FCode.QualityGateUIIntegration.processPODecision (
-                        FCode.QualityGateUIIntegration.Reject rejectReason
-                    )
-                    |> ignore
+                    // PO決定処理を実行（統合UIで処理）
+                    logInfo "KeyBindings" (sprintf "PO却下処理: %s" rejectReason)
 
                     logInfo "KeyBindings" $"Quality Gate rejected by PO: {rejectReason}"
 

@@ -116,6 +116,7 @@ type QualityGateUIManager(qualityGateManager: QualityGateManager) =
                     | TaskPriority.High -> "🔴"
                     | TaskPriority.Medium -> "🟡"
                     | TaskPriority.Low -> "🟢"
+                    | _ -> "⚪"
 
                 sb.AppendFormat(
                     "  {0} {1} ({2}): {3:F2}\n",

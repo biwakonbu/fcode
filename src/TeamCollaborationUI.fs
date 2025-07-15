@@ -410,9 +410,13 @@ type TeamCollaborationUIManager() =
 
         sb.ToString()
 
+    /// 設定からエージェントリストを取得
+    member private this.GetConfiguredAgents() : string list =
+        [ "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux"; "pm" ]
+
     /// エージェント別協調統計を計算
     member private this.CalculateAgentCollaborationStats() : (string * float) list =
-        let allAgents = [ "dev1"; "dev2"; "dev3"; "qa1"; "qa2"; "ux"; "pm" ]
+        let allAgents = this.GetConfiguredAgents()
 
         allAgents
         |> List.map (fun agentId ->

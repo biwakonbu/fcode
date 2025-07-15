@@ -189,7 +189,16 @@ let testQualityGateIntegration () : Result<Map<string, obj>, string> =
                     let! result = FCode.QualityGateUIIntegration.executeQualityGateEvaluation testTask
                     return Some result
                 with ex ->
-                    logError "SC1IntegrationTest" (sprintf "品質ゲート評価例外: %s" ex.Message)
+                    let detailedErrorMsg =
+                        sprintf
+                            "品質ゲート評価例外: %s | スタックトレース: %s | 内部例外: %s"
+                            ex.Message
+                            ex.StackTrace
+                            (match ex.InnerException with
+                             | null -> "なし"
+                             | inner -> inner.Message)
+
+                    logError "SC1IntegrationTest" detailedErrorMsg
                     return None
             }
 

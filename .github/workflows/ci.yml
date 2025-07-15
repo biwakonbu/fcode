@@ -69,10 +69,12 @@ jobs:
     
     # 4. テスト実行 (30秒タイムアウト・UI依存テスト除外)
     - name: Run CI-safe unit tests
-      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory=Unit&TestCategory!=UI" --blame-hang-timeout 30000ms --blame-crash
+      run: dotnet test tests/fcode.Tests.fsproj --configuration Debug --verbosity quiet --logger trx --results-directory TestResults --filter "TestCategory=Unit&TestCategory!=UI" --blame-hang-timeout 30000ms --blame-crash --nologo 2>/dev/null
       env:
-        TERM: xterm
+        TERM: dumb
         CI: true
+        TERMINFO: /dev/null
+        NO_COLOR: 1
         
     # 5. CI安全テスト数検証
     - name: Verify CI-safe test count

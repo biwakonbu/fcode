@@ -306,6 +306,7 @@ type ProgressDashboardUIManager() =
                 | TaskPriority.High -> "🔴"
                 | TaskPriority.Medium -> "🟡"
                 | TaskPriority.Low -> "🟢"
+                | _ -> "⚪"
 
             let statusIcon =
                 match task.Status with

@@ -58,7 +58,9 @@ type ClaudeCodeIOIntegrationManager(dev1Pane: TextView) =
                                   ProcessId = None }
                         )
                 else
-                    logInfo "ClaudeCodeIOIntegration" $"Claude Code実行開始: sessionId={sessionId}, command={claudeCommand}"
+                    logInfo
+                        "ClaudeCodeIOIntegration"
+                        (sprintf "Claude Code実行開始: sessionId=%s, command=%s" sessionId claudeCommand)
 
                     // セッション情報初期化
                     let session =
@@ -79,21 +81,23 @@ type ClaudeCodeIOIntegrationManager(dev1Pane: TextView) =
                     // dev1ペインに開始メッセージ表示
                     Application.MainLoop.Invoke(fun _ ->
                         let timeStr = DateTime.Now.ToString("HH:mm:ss")
-                        dev1Pane.Text <- NStack.ustring.Make($"[{timeStr}] Claude Code実行開始: {claudeCommand}\n"))
+
+                        dev1Pane.Text <-
+                            NStack.ustring.Make(sprintf "[%s] Claude Code実行開始: %s\n" timeStr claudeCommand))
 
                     // SessionBridgeを使用してClaude Code実行
                     let! bridgeResult = sessionBridge.StartSession(sessionId, claudeCommand, args, workingDir)
 
                     match bridgeResult with
                     | Result.Ok() ->
-                        logInfo "ClaudeCodeIOIntegration" $"Claude Code実行開始成功: sessionId={sessionId}"
+                        logInfo "ClaudeCodeIOIntegration" (sprintf "Claude Code実行開始成功: sessionId=%s" sessionId)
 
                         // 出力監視開始
                         let! _ = Task.Run(fun () -> this.MonitorOutput(session) :> Task)
 
                         return Result.Ok()
                     | Result.Error error ->
-                        logError "ClaudeCodeIOIntegration" $"Claude Code実行開始失敗: {error}"
+                        logError "ClaudeCodeIOIntegration" (sprintf "Claude Code実行開始失敗: %s" error)
                         isActive <- false
                         currentSession <- None
 
@@ -108,7 +112,7 @@ type ClaudeCodeIOIntegrationManager(dev1Pane: TextView) =
                             )
 
             with ex ->
-                logError "ClaudeCodeIOIntegration" $"Claude Code実行開始例外: {ex.Message}"
+                logError "ClaudeCodeIOIntegration" (sprintf "Claude Code実行開始例外: %s" ex.Message)
                 isActive <- false
                 currentSession <- None
                 return Result.Error(SystemError ex.Message)
@@ -118,7 +122,7 @@ type ClaudeCodeIOIntegrationManager(dev1Pane: TextView) =
     member private this.MonitorOutput(session: ClaudeCodeIOSession) : Task<unit> =
         task {
             try
-                logInfo "ClaudeCodeIOIntegration" $"出力監視開始: sessionId={session.SessionId}"
+                logInfo "ClaudeCodeIOIntegration" (sprintf "出力監視開始: sessionId=%s" session.SessionId)
 
                 // 出力監視ループ（SessionBridgeが内部的に処理）
                 // リアルタイム表示はSessionBridgeが担当
@@ -131,29 +135,34 @@ type ClaudeCodeIOIntegrationManager(dev1Pane: TextView) =
 
                     // タイムアウト処理（30分）
                     if DateTime.UtcNow - lastUpdateTime > TimeSpan.FromMinutes(30.0) then
-                        logWarning "ClaudeCodeIOIntegration" $"Claude Code実行タイムアウト: sessionId={session.SessionId}"
+                        logWarning
+                            "ClaudeCodeIOIntegration"
+                            (sprintf "Claude Code実行タイムアウト: sessionId=%s" session.SessionId)
+
                         monitoring <- false
 
                         Application.MainLoop.Invoke(fun _ ->
                             let timeStr = DateTime.Now.ToString("HH:mm:ss")
 
                             dev1Pane.Text <-
-                                NStack.ustring.Make(dev1Pane.Text.ToString() + $"\n[{timeStr}] タイムアウト: 30分経過\n"))
+                                NStack.ustring.Make(
+                                    dev1Pane.Text.ToString() + sprintf "\n[%s] タイムアウト: 30分経過\n" timeStr
+                                ))
 
                     // セッション状態確認
                     if not isActive then
                         monitoring <- false
 
-                logInfo "ClaudeCodeIOIntegration" $"出力監視完了: sessionId={session.SessionId}"
+                logInfo "ClaudeCodeIOIntegration" (sprintf "出力監視完了: sessionId=%s" session.SessionId)
 
             with ex ->
-                logError "ClaudeCodeIOIntegration" $"出力監視エラー: {ex.Message}"
+                logError "ClaudeCodeIOIntegration" (sprintf "出力監視エラー: %s" ex.Message)
 
                 Application.MainLoop.Invoke(fun _ ->
                     let timeStr = DateTime.Now.ToString("HH:mm:ss")
 
                     dev1Pane.Text <-
-                        NStack.ustring.Make(dev1Pane.Text.ToString() + $"\n[{timeStr}] エラー: {ex.Message}\n"))
+                        NStack.ustring.Make(dev1Pane.Text.ToString() + sprintf "\n[%s] エラー: %s\n" timeStr ex.Message))
         }
 
     /// Claude Code実行停止
@@ -181,11 +190,13 @@ type ClaudeCodeIOIntegrationManager(dev1Pane: TextView) =
                             let timeStr = DateTime.Now.ToString("HH:mm:ss")
 
                             dev1Pane.Text <-
-                                NStack.ustring.Make(dev1Pane.Text.ToString() + $"\n[{timeStr}] Claude Code実行停止\n"))
+                                NStack.ustring.Make(
+                                    dev1Pane.Text.ToString() + sprintf "\n[%s] Claude Code実行停止\n" timeStr
+                                ))
 
                         return Result.Ok()
                     | Result.Error error ->
-                        logError "ClaudeCodeIOIntegration" $"Claude Code実行停止失敗: {error}"
+                        logError "ClaudeCodeIOIntegration" (sprintf "Claude Code実行停止失敗: %s" error)
 
                         return
                             Result.Error(
@@ -198,7 +209,7 @@ type ClaudeCodeIOIntegrationManager(dev1Pane: TextView) =
                             )
 
             with ex ->
-                logError "ClaudeCodeIOIntegration" $"Claude Code実行停止例外: {ex.Message}"
+                logError "ClaudeCodeIOIntegration" (sprintf "Claude Code実行停止例外: %s" ex.Message)
                 return Result.Error(SystemError ex.Message)
         }
 
@@ -241,9 +252,17 @@ type ClaudeCodeIOIntegrationManager(dev1Pane: TextView) =
     interface IDisposable with
         member this.Dispose() =
             if isActive then
-                this.StopClaudeCodeExecution()
-                |> Async.AwaitTask
-                |> Async.RunSynchronously
-                |> ignore
+                try
+                    // デッドロック回避のためTaskで実行
+                    Task
+                        .Run(fun () -> this.StopClaudeCodeExecution() |> Async.AwaitTask |> Async.RunSynchronously)
+                        .Wait(TimeSpan.FromSeconds(5.0))
+                    |> ignore
+                with _ ->
+                    ()
 
-            () // SessionBridgeはIDisposableを実装していないため暫定対応
+            // SessionBridgeのリソース解放
+            try
+                (sessionBridge :> IDisposable).Dispose()
+            with _ ->
+                ()

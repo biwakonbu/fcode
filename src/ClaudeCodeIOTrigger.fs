@@ -14,7 +14,7 @@ type ClaudeCodeIOTrigger(ioManager: ClaudeCodeIOIntegrationManager) =
     member this.StartFromPOInstruction(instruction: string, workingDir: string) : Task<Result<unit, FCodeError>> =
         task {
             try
-                logInfo "ClaudeCodeIOTrigger" $"PO指示からClaude Code実行開始: {instruction}"
+                logInfo "ClaudeCodeIOTrigger" (sprintf "PO指示からClaude Code実行開始: %s" instruction)
 
                 // PO指示をClaude Codeコマンドに変換
                 let sessionId = Guid.NewGuid().ToString("N").Substring(0, 8)
@@ -26,14 +26,14 @@ type ClaudeCodeIOTrigger(ioManager: ClaudeCodeIOIntegrationManager) =
 
                 match result with
                 | Result.Ok() ->
-                    logInfo "ClaudeCodeIOTrigger" $"PO指示からClaude Code実行開始成功: sessionId={sessionId}"
+                    logInfo "ClaudeCodeIOTrigger" (sprintf "PO指示からClaude Code実行開始成功: sessionId=%s" sessionId)
                     return Result.Ok()
                 | Result.Error error ->
-                    logError "ClaudeCodeIOTrigger" $"PO指示からClaude Code実行開始失敗: {error}"
+                    logError "ClaudeCodeIOTrigger" (sprintf "PO指示からClaude Code実行開始失敗: %A" error)
                     return Result.Error error
 
             with ex ->
-                logError "ClaudeCodeIOTrigger" $"PO指示からClaude Code実行開始例外: {ex.Message}"
+                logError "ClaudeCodeIOTrigger" (sprintf "PO指示からClaude Code実行開始例外: %s" ex.Message)
                 return Result.Error(SystemError ex.Message)
         }
 
@@ -43,7 +43,9 @@ type ClaudeCodeIOTrigger(ioManager: ClaudeCodeIOIntegrationManager) =
         : Task<Result<unit, FCodeError>> =
         task {
             try
-                logInfo "ClaudeCodeIOTrigger" $"エージェント要求からClaude Code実行開始: agent={agentId}, request={request}"
+                logInfo
+                    "ClaudeCodeIOTrigger"
+                    (sprintf "エージェント要求からClaude Code実行開始: agent=%s, request=%s" agentId request)
 
                 // エージェント要求をClaude Codeコマンドに変換
                 let sessionId =
@@ -57,14 +59,14 @@ type ClaudeCodeIOTrigger(ioManager: ClaudeCodeIOIntegrationManager) =
 
                 match result with
                 | Result.Ok() ->
-                    logInfo "ClaudeCodeIOTrigger" $"エージェント要求からClaude Code実行開始成功: sessionId={sessionId}"
+                    logInfo "ClaudeCodeIOTrigger" (sprintf "エージェント要求からClaude Code実行開始成功: sessionId=%s" sessionId)
                     return Result.Ok()
                 | Result.Error error ->
-                    logError "ClaudeCodeIOTrigger" $"エージェント要求からClaude Code実行開始失敗: {error}"
+                    logError "ClaudeCodeIOTrigger" (sprintf "エージェント要求からClaude Code実行開始失敗: %A" error)
                     return Result.Error error
 
             with ex ->
-                logError "ClaudeCodeIOTrigger" $"エージェント要求からClaude Code実行開始例外: {ex.Message}"
+                logError "ClaudeCodeIOTrigger" (sprintf "エージェント要求からClaude Code実行開始例外: %s" ex.Message)
                 return Result.Error(SystemError ex.Message)
         }
 
@@ -74,7 +76,7 @@ type ClaudeCodeIOTrigger(ioManager: ClaudeCodeIOIntegrationManager) =
         : Task<Result<unit, FCodeError>> =
         task {
             try
-                logInfo "ClaudeCodeIOTrigger" $"タスクからClaude Code実行開始: taskId={taskId}, title={taskTitle}"
+                logInfo "ClaudeCodeIOTrigger" (sprintf "タスクからClaude Code実行開始: taskId=%s, title=%s" taskId taskTitle)
 
                 // タスク情報をClaude Codeコマンドに変換
                 let sessionId = sprintf "task_%s" taskId
@@ -86,14 +88,14 @@ type ClaudeCodeIOTrigger(ioManager: ClaudeCodeIOIntegrationManager) =
 
                 match result with
                 | Result.Ok() ->
-                    logInfo "ClaudeCodeIOTrigger" $"タスクからClaude Code実行開始成功: sessionId={sessionId}"
+                    logInfo "ClaudeCodeIOTrigger" (sprintf "タスクからClaude Code実行開始成功: sessionId=%s" sessionId)
                     return Result.Ok()
                 | Result.Error error ->
-                    logError "ClaudeCodeIOTrigger" $"タスクからClaude Code実行開始失敗: {error}"
+                    logError "ClaudeCodeIOTrigger" (sprintf "タスクからClaude Code実行開始失敗: %A" error)
                     return Result.Error error
 
             with ex ->
-                logError "ClaudeCodeIOTrigger" $"タスクからClaude Code実行開始例外: {ex.Message}"
+                logError "ClaudeCodeIOTrigger" (sprintf "タスクからClaude Code実行開始例外: %s" ex.Message)
                 return Result.Error(SystemError ex.Message)
         }
 

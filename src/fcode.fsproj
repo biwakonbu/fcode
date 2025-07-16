@@ -85,8 +85,12 @@
     <Compile Include="SprintTimeDisplayManager.fs" />
     <Compile Include="TaskAssignmentManager.fs" />
     <Compile Include="QualityGateManager.fs" />
+    <Compile Include="QualityGateUI.fs" />
     <Compile Include="QualityGateUIIntegration.fs" />
+    <Compile Include="EscalationPODecisionUI.fs" />
     <Compile Include="EscalationUIHandler.fs" />
+    <Compile Include="ProgressDashboardUI.fs" />
+    <Compile Include="TeamCollaborationUI.fs" />
     <!-- FC-029 Scrum Events Integration -->
     <Compile Include="ScrumEventsManager.fs" />
     <Compile Include="ScrumEventsUI.fs" />

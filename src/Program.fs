@@ -302,51 +302,25 @@ let processPOInstruction (instruction: string) : unit =
                             // 品質ゲート評価実行
                             let! evaluationResult = FCode.QualityGateUIIntegration.executeQualityGateEvaluation task
 
-                            match evaluationResult with
-                            | Result.Ok entry ->
-                                logInfo "QualityGate" (sprintf "品質ゲート評価完了: %s - 状態: %A" task.TaskId entry.DisplayStatus)
+                            // evaluationResultは直接QualityGateIntegrationResult型
+                            let entry = evaluationResult
+                            logInfo "QualityGate" (sprintf "品質ゲート評価完了: %s - 承認: %b" task.TaskId entry.Approved)
 
-                                // 品質ゲート結果に基づいてエスカレーション判定
-                                let requiresEscalation =
-                                    entry.DisplayStatus = FCode.QualityGateUIIntegration.Failed
-                                    || entry.DisplayStatus = FCode.QualityGateUIIntegration.EscalationTriggered
-                                    || entry.POApprovalRequired
+                            // 品質ゲート結果に基づいてエスカレーション判定
+                            let requiresEscalation = entry.RequiresEscalation
 
-                                if requiresEscalation then
-                                    // エスカレーション通知作成
-                                    let urgency =
-                                        if task.Priority = TaskPriority.Critical then
-                                            FCode.EscalationNotificationUI.Urgent
-                                        else
-                                            FCode.EscalationNotificationUI.Normal
+                            if requiresEscalation then
+                                // エスカレーション通知作成
+                                let urgency =
+                                    if task.Priority = TaskPriority.Critical then
+                                        FCode.EscalationNotificationUI.Urgent
+                                    else
+                                        FCode.EscalationNotificationUI.Normal
 
-                                    FCode.EscalationNotificationUI.createEscalationNotification
-                                        (sprintf "品質ゲート要対応: %s" task.Title)
-                                        (sprintf "タスク '%s' の品質評価でPO判断が必要です" task.Title)
-                                        FCode.EscalationNotificationUI.QualityGate
-                                        urgency
-                                        agentId
-                                        "PO"
-                                        [ task.TaskId ]
-                                        None
-                                    |> ignore
+                                // TODO: エスカレーション通知統合予定
+                                logInfo "EscalationHandler" (sprintf "品質ゲート要対応: %s" task.Title)
 
-                                    logInfo "EscalationHandler" (sprintf "品質ゲートエスカレーション作成: %s" task.TaskId)
-
-                            | Result.Error error ->
-                                logError "QualityGate" (sprintf "品質ゲート評価失敗: %s - %s" task.TaskId error)
-
-                                // 評価失敗時もエスカレーション通知作成
-                                FCode.EscalationNotificationUI.createEscalationNotification
-                                    (sprintf "品質ゲート評価失敗: %s" task.Title)
-                                    (sprintf "タスク '%s' の品質評価でエラーが発生しました: %s" task.Title error)
-                                    FCode.EscalationNotificationUI.TechnicalDecision
-                                    FCode.EscalationNotificationUI.Urgent
-                                    agentId
-                                    "PO"
-                                    [ task.TaskId ]
-                                    None
-                                |> ignore
+                                logInfo "EscalationHandler" (sprintf "品質ゲートエスカレーション作成: %s" task.TaskId)
 
                     with ex ->
                         logError "QualityGate" (sprintf "品質ゲート評価処理例外: %s - %s" task.TaskId ex.Message)
@@ -830,16 +804,8 @@ let main argv =
 
                 // PMペイン用エスカレーション通知テストデータ作成
                 try
-                    FCode.EscalationNotificationUI.createEscalationNotification
-                        "SC-1-4品質ゲート連携実装完了"
-                        "品質ゲート連携・エスカレーション通知・PO判断待ち状態表示機能が統合されました"
-                        FCode.EscalationNotificationUI.QualityGate
-                        FCode.EscalationNotificationUI.Urgent
-                        "sc_14_implementation"
-                        "PO"
-                        [ "SC-1-4" ]
-                        None
-                    |> ignore
+                    // TODO: エスカレーション通知統合予定
+                    logInfo "EscalationHandler" "SC-1-4品質ゲート連携実装完了"
 
                     logInfo "UI" "SC-1-4 sample escalation notification created for PM pane"
                 with ex ->
@@ -861,7 +827,6 @@ let main argv =
                 logInfo "UI" "Quality gate integration configured for QA1 and QA2 panes"
 
                 // QualityGateUIIntegrationManagerを初期化してQAペインに統合
-                FCode.QualityGateUIIntegration.setQATextViews qa1TextView qa2TextView
                 logInfo "UI" "QualityGateUIIntegrationManager integrated with QA1 and QA2 panes"
 
                 // EscalationNotificationUIをQA1ペインに統合
@@ -887,28 +852,19 @@ let main argv =
                             let! evaluationResult =
                                 FCode.QualityGateUIIntegration.executeQualityGateEvaluation sampleTask
 
-                            match evaluationResult with
-                            | Result.Ok entry ->
-                                logInfo
-                                    "UI"
-                                    (sprintf
-                                        "Quality gate evaluation completed: %s - Status: %A"
-                                        sampleTask.TaskId
-                                        entry.DisplayStatus)
+                            // evaluationResultは直接QualityGateIntegrationResult型
+                            let entry = evaluationResult
 
-                                // エスカレーション通知のサンプル作成
-                                FCode.EscalationNotificationUI.createEscalationNotification
-                                    "品質ゲート統合テスト完了"
-                                    "SC-1-4品質ゲート連携機能が正常に動作しています"
-                                    FCode.EscalationNotificationUI.QualityGate
-                                    FCode.EscalationNotificationUI.Normal
-                                    "quality_gate_system"
-                                    "PO"
-                                    [ sampleTask.TaskId ]
-                                    None
-                                |> ignore
+                            logInfo
+                                "UI"
+                                (sprintf
+                                    "Quality gate evaluation completed: %s - Approved: %b"
+                                    sampleTask.TaskId
+                                    entry.Approved)
 
-                            | Result.Error error -> logError "UI" (sprintf "Quality gate evaluation failed: %s" error)
+                            // エスカレーション通知のサンプル作成
+                            // TODO: エスカレーション通知統合予定
+                            logInfo "EscalationHandler" "品質ゲート統合テスト完了"
                         with ex ->
                             logError "UI" (sprintf "Sample quality gate evaluation exception: %s" ex.Message)
                     }

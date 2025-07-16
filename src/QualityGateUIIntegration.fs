@@ -1,625 +1,287 @@
 module FCode.QualityGateUIIntegration
 
 open System
-open System.Collections.Concurrent
+open System.Threading.Tasks
 open Terminal.Gui
-open NStack
-open FCode.Logger
+open FCode.QualityGateUI
 open FCode.QualityGateManager
 open FCode.EscalationNotificationUI
-open FCode.Collaboration.EscalationManager
-open FCode.Collaboration.CollaborationTypes
-open FCode.Collaboration.AgentStateManager
-open FCode.Collaboration.TaskDependencyGraph
-open FCode.Collaboration.ProgressAggregator
-open FCode.Collaboration.CollaborationCoordinator
 open FCode.TaskAssignmentManager
+open FCode.Collaboration.CollaborationTypes
+open FCode.Logger
 
-// ===============================================
-// 品質ゲート UI 統合システム型定義
-// ===============================================
-
-/// 品質ゲート表示状態
-type QualityGateDisplayStatus =
-    | Pending // 評価待機中
-    | InProgress // 評価実行中
-    | Passed // 品質ゲート通過
-    | Failed // 品質ゲート失敗
-    | RequiresPOApproval // PO承認要求
-    | EscalationTriggered // エスカレーション発生
-
-/// 品質ゲート評価エントリ
-type QualityGateEvaluationEntry =
+/// 品質ゲート統合実行結果
+type QualityGateIntegrationResult =
     { TaskId: string
-      TaskTitle: string
-      EvaluatedAt: DateTime
-      QualityResult: QualityEvaluationResult option
-      ReviewResult: ReviewResult option
-      AlternativeProposals: AlternativeProposal list option
-      DisplayStatus: QualityGateDisplayStatus
-      POApprovalRequired: bool
-      EscalationId: string option
-      LastUpdated: DateTime }
+      Approved: bool
+      RequiresEscalation: bool
+      EscalationNotification: EscalationNotification option
+      QualityReport: string
+      ExecutionTime: TimeSpan }
 
-/// PO判断アクション
-type POApprovalAction =
-    | Approve of string // 承認とコメント
-    | Reject of string // 却下と理由
-    | RequestRevision of string list // 修正要求と具体的指示
-    | EscalateHigher of string // 上位エスカレーション
+/// 品質ゲート統合管理クラス
+type QualityGateIntegrationManager() =
 
-// ===============================================
-// 品質ゲート UI 統合管理
-// ===============================================
+    // 品質ゲート管理コンポーネント
+    let evaluationEngine = QualityEvaluationEngine()
+    let reviewer = UpstreamDownstreamReviewer()
+    let proposalGenerator = AlternativeProposalGenerator()
 
-/// 品質ゲートUI統合管理クラス - QAペイン表示制御
-type QualityGateUIIntegrationManager(qualityGateManager: QualityGateManager, escalationManager: EscalationManager) =
+    let qualityGateManager =
+        QualityGateManager(evaluationEngine, reviewer, proposalGenerator)
 
-    let evaluationEntries = ConcurrentDictionary<string, QualityGateEvaluationEntry>()
-    let maxEvaluationHistory = 50 // 最大評価履歴保持数
-    let mutable qaTextView: TextView option = None
-    let mutable qa2TextView: TextView option = None
+    let qualityGateUIManager = new QualityGateUIManager(qualityGateManager)
+    let escalationNotificationManager = new EscalationNotificationManager()
 
-    /// QAペイン用TextView設定
-    member this.SetQATextViews(qa1TextViewParam: TextView, qa2TextViewParam: TextView) =
-        qaTextView <- Some qa1TextViewParam
-        qa2TextView <- Some qa2TextViewParam
-        logInfo "QualityGateUIIntegration" "QA pane TextViews configured for quality gate display"
-
-    /// 評価エントリの初期化
-    member private this.InitializeEvaluationEntry(task: ParsedTask) =
-        { TaskId = task.TaskId
-          TaskTitle = task.Title
-          EvaluatedAt = DateTime.UtcNow
-          QualityResult = None
-          ReviewResult = None
-          AlternativeProposals = None
-          DisplayStatus = InProgress
-          POApprovalRequired = false
-          EscalationId = None
-          LastUpdated = DateTime.UtcNow }
-
-    /// エスカレーション判定とID生成
-    member private this.DetermineEscalationId(task: ParsedTask, reviewResult: ReviewResult) =
-        if not reviewResult.Approved && reviewResult.ConsensusScore < 0.5 then
-            Some(sprintf "ESC-QG-%s-%s" task.TaskId (DateTime.UtcNow.ToString("yyyyMMddHHmmss")))
-        else
-            None
-
-    /// エスカレーション通知作成
-    member private this.CreateEscalationNotification
-        (task: ParsedTask, reviewResult: ReviewResult, escalationId: string)
-        =
-        createEscalationNotification
-            (sprintf "品質ゲート評価: %s" task.Title)
-            (sprintf "品質スコア %.2f - 改善要求 %d件" reviewResult.ConsensusScore reviewResult.RequiredImprovements.Length)
-            TechnicalDecision
-            (if reviewResult.ConsensusScore < 0.4 then Urgent else Normal)
-            "quality_gate"
-            "PO"
-            [ task.TaskId ]
-            (Some escalationId)
-        |> ignore
-
-    /// 成功結果の処理
-    member private this.ProcessSuccessfulEvaluation
-        (
-            task: ParsedTask,
-            initialEntry: QualityGateEvaluationEntry,
-            reviewResult: ReviewResult,
-            alternatives: AlternativeProposal list option
-        ) =
-        let qualityLevel = this.DetermineQualityLevel(reviewResult)
-        let poApprovalRequired = this.RequiresPOApproval(reviewResult, alternatives)
-        let escalationId = this.DetermineEscalationId(task, reviewResult)
-
-        let updatedEntry =
-            { initialEntry with
-                QualityResult = None // QualityEvaluationResultは別途取得必要
-                ReviewResult = Some reviewResult
-                AlternativeProposals = alternatives
-                DisplayStatus = qualityLevel
-                POApprovalRequired = poApprovalRequired
-                EscalationId = escalationId
-                LastUpdated = DateTime.UtcNow }
-
-        evaluationEntries.[task.TaskId] <- updatedEntry
-        this.UpdateQADisplay()
-
-        // エスカレーション通知作成
-        match escalationId with
-        | Some escId -> this.CreateEscalationNotification(task, reviewResult, escId)
-        | None -> ()
-
-        logInfo "QualityGateUIIntegration" (sprintf "品質ゲート評価完了: %s - 状態: %A" task.TaskId qualityLevel)
-        Result.Ok updatedEntry
-
-    /// エラー結果の処理
-    member private this.ProcessErrorEvaluation
-        (task: ParsedTask, initialEntry: QualityGateEvaluationEntry, error: string)
-        =
-        let errorEntry =
-            { initialEntry with
-                DisplayStatus = Failed
-                LastUpdated = DateTime.UtcNow }
-
-        evaluationEntries.[task.TaskId] <- errorEntry
-        this.UpdateQADisplay()
-
-        logError "QualityGateUIIntegration" (sprintf "品質ゲート評価失敗: %s - %s" task.TaskId error)
-        Result.Error error
-
-    /// タスクの品質ゲート評価実行
-    member this.ExecuteQualityGateEvaluation(task: ParsedTask) =
+    /// 品質ゲート統合実行
+    member this.ExecuteQualityGateIntegration
+        (task: ParsedTask, targetView: TextView)
+        : Async<QualityGateIntegrationResult> =
         async {
+            let startTime = DateTime.UtcNow
+
             try
-                logInfo "QualityGateUIIntegration" (sprintf "品質ゲート評価開始: %s - %s" task.TaskId task.Title)
+                logInfo "QualityGateIntegration" (sprintf "品質ゲート統合実行開始: %s" task.TaskId)
 
-                let initialEntry = this.InitializeEvaluationEntry(task)
-                evaluationEntries.[task.TaskId] <- initialEntry
-                this.UpdateQADisplay()
+                // 品質ゲートUI実行
+                qualityGateUIManager.ExecuteQualityGateWithUI(task, targetView)
 
-                // QualityGateManager実行
+                // 少し待機してUI更新を確認
+                do! Async.Sleep(1000)
+
+                // 品質ゲート実行結果を取得
                 match qualityGateManager.ExecuteQualityGate(task) with
                 | Result.Ok(reviewResult, alternatives) ->
-                    return this.ProcessSuccessfulEvaluation(task, initialEntry, reviewResult, alternatives)
-                | Result.Error error -> return this.ProcessErrorEvaluation(task, initialEntry, error)
+                    // エスカレーション必要性判定
+                    let requiresEscalation =
+                        this.DetermineEscalationRequirement(reviewResult, alternatives)
 
-            with ex ->
-                let errorMsg = sprintf "品質ゲート評価例外: %s" ex.Message
-                logError "QualityGateUIIntegration" errorMsg
-                return Result.Error errorMsg
-        }
+                    // エスカレーション通知作成
+                    let escalationNotification =
+                        if requiresEscalation then
+                            Some(this.CreateEscalationNotification(task, reviewResult, alternatives))
+                        else
+                            None
 
-    /// 品質レベル判定
-    member private this.DetermineQualityLevel(reviewResult: ReviewResult) : QualityGateDisplayStatus =
-        if reviewResult.Approved && reviewResult.ConsensusScore >= 0.8 then
-            Passed
-        elif reviewResult.Approved && reviewResult.ConsensusScore >= 0.65 then
-            RequiresPOApproval
-        elif
-            reviewResult.RequiredImprovements.Length > 5
-            || reviewResult.ConsensusScore < 0.4
-        then
-            EscalationTriggered
-        else
-            Failed
+                    // 品質レポート生成
+                    let qualityReport =
+                        qualityGateManager.GenerateQualityReport(task, reviewResult, alternatives)
 
-    /// PO承認要求判定
-    member private this.RequiresPOApproval
-        (reviewResult: ReviewResult, alternatives: AlternativeProposal list option)
-        : bool =
-        // 中程度の品質スコアまたは代替案が存在する場合はPO承認要求
-        (reviewResult.ConsensusScore >= 0.5 && reviewResult.ConsensusScore < 0.8)
-        || alternatives.IsSome
+                    let executionTime = DateTime.UtcNow - startTime
 
-    /// PO承認処理
-    member this.ProcessPOApproval(taskId: string, action: POApprovalAction, approver: string) =
-        async {
-            try
-                match evaluationEntries.TryGetValue(taskId) with
-                | true, entry ->
-                    logInfo "QualityGateUIIntegration" (sprintf "PO承認処理開始: %s - %A" taskId action)
+                    let result =
+                        { TaskId = task.TaskId
+                          Approved = reviewResult.Approved
+                          RequiresEscalation = requiresEscalation
+                          EscalationNotification = escalationNotification
+                          QualityReport = qualityReport
+                          ExecutionTime = executionTime }
 
-                    let (newStatus, actionDescription) =
-                        match action with
-                        | Approve comment -> (Passed, sprintf "PO承認: %s" comment)
-                        | Reject reason -> (Failed, sprintf "PO却下: %s" reason)
-                        | RequestRevision revisions -> (Failed, sprintf "修正要求: %s" (String.concat "; " revisions))
-                        | EscalateHigher reason -> (EscalationTriggered, sprintf "上位エスカレーション: %s" reason)
+                    // エスカレーション通知が必要な場合は通知管理に追加
+                    match escalationNotification with
+                    | Some notification ->
+                        let notificationId =
+                            escalationNotificationManager.CreateEscalationNotification(
+                                notification.Title,
+                                notification.Description,
+                                notification.NotificationType,
+                                notification.Urgency,
+                                notification.RequestingAgent,
+                                notification.TargetRole,
+                                notification.RelatedTaskIds,
+                                notification.RelatedDecisionId
+                            )
 
-                    // エントリ更新
-                    let updatedEntry =
-                        { entry with
-                            DisplayStatus = newStatus
-                            POApprovalRequired = false
-                            LastUpdated = DateTime.UtcNow }
-
-                    evaluationEntries.[taskId] <- updatedEntry
-                    this.UpdateQADisplay()
-
-                    // エスカレーション処理
-                    match entry.EscalationId with
-                    | Some escId ->
-                        let approved =
-                            match action with
-                            | Approve _ -> true
-                            | _ -> false
-
-                        let! poDecisionResult = escalationManager.ProcessPODecision(escId, approved, actionDescription)
-
-                        match poDecisionResult with
-                        | Result.Ok _ -> logInfo "QualityGateUIIntegration" (sprintf "エスカレーション解決: %s" escId)
-                        | Result.Error err -> logError "QualityGateUIIntegration" (sprintf "エスカレーション処理失敗: %A" err)
+                        logInfo "QualityGateIntegration" (sprintf "エスカレーション通知作成: %s" notificationId)
                     | None -> ()
 
-                    logInfo "QualityGateUIIntegration" (sprintf "PO承認処理完了: %s - %s" taskId actionDescription)
-                    return Result.Ok updatedEntry
+                    logInfo
+                        "QualityGateIntegration"
+                        (sprintf
+                            "品質ゲート統合実行完了: %s (承認: %b, エスカレーション: %b)"
+                            task.TaskId
+                            result.Approved
+                            result.RequiresEscalation)
 
-                | false, _ ->
-                    let errorMsg = sprintf "評価エントリが見つかりません: %s" taskId
-                    logError "QualityGateUIIntegration" errorMsg
-                    return Result.Error errorMsg
+                    return result
+
+                | Result.Error errorMsg ->
+                    let executionTime = DateTime.UtcNow - startTime
+
+                    let errorResult =
+                        { TaskId = task.TaskId
+                          Approved = false
+                          RequiresEscalation = true
+                          EscalationNotification = Some(this.CreateErrorEscalationNotification(task, errorMsg))
+                          QualityReport = sprintf "品質ゲート実行エラー: %s" errorMsg
+                          ExecutionTime = executionTime }
+
+                    logError "QualityGateIntegration" (sprintf "品質ゲート統合実行エラー: %s - %s" task.TaskId errorMsg)
+
+                    return errorResult
 
             with ex ->
-                let errorMsg = sprintf "PO承認処理例外: %s" ex.Message
-                logError "QualityGateUIIntegration" errorMsg
-                return Result.Error errorMsg
+                let executionTime = DateTime.UtcNow - startTime
+                let errorMsg = sprintf "品質ゲート統合実行例外: %s" ex.Message
+
+                let errorResult =
+                    { TaskId = task.TaskId
+                      Approved = false
+                      RequiresEscalation = true
+                      EscalationNotification = Some(this.CreateErrorEscalationNotification(task, errorMsg))
+                      QualityReport = errorMsg
+                      ExecutionTime = executionTime }
+
+                logError "QualityGateIntegration" (sprintf "品質ゲート統合実行例外: %s - %s" task.TaskId ex.Message)
+
+                return errorResult
         }
 
-    /// QA表示更新
-    member private this.UpdateQADisplay() =
-        match qaTextView, qa2TextView with
-        | Some qa1View, Some qa2View ->
-            try
-                // QA1: アクティブ評価表示
-                let activeEvaluations =
-                    evaluationEntries.Values
-                    |> Seq.filter (fun e -> e.DisplayStatus = InProgress || e.DisplayStatus = RequiresPOApproval)
-                    |> Seq.sortByDescending (fun e -> e.EvaluatedAt)
-                    |> Seq.take 5
-                    |> Seq.toArray
+    /// エスカレーション必要性判定
+    member this.DetermineEscalationRequirement
+        (reviewResult: ReviewResult, alternatives: AlternativeProposal list option)
+        : bool =
+        // 複数の条件でエスカレーション必要性を判定
+        let baseEscalationConditions =
+            [ not reviewResult.Approved // 承認されていない
+              reviewResult.ConsensusScore < 0.5 // 総合スコアが低い
+              reviewResult.RequiredImprovements.Length > 3 // 改善事項が多い
+              reviewResult.Comments
+              |> List.exists (fun c -> c.Priority = TaskPriority.Critical) ] // 重要な問題がある
 
-                let qa1Text = this.FormatActiveEvaluationsDisplay(activeEvaluations)
+        let alternativeEscalationConditions =
+            match alternatives with
+            | Some alts ->
+                [ alts.Length > 2 // 代替案が多い
+                  alts |> List.exists (fun alt -> alt.DifficultyScore > 0.8) // 高難易度の代替案がある
+                  alts |> List.exists (fun alt -> alt.FeasibilityScore < 0.5) ] // 実現可能性が低い代替案がある
+            | None -> []
 
-                // QA2: 品質レポート・履歴表示
-                let recentEvaluations =
-                    evaluationEntries.Values
-                    |> Seq.filter (fun e -> e.DisplayStatus = Passed || e.DisplayStatus = Failed)
-                    |> Seq.sortByDescending (fun e -> e.LastUpdated)
-                    |> Seq.take 8
-                    |> Seq.toArray
+        let allConditions = baseEscalationConditions @ alternativeEscalationConditions
 
-                let qa2Text = this.FormatQualityReportDisplay(recentEvaluations)
+        // 条件の半分以上が満たされた場合にエスカレーション
+        let trueConditions = allConditions |> List.filter id |> List.length
+        let totalConditions = allConditions.Length
 
-                // UI更新（CI環境では安全にスキップ）
-                let isCI = not (isNull (System.Environment.GetEnvironmentVariable("CI")))
+        float trueConditions / float totalConditions >= 0.5
 
-                if not isCI then
-                    try
-                        if not (isNull Application.MainLoop) then
-                            Application.MainLoop.Invoke(fun () ->
-                                try
-                                    qa1View.Text <- ustring.Make(qa1Text: string)
-                                    qa1View.SetNeedsDisplay()
-                                    qa2View.Text <- ustring.Make(qa2Text: string)
-                                    qa2View.SetNeedsDisplay()
-                                with ex ->
-                                    logException "QualityGateUIIntegration" "QA UI update failed" ex)
-                        else
-                            qa1View.Text <- ustring.Make(qa1Text: string)
-                            qa1View.SetNeedsDisplay()
-                            qa2View.Text <- ustring.Make(qa2Text: string)
-                            qa2View.SetNeedsDisplay()
-                    with ex ->
-                        logException "QualityGateUIIntegration" "QA display update failed" ex
-
-                logDebug
-                    "QualityGateUIIntegration"
-                    (sprintf "QA表示更新完了: アクティブ %d件, 履歴 %d件" activeEvaluations.Length recentEvaluations.Length)
-
-            with ex ->
-                logException "QualityGateUIIntegration" "Failed to update QA display" ex
-        | _ -> logWarning "QualityGateUIIntegration" "QA TextViews not configured - cannot update display"
-
-    /// アクティブ評価表示フォーマット
-    member private this.FormatActiveEvaluationsDisplay(activeEvaluations: QualityGateEvaluationEntry[]) =
-        let header = "=== QA1: 品質ゲート評価状況 ===\n\n"
-
-        let activeSection =
-            if activeEvaluations.Length > 0 then
-                let activeLines =
-                    activeEvaluations
-                    |> Array.map (fun entry ->
-                        let timeStr = entry.EvaluatedAt.ToString("MM/dd HH:mm")
-                        let statusStr = this.GetStatusDisplay(entry.DisplayStatus)
-
-                        let titlePreview =
-                            if entry.TaskTitle.Length > 25 then
-                                entry.TaskTitle.[..22] + "..."
-                            else
-                                entry.TaskTitle.PadRight(25)
-
-                        let scoreStr =
-                            match entry.ReviewResult with
-                            | Some result -> sprintf "%.2f" result.ConsensusScore
-                            | None -> "-.--"
-
-                        let improvementCount =
-                            match entry.ReviewResult with
-                            | Some result -> result.RequiredImprovements.Length
-                            | None -> 0
-
-                        sprintf "[%s] %s %s スコア:%s 改善:%d件" timeStr statusStr titlePreview scoreStr improvementCount)
-                    |> String.concat "\n"
-
-                sprintf "🔍 評価中・承認待ち (%d件)\n%s\n\n" activeEvaluations.Length activeLines
+    /// エスカレーション通知作成
+    member this.CreateEscalationNotification
+        (task: ParsedTask, reviewResult: ReviewResult, alternatives: AlternativeProposal list option)
+        : EscalationNotification =
+        let urgency =
+            if reviewResult.ConsensusScore < 0.3 then
+                EscalationUrgency.Immediate
+            elif reviewResult.ConsensusScore < 0.5 then
+                EscalationUrgency.Urgent
             else
-                "✅ 評価待ちタスクなし\n\n"
+                EscalationUrgency.Normal
 
-        let poApprovalSection =
-            let poApprovalTasks =
-                activeEvaluations
-                |> Array.filter (fun e -> e.POApprovalRequired)
-                |> Array.length
-
-            if poApprovalTasks > 0 then
-                sprintf "📋 PO承認要求: %d件\n\n" poApprovalTasks
+        let notificationType =
+            if
+                reviewResult.Comments
+                |> List.exists (fun c -> c.Dimension = QualityDimension.UserExperience)
+            then
+                EscalationNotificationType.BusinessDecision
+            elif
+                reviewResult.Comments
+                |> List.exists (fun c -> c.Dimension = QualityDimension.TechnicalCompleteness)
+            then
+                EscalationNotificationType.TechnicalDecision
             else
-                ""
+                EscalationNotificationType.QualityGate
 
-        let footer =
-            "キーバインド: Ctrl+Q(品質詳細) Ctrl+A(承認) Ctrl+R(却下)\n--- 品質基準: スコア0.65以上で合格 ---"
+        let description =
+            let sb = System.Text.StringBuilder()
+            sb.AppendFormat("タスク「{0}」の品質ゲート評価でエスカレーションが必要です。\n\n", task.Title) |> ignore
+            sb.AppendFormat("総合スコア: {0:F2}\n", reviewResult.ConsensusScore) |> ignore
 
-        header + activeSection + poApprovalSection + footer
+            sb.AppendFormat("承認状況: {0}\n", if reviewResult.Approved then "承認" else "要改善")
+            |> ignore
 
-    /// 品質レポート表示フォーマット
-    member private this.FormatQualityReportDisplay(recentEvaluations: QualityGateEvaluationEntry[]) =
-        let header = "=== QA2: 品質レポート・履歴 ===\n\n"
+            sb.AppendFormat("改善事項: {0}件\n\n", reviewResult.RequiredImprovements.Length)
+            |> ignore
 
-        let recentSection =
-            if recentEvaluations.Length > 0 then
-                let recentLines =
-                    recentEvaluations
-                    |> Array.map (fun entry ->
-                        let timeStr = entry.LastUpdated.ToString("MM/dd HH:mm")
-                        let statusStr = this.GetStatusDisplay(entry.DisplayStatus)
+            if reviewResult.RequiredImprovements.Length > 0 then
+                sb.AppendLine("主な改善事項:") |> ignore
 
-                        let titlePreview =
-                            if entry.TaskTitle.Length > 20 then
-                                entry.TaskTitle.[..17] + "..."
-                            else
-                                entry.TaskTitle
+                for i, improvement in reviewResult.RequiredImprovements |> List.indexed do
+                    sb.AppendFormat("  {0}. {1}\n", i + 1, improvement) |> ignore
 
-                        let scoreStr =
-                            match entry.ReviewResult with
-                            | Some result -> sprintf "%.2f" result.ConsensusScore
-                            | None -> "-.--"
+            match alternatives with
+            | Some alts when alts.Length > 0 -> sb.AppendFormat("\n{0}件の代替案が提案されています。\n", alts.Length) |> ignore
+            | _ -> ()
 
-                        sprintf "[%s] %s %s (%s)" timeStr statusStr titlePreview scoreStr)
-                    |> String.concat "\n"
+            sb.ToString()
 
-                sprintf "📊 最新評価結果 (%d件)\n%s\n\n" recentEvaluations.Length recentLines
-            else
-                "📊 評価履歴なし\n\n"
+        let responseTime =
+            match urgency with
+            | EscalationUrgency.Immediate -> TimeSpan.FromMinutes(30.0)
+            | EscalationUrgency.Urgent -> TimeSpan.FromHours(2.0)
+            | EscalationUrgency.Normal -> TimeSpan.FromHours(8.0)
+            | EscalationUrgency.Low -> TimeSpan.FromDays(1.0)
 
-        // 品質統計の計算
-        let allEvaluations = evaluationEntries.Values |> Seq.toArray
-        let totalEvaluations = allEvaluations.Length
+        { NotificationId = sprintf "qg-esc-%s-%s" task.TaskId (DateTime.UtcNow.ToString("yyyyMMdd-HHmmss"))
+          Title = sprintf "品質ゲート要判断: %s" task.Title
+          Description = description
+          NotificationType = notificationType
+          Urgency = urgency
+          RequestingAgent = "quality_gate_manager"
+          TargetRole = "po"
+          CreatedAt = DateTime.UtcNow
+          RequiredResponseBy = DateTime.UtcNow.Add(responseTime)
+          RelatedTaskIds = [ task.TaskId ]
+          RelatedDecisionId = None
+          Metadata = Map.empty
+          Status = EscalationNotificationStatus.Pending
+          ResponseContent = None
+          ResponseAt = None }
 
-        let passedCount =
-            allEvaluations
-            |> Array.filter (fun e -> e.DisplayStatus = Passed)
-            |> Array.length
+    /// エラー時エスカレーション通知作成
+    member this.CreateErrorEscalationNotification(task: ParsedTask, errorMsg: string) : EscalationNotification =
+        { NotificationId = sprintf "qg-error-%s-%s" task.TaskId (DateTime.UtcNow.ToString("yyyyMMdd-HHmmss"))
+          Title = sprintf "品質ゲートエラー: %s" task.Title
+          Description = sprintf "タスク「%s」の品質ゲート実行中にエラーが発生しました。\n\nエラー内容: %s\n\n手動による確認・判断が必要です。" task.Title errorMsg
+          NotificationType = EscalationNotificationType.TechnicalDecision
+          Urgency = EscalationUrgency.Urgent
+          RequestingAgent = "quality_gate_manager"
+          TargetRole = "po"
+          CreatedAt = DateTime.UtcNow
+          RequiredResponseBy = DateTime.UtcNow.Add(TimeSpan.FromHours(1.0))
+          RelatedTaskIds = [ task.TaskId ]
+          RelatedDecisionId = None
+          Metadata = Map.empty
+          Status = EscalationNotificationStatus.Pending
+          ResponseContent = None
+          ResponseAt = None }
 
-        let failedCount =
-            allEvaluations
-            |> Array.filter (fun e -> e.DisplayStatus = Failed)
-            |> Array.length
+    /// 品質ゲート統合統計情報生成
+    member this.GenerateIntegrationStatistics() : string =
+        let currentInfo = qualityGateUIManager.GetCurrentQualityGateInfo()
+        let escalationStatus = escalationNotificationManager.GetNotificationCount()
 
-        let escalationCount =
-            allEvaluations
-            |> Array.filter (fun e -> e.DisplayStatus = EscalationTriggered)
-            |> Array.length
+        let sb = System.Text.StringBuilder()
+        sb.AppendFormat("📊 品質ゲート統合統計\n\n") |> ignore
+        sb.AppendFormat("現在時刻: {0:HH:mm:ss}\n", DateTime.UtcNow) |> ignore
 
-        let passRate =
-            if totalEvaluations > 0 then
-                (float passedCount / float totalEvaluations) * 100.0
-            else
-                0.0
+        match currentInfo with
+        | Some info ->
+            sb.AppendFormat("アクティブタスク: {0}\n", info.TaskTitle) |> ignore
+            sb.AppendFormat("表示状態: {0}\n", info.DisplayState) |> ignore
+            sb.AppendFormat("最終更新: {0:HH:mm:ss}\n", info.LastUpdated) |> ignore
+        | None -> sb.AppendLine("アクティブタスク: なし") |> ignore
 
-        let statisticsSection =
-            "📈 品質統計\n"
-            + sprintf "総評価: %d件 | 合格: %d件 (%.1f%%)\n" totalEvaluations passedCount passRate
-            + sprintf "失敗: %d件 | エスカレ: %d件\n\n" failedCount escalationCount
+        sb.AppendFormat("保留中エスカレーション: {0}件\n", escalationStatus) |> ignore
 
-        let footer = "--- 品質ゲート連携: QualityGateManager + EscalationManager ---"
+        sb.ToString()
 
-        header + recentSection + statisticsSection + footer
+/// 品質ゲート統合実行エントリーポイント
+let executeQualityGateEvaluation (task: ParsedTask) : Async<QualityGateIntegrationResult> =
+    async {
+        let integrationManager = QualityGateIntegrationManager()
 
-    /// ステータス表示文字列取得
-    member private this.GetStatusDisplay(status: QualityGateDisplayStatus) =
-        match status with
-        | Pending -> "⏳待機"
-        | InProgress -> "🔍評価"
-        | Passed -> "✅合格"
-        | Failed -> "❌失敗"
-        | RequiresPOApproval -> "📋承認要求"
-        | EscalationTriggered -> "🚨エスカレ"
+        // 適切なターゲットビューを特定（実際の実装では globalPaneTextViews から取得）
+        use targetView = new TextView()
 
-    /// タスク評価エントリ取得
-    member this.GetEvaluationEntry(taskId: string) = evaluationEntries.TryGetValue(taskId)
-
-    /// 全評価エントリ取得
-    member this.GetAllEvaluationEntries() = evaluationEntries.Values |> Seq.toArray
-
-    /// 評価履歴クリア
-    member this.ClearEvaluationHistory() =
-        evaluationEntries.Clear()
-        this.UpdateQADisplay()
-        logInfo "QualityGateUIIntegration" "評価履歴をクリアしました"
-
-    /// リソース解放
-    member this.Dispose() =
-        evaluationEntries.Clear()
-        qaTextView <- None
-        qa2TextView <- None
-        GC.SuppressFinalize(this)
-
-    interface IDisposable with
-        member this.Dispose() = this.Dispose()
-
-// ===============================================
-// グローバル管理インスタンス
-// ===============================================
-
-/// 品質ゲートUI統合管理インスタンス（遅延初期化）
-let mutable private qualityGateUIManagerInstance: QualityGateUIIntegrationManager option =
-    None
-
-/// 品質ゲートUI統合管理インスタンス取得または作成
-let private getOrCreateQualityGateUIManager () =
-    match qualityGateUIManagerInstance with
-    | Some manager -> manager
-    | None ->
-        // デフォルト依存関係で初期化（実際の依存性注入は後で対応）
-        let evaluationEngine = QualityEvaluationEngine()
-        let reviewer = UpstreamDownstreamReviewer()
-        let proposalGenerator = AlternativeProposalGenerator()
-
-        let qualityGateManager =
-            QualityGateManager(evaluationEngine, reviewer, proposalGenerator)
-
-        // EscalationManagerの初期化（簡易版）
-        let config =
-            { MaxConcurrentAgents = 10
-              TaskTimeoutMinutes = 30
-              StaleAgentThreshold = TimeSpan.FromMinutes(5.0)
-              MaxRetryAttempts = 3
-              DatabasePath = "~/.fcode/tasks.db"
-              ConnectionPoolSize = 5
-              WALModeEnabled = true
-              AutoVacuumEnabled = false
-              MaxHistoryRetentionDays = 30
-              BackupEnabled = false
-              BackupIntervalHours = 24
-              EscalationEnabled = true
-              AutoRecoveryMaxAttempts = 3
-              PONotificationThreshold = EscalationSeverity.Important
-              CriticalEscalationTimeoutMinutes = 60
-              DataProtectionModeEnabled = false
-              EmergencyShutdownEnabled = false }
-
-        // 実際の依存関係で初期化
-        let agentStateManager = new AgentStateManager(config)
-        let taskDependencyGraph = new TaskDependencyGraph(config)
-
-        let progressAggregator =
-            new ProgressAggregator(agentStateManager, taskDependencyGraph, config)
-
-        let collaborationCoordinator =
-            new CollaborationCoordinator(agentStateManager, taskDependencyGraph, config)
-
-        let escalationManager =
-            new EscalationManager(
-                agentStateManager,
-                taskDependencyGraph,
-                progressAggregator,
-                collaborationCoordinator,
-                config
-            )
-
-        let manager =
-            new QualityGateUIIntegrationManager(qualityGateManager, escalationManager)
-
-        qualityGateUIManagerInstance <- Some manager
-        manager
-
-/// QAペイン用TextView設定（グローバル関数）
-let setQATextViews (qa1TextView: TextView) (qa2TextView: TextView) =
-    (getOrCreateQualityGateUIManager ()).SetQATextViews(qa1TextView, qa2TextView)
-
-/// タスク品質ゲート評価実行（グローバル関数）
-let executeQualityGateEvaluation (task: ParsedTask) =
-    (getOrCreateQualityGateUIManager ()).ExecuteQualityGateEvaluation(task)
-
-/// PO承認処理（グローバル関数）
-let processPOApproval (taskId: string) (action: POApprovalAction) (approver: string) =
-    (getOrCreateQualityGateUIManager ()).ProcessPOApproval(taskId, action, approver)
-
-/// PO判断待ち状態の視覚的表示制御（SC-1-4用）
-let updatePOWaitingDisplay (isWaiting: bool) =
-    try
-        let manager = getOrCreateQualityGateUIManager ()
-        let waitingIndicator = if isWaiting then "⏳ PO判断待ち" else "✅ 判断完了"
-        let timestamp = DateTime.Now.ToString("HH:mm:ss")
-
-        // QA TextViewsの状態表示（SC-1-4 PO判断待ち状態管理）
-        let statusMessage =
-            if isWaiting then
-                sprintf "🔶 %s - PO判断待ち状態\n" timestamp
-                + "Ctrl+Q A で承認、Ctrl+Q R で却下してください\n"
-                + "代替作業: ブロックされていないタスクを継続可能\n"
-                + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            else
-                sprintf "✅ %s - PO判断完了\n" timestamp
-                + "作業を継続します\n"
-                + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-
-        logInfo
-            "QualityGateUI"
-            (sprintf "PO status message prepared: %s..." (statusMessage.Substring(0, min 50 statusMessage.Length)))
-
-        logInfo "QualityGateUI" (sprintf "PO waiting display updated: %s" waitingIndicator)
-    with ex ->
-        logError "QualityGateUI" (sprintf "Error updating PO waiting display: %s" ex.Message)
-
-/// PO判断処理（SC-1-4用統合関数）
-let processPODecision (action: POApprovalAction) =
-    try
-        logInfo "QualityGateUI" (sprintf "Processing PO decision: %A" action)
-
-        // 現在PO判断待ちのタスクを検索
-        let manager = getOrCreateQualityGateUIManager ()
-
-        let pendingTasks =
-            manager.GetAllEvaluationEntries()
-            |> Array.filter (fun entry -> entry.POApprovalRequired && entry.DisplayStatus = RequiresPOApproval)
-            |> Array.toList
-
-        match pendingTasks with
-        | [] ->
-            logWarning "QualityGateUI" "No pending PO approval tasks found"
-            false
-        | latestTask :: _ ->
-            // 最新のPO判断待ちタスクに対してアクションを適用（非同期）
-            async {
-                let! approvalResult = manager.ProcessPOApproval(latestTask.TaskId, action, "PO")
-
-                match approvalResult with
-                | Result.Ok _ ->
-                    // 判断完了後、待機中表示を更新
-                    updatePOWaitingDisplay false
-                    logInfo "QualityGateUI" (sprintf "PO decision processed for task: %s" latestTask.TaskId)
-                    return true
-                | Result.Error err ->
-                    logError
-                        "QualityGateUI"
-                        (sprintf "Failed to process PO decision for task: %s - %s" latestTask.TaskId err)
-
-                    return false
-            }
-            |> Async.RunSynchronously
-    with ex ->
-        logError "QualityGateUI" (sprintf "Error processing PO decision: %s" ex.Message)
-        false
-
-/// PO判断要求の開始（SC-1-4用）
-let requestPOApproval (taskId: string) (taskTitle: string) =
-    try
-        logInfo "QualityGateUI" (sprintf "Requesting PO approval for task: %s - %s" taskId taskTitle)
-
-        // 判断待ち状態表示を開始
-        updatePOWaitingDisplay true
-
-        // エスカレーション通知も作成
-        FCode.EscalationNotificationUI.createEscalationNotification
-            (sprintf "PO判断要求: %s" taskTitle)
-            (sprintf "品質ゲート評価完了。PO判断をお待ちしています。\nCtrl+Q A (承認) または Ctrl+Q R (却下) で判断してください。")
-            FCode.EscalationNotificationUI.QualityGate
-            FCode.EscalationNotificationUI.Urgent
-            taskId
-            "PO"
-            [ taskId ]
-            None
-        |> ignore
-
-        logInfo "QualityGateUI" (sprintf "PO approval request created for task: %s" taskId)
-        true
-    with ex ->
-        logError "QualityGateUI" (sprintf "Error requesting PO approval: %s" ex.Message)
-        false
-
-/// 依存性注入: 既存のインスタンスを置き換え（テスト用）
-let injectQualityGateUIManager (manager: QualityGateUIIntegrationManager) =
-    qualityGateUIManagerInstance <- Some manager
+        return! integrationManager.ExecuteQualityGateIntegration(task, targetView)
+    }

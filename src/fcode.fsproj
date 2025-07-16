@@ -85,8 +85,12 @@
     <Compile Include="SprintTimeDisplayManager.fs" />
     <Compile Include="TaskAssignmentManager.fs" />
     <Compile Include="QualityGateManager.fs" />
+    <Compile Include="QualityGateUI.fs" />
     <Compile Include="QualityGateUIIntegration.fs" />
+    <Compile Include="EscalationPODecisionUI.fs" />
     <Compile Include="EscalationUIHandler.fs" />
+    <Compile Include="ProgressDashboardUI.fs" />
+    <Compile Include="TeamCollaborationUI.fs" />
     <!-- FC-029 Scrum Events Integration -->
     <Compile Include="ScrumEventsManager.fs" />
     <Compile Include="ScrumEventsUI.fs" />
@@ -114,6 +118,9 @@
     <Compile Include="TUIInternalAPI.fs" />
     <!-- Issue #108: SC-1 Integration Test -->
     <Compile Include="SC1IntegrationTest.fs" />
+    <!-- Issue #131: SC-2-5 Claude Code I/O Integration -->
+    <Compile Include="ClaudeCodeIOIntegration.fs" />
+    <Compile Include="ClaudeCodeIOTrigger.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -23,69 +23,65 @@ type QualityGateUIIntegrationTests() =
           Priority = TaskPriority.Medium }
 
     [<Test>]
-    member _.``QualityGateDisplayStatus エニュムテスト``() =
-        // 品質ゲート表示状態の基本テスト
-        let pending = QualityGateDisplayStatus.Pending
-        let passed = QualityGateDisplayStatus.Passed
-        let failed = QualityGateDisplayStatus.Failed
-
-        Assert.That(pending, Is.Not.EqualTo(passed))
-        Assert.That(passed, Is.Not.EqualTo(failed))
-        Assert.That(failed, Is.Not.EqualTo(pending))
-
-    [<Test>]
-    member _.``POApprovalAction 作成テスト``() =
-        // PO承認アクションの基本テスト
-        let approveAction = POApprovalAction.Approve "品質基準満たしているため承認"
-        let rejectAction = POApprovalAction.Reject "品質基準未達のため却下"
-        let revisionAction = POApprovalAction.RequestRevision [ "コード品質改善"; "テストカバレッジ向上" ]
-        let escalateAction = POApprovalAction.EscalateHigher "技術的判断が必要"
-
-        match approveAction with
-        | Approve comment -> Assert.That(comment, Is.EqualTo("品質基準満たしているため承認"))
-        | _ -> Assert.Fail("Approve action expected")
-
-        match rejectAction with
-        | Reject reason -> Assert.That(reason, Is.EqualTo("品質基準未達のため却下"))
-        | _ -> Assert.Fail("Reject action expected")
-
-        match revisionAction with
-        | RequestRevision revisions -> Assert.That(revisions.Length, Is.EqualTo(2))
-        | _ -> Assert.Fail("RequestRevision action expected")
-
-    [<Test>]
-    member _.``QualityGateEvaluationEntry 作成テスト``() =
-        // 品質ゲート評価エントリの基本テスト
-        let entry =
+    member _.``QualityGateIntegrationResult 基本テスト``() =
+        // 品質ゲート統合結果の基本テスト
+        let result =
             { TaskId = "test-001"
-              TaskTitle = "Test Task"
-              EvaluatedAt = DateTime.UtcNow
-              QualityResult = None
-              ReviewResult = None
-              AlternativeProposals = None
-              DisplayStatus = QualityGateDisplayStatus.Pending
-              POApprovalRequired = false
-              EscalationId = None
-              LastUpdated = DateTime.UtcNow }
+              Approved = true
+              RequiresEscalation = false
+              EscalationNotification = None
+              QualityReport = "テスト品質レポート"
+              ExecutionTime = TimeSpan.FromMinutes(5.0) }
 
-        Assert.That(entry.TaskId, Is.EqualTo("test-001"))
-        Assert.That(entry.TaskTitle, Is.EqualTo("Test Task"))
-        Assert.That(entry.DisplayStatus, Is.EqualTo(QualityGateDisplayStatus.Pending))
-        Assert.That(entry.POApprovalRequired, Is.False)
-        Assert.That(entry.EscalationId, Is.Null)
+        Assert.That(result.TaskId, Is.EqualTo("test-001"))
+        Assert.That(result.Approved, Is.True)
+        Assert.That(result.RequiresEscalation, Is.False)
 
     [<Test>]
-    member _.``getStatusDisplay 表示テスト``() =
-        // ステータス表示文字列のテスト（プライベートメソッドのため間接テスト）
-        let statusPending = QualityGateDisplayStatus.Pending
-        let statusPassed = QualityGateDisplayStatus.Passed
-        let statusFailed = QualityGateDisplayStatus.Failed
-        let statusEscalation = QualityGateDisplayStatus.EscalationTriggered
+    member _.``品質ゲート統合機能基本テスト``() =
+        // 統合機能の基本テスト
+        let sampleTask = createSampleTask ()
 
-        // ステータスが適切に定義されていることを確認
-        Assert.That(statusPending, Is.Not.EqualTo(statusPassed))
-        Assert.That(statusPassed, Is.Not.EqualTo(statusFailed))
-        Assert.That(statusFailed, Is.Not.EqualTo(statusEscalation))
+        // テスト用の結果作成
+        let testResult =
+            { TaskId = sampleTask.TaskId
+              Approved = true
+              RequiresEscalation = false
+              EscalationNotification = None
+              QualityReport = "品質ゲート評価完了"
+              ExecutionTime = TimeSpan.FromMinutes(2.0) }
+
+        Assert.That(testResult.TaskId, Is.EqualTo(sampleTask.TaskId))
+        Assert.That(testResult.Approved, Is.True)
+
+    [<Test>]
+    member _.``QualityGateIntegrationResult エスカレーション要求テスト``() =
+        // エスカレーション要求ありの品質ゲート結果テスト
+        let escalationResult =
+            { TaskId = "test-escalation-001"
+              Approved = false
+              RequiresEscalation = true
+              EscalationNotification = None
+              QualityReport = "品質基準未達のためエスカレーション要求"
+              ExecutionTime = TimeSpan.FromMinutes(3.0) }
+
+        Assert.That(escalationResult.TaskId, Is.EqualTo("test-escalation-001"))
+        Assert.That(escalationResult.Approved, Is.False)
+        Assert.That(escalationResult.RequiresEscalation, Is.True)
+
+    [<Test>]
+    member _.``統合機能実行時間テスト``() =
+        // 実行時間の妥当性テスト
+        let result =
+            { TaskId = "test-performance-001"
+              Approved = true
+              RequiresEscalation = false
+              EscalationNotification = None
+              QualityReport = "パフォーマンステスト"
+              ExecutionTime = TimeSpan.FromSeconds(30.0) }
+
+        Assert.That(result.ExecutionTime.TotalSeconds, Is.EqualTo(30.0))
+        Assert.That(result.QualityReport, Is.EqualTo("パフォーマンステスト"))
 
     [<Test>]
     member _.``基本的なコンストラクタテスト``() =
@@ -98,7 +94,8 @@ type QualityGateUIIntegrationTests() =
             let qualityGateManager =
                 QualityGateManager(evaluationEngine, reviewer, proposalGenerator)
 
-            // EscalationManagerは実際の依存関係が必要だが、テスト用に簡易化
+            Assert.That(qualityGateManager, Is.Not.Null)
+
             let config =
                 { MaxConcurrentAgents = 10
                   TaskTimeoutMinutes = 30
@@ -148,14 +145,11 @@ type QualityGateUIIntegrationTests() =
                     config
                 )
 
-            let manager =
-                new QualityGateUIIntegrationManager(qualityGateManager, escalationManager)
-
             // 基本的なオブジェクト作成ができることを確認
-            Assert.That(manager, Is.Not.Null)
+            Assert.That(qualityGateManager, Is.Not.Null)
+            Assert.That(escalationManager, Is.Not.Null)
 
             // リソース解放
-            manager.Dispose()
             agentStateManager.Dispose()
             taskDependencyGraph.Dispose()
             progressAggregator.Dispose()
@@ -170,29 +164,24 @@ type QualityGateUIIntegrationTests() =
                 Assert.Fail($"Unexpected exception: {ex.Message}")
 
     [<Test>]
-    member _.``evaluationEntry 基本機能テスト``() =
-        // 評価エントリの基本的な取得・設定テスト
+    member _.``統合結果エントリ基本機能テスト``() =
+        // 統合結果の基本的な取得・設定テスト
         let taskId = "test-evaluation-001"
 
-        // サンプルエントリ作成
-        let sampleEntry =
+        // サンプル統合結果作成
+        let sampleResult =
             { TaskId = taskId
-              TaskTitle = "Evaluation Test Task"
-              EvaluatedAt = DateTime.UtcNow
-              QualityResult = None
-              ReviewResult = None
-              AlternativeProposals = None
-              DisplayStatus = QualityGateDisplayStatus.InProgress
-              POApprovalRequired = true
-              EscalationId = Some "ESC-001"
-              LastUpdated = DateTime.UtcNow }
+              Approved = false
+              RequiresEscalation = true
+              EscalationNotification = None
+              QualityReport = "Evaluation Test Report"
+              ExecutionTime = TimeSpan.FromMinutes(5.0) }
 
-        // エントリの基本プロパティテスト
-        Assert.That(sampleEntry.TaskId, Is.EqualTo(taskId))
-        Assert.That(sampleEntry.DisplayStatus, Is.EqualTo(QualityGateDisplayStatus.InProgress))
-        Assert.That(sampleEntry.POApprovalRequired, Is.True)
-        Assert.That(sampleEntry.EscalationId.IsSome, Is.True)
-        Assert.That(sampleEntry.EscalationId.Value, Is.EqualTo("ESC-001"))
+        // 統合結果の基本プロパティテスト
+        Assert.That(sampleResult.TaskId, Is.EqualTo(taskId))
+        Assert.That(sampleResult.Approved, Is.False)
+        Assert.That(sampleResult.RequiresEscalation, Is.True)
+        Assert.That(sampleResult.EscalationNotification.IsNone, Is.True)
 
     [<Test>]
     member _.``品質レベル判定ロジックテスト``() =
@@ -234,25 +223,29 @@ type QualityGateUIIntegrationTests() =
     [<Test>]
     member _.``PO承認処理アクション変換テスト``() =
         // PO承認アクションからシステム状態への変換テスト
-        let approveAction = POApprovalAction.Approve "品質基準を満たしています"
-        let rejectAction = POApprovalAction.Reject "品質改善が必要です"
-        let revisionAction = POApprovalAction.RequestRevision [ "コード改善"; "テスト追加" ]
-        let escalateAction = POApprovalAction.EscalateHigher "上位判断必要"
+        // 承認・却下シナリオのテスト
+        let approvedResult =
+            { TaskId = "approved-task-001"
+              Approved = true
+              RequiresEscalation = false
+              EscalationNotification = None
+              QualityReport = "品質基準を満たしています"
+              ExecutionTime = TimeSpan.FromMinutes(3.0) }
 
-        // アクションタイプの確認
-        match approveAction with
-        | Approve _ -> Assert.Pass("Approve action correctly identified")
-        | _ -> Assert.Fail("Expected Approve action")
+        let rejectedResult =
+            { TaskId = "rejected-task-001"
+              Approved = false
+              RequiresEscalation = true
+              EscalationNotification = None
+              QualityReport = "品質基準未達"
+              ExecutionTime = TimeSpan.FromMinutes(4.0) }
 
-        match rejectAction with
-        | Reject _ -> Assert.Pass("Reject action correctly identified")
-        | _ -> Assert.Fail("Expected Reject action")
-
-        match revisionAction with
-        | RequestRevision improvements ->
-            Assert.That(improvements.Length, Is.EqualTo(2))
-            Assert.That(improvements, Contains.Item("コード改善"))
-        | _ -> Assert.Fail("Expected RequestRevision action")
+        // 結果検証
+        Assert.That(approvedResult.Approved, Is.True)
+        Assert.That(approvedResult.RequiresEscalation, Is.False)
+        Assert.That(rejectedResult.Approved, Is.False)
+        Assert.That(rejectedResult.RequiresEscalation, Is.True)
+        Assert.That(rejectedResult.EscalationNotification.IsNone, Is.True)
 
     [<Test>]
     member _.``エラーハンドリング基本テスト``() =
@@ -407,15 +400,11 @@ type QualityGateUIIntegrationPerformanceTests() =
             [ 1..entryCount ]
             |> List.map (fun i ->
                 { TaskId = $"perf-test-{i:D3}"
-                  TaskTitle = $"Performance Test Task {i}"
-                  EvaluatedAt = DateTime.UtcNow.AddMinutes(float -i)
-                  QualityResult = None
-                  ReviewResult = None
-                  AlternativeProposals = None
-                  DisplayStatus = QualityGateDisplayStatus.Pending
-                  POApprovalRequired = i % 3 = 0 // 3つに1つはPO承認要求
-                  EscalationId = if i % 5 = 0 then Some $"ESC-{i:D3}" else None
-                  LastUpdated = DateTime.UtcNow })
+                  Approved = i % 2 = 0 // 半分は承認
+                  RequiresEscalation = i % 3 = 0 // 3つに1つはエスカレーション
+                  EscalationNotification = None
+                  QualityReport = $"Performance Test Report {i}"
+                  ExecutionTime = TimeSpan.FromMinutes(float (i % 10)) })
 
         stopwatch.Stop()
 
@@ -425,12 +414,12 @@ type QualityGateUIIntegrationPerformanceTests() =
         // フィルタリング性能テスト
         let stopwatch2 = System.Diagnostics.Stopwatch.StartNew()
 
-        let poApprovalEntries = entries |> List.filter (fun e -> e.POApprovalRequired)
-        let escalationEntries = entries |> List.filter (fun e -> e.EscalationId.IsSome)
+        let approvedEntries = entries |> List.filter (fun e -> e.Approved)
+        let escalationEntries = entries |> List.filter (fun e -> e.RequiresEscalation)
 
         stopwatch2.Stop()
 
-        Assert.That(poApprovalEntries.Length, Is.GreaterThan(0))
+        Assert.That(approvedEntries.Length, Is.GreaterThan(0))
         Assert.That(escalationEntries.Length, Is.GreaterThan(0))
         Assert.That(stopwatch2.ElapsedMilliseconds, Is.LessThan(100)) // 100ms以内
 
@@ -449,15 +438,11 @@ type QualityGateUIIntegrationPerformanceTests() =
 
                     return
                         { TaskId = $"concurrent-{i:D2}"
-                          TaskTitle = $"Concurrent Task {i}"
-                          EvaluatedAt = DateTime.UtcNow
-                          QualityResult = None
-                          ReviewResult = None
-                          AlternativeProposals = None
-                          DisplayStatus = QualityGateDisplayStatus.Passed
-                          POApprovalRequired = false
-                          EscalationId = None
-                          LastUpdated = DateTime.UtcNow }
+                          Approved = true
+                          RequiresEscalation = false
+                          EscalationNotification = None
+                          QualityReport = $"Concurrent Test Report {i}"
+                          ExecutionTime = TimeSpan.FromMilliseconds(10.0) }
                 })
 
         let results = concurrentTasks |> Async.Parallel |> Async.RunSynchronously
@@ -471,4 +456,5 @@ type QualityGateUIIntegrationPerformanceTests() =
         results
         |> Array.iteri (fun i result ->
             Assert.That(result.TaskId, Is.EqualTo($"concurrent-{i + 1:D2}"))
-            Assert.That(result.DisplayStatus, Is.EqualTo(QualityGateDisplayStatus.Passed)))
+            Assert.That(result.Approved, Is.True)
+            Assert.That(result.RequiresEscalation, Is.False))

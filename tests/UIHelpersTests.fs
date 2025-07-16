@@ -15,9 +15,16 @@ type UIHelpersTests() =
 
         if not isCI then
             try
+                // 完全にサイレントな初期化を試行
+                Console.SetOut(System.IO.TextWriter.Null)
+                Console.SetError(System.IO.TextWriter.Null)
                 Application.Init()
             with _ ->
                 () // Already initialized
+        else
+            // CI環境では一切の出力を抑制
+            Console.SetOut(System.IO.TextWriter.Null)
+            Console.SetError(System.IO.TextWriter.Null)
 
     [<TearDown>]
     member _.TearDown() =
@@ -27,6 +34,16 @@ type UIHelpersTests() =
         if not isCI then
             try
                 Application.Shutdown()
+                // 標準出力を復元
+                Console.SetOut(new System.IO.StreamWriter(Console.OpenStandardOutput()))
+                Console.SetError(new System.IO.StreamWriter(Console.OpenStandardError()))
+            with _ ->
+                ()
+        else
+            // CI環境では出力をリセット
+            try
+                Console.SetOut(new System.IO.StreamWriter(Console.OpenStandardOutput()))
+                Console.SetError(new System.IO.StreamWriter(Console.OpenStandardError()))
             with _ ->
                 ()
 

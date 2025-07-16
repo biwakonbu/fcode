@@ -30,6 +30,8 @@ src/                         # メインアプリケーション
 ├── ProcessSupervisor.fs     # プロセス分離・監視・自動復旧システム (422行)
 ├── Logger.fs                # 包括的ログシステム (71行)
 ├── RealtimeCollaboration.fs # リアルタイム協調機能統合ファサード (217行)
+├── ClaudeCodeIOIntegration.fs # Claude Code I/O統合マネージャー (250行)
+├── ClaudeCodeIOTrigger.fs   # Claude Code実行トリガーシステム (111行)
 ├── Collaboration/           # リアルタイム協調機能アーキテクチャ（2,526行）
 │   ├── CollaborationTypes.fs        # 型定義・エラー型 (163行)
 │   ├── IAgentStateManager.fs        # エージェント状態管理インターフェース (46行)
@@ -127,19 +129,20 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - **包括的テストスイート**: 510テストケース、4カテゴリ（Unit/Integration/Performance/Stability）
 - **リアルタイム協調機能基盤**: 完全実装（2,526行、包括的アーキテクチャ）
 - **SQLite3タスクストレージ**: TaskStorageManager実装完了（477行）
+- **SC-2-5 Claude Code I/O統合**: dev1ペイン向けリアルタイム出力表示（361行、2025-07-15）
 - **FC-027テスト安定性根本修正**: JSON制御文字サニタイズ・CI環境最適化（2025-07-11）
 
-### 開発中機能（FC-022: スペシャリストエージェント統合）
+### 開発中機能（SC-2: 品質ゲート統合UI・協調機能）
 - **エージェント間通信API**: TUI内部でのエージェント間メッセージング
 - **ペイン状態同期**: リアルタイム状態共有・競合解決
-- **Claude Code I/O統合**: プロセス出力のTUI表示機能
+- **SC-2-5 Claude Code I/O統合完了**: dev1ペイン向けリアルタイム出力表示（361行実装）
 - **DevOpsワークフロー統合**: 自動化されたDevOpsプロセス（923行実装中）
 
 ### 完了済み基盤機能
 - **UI基盤**: 8ペインレイアウト（会話+dev1-3+qa1-2+ux+PM）完全実装
 - **プロセス管理**: ProcessSupervisor（422行）・SessionManager（190行）
 - **リアルタイム協調**: Collaboration/（2,526行）エージェント管理基盤
-- **品質保証**: 466テスト100%パス・型安全性・エラーハンドリング統一
+- **品質保証**: 529テスト100%パス・型安全性・エラーハンドリング統一
 
 ### 将来機能（基本機能完成後）
 - tmuxライクなセッション永続化
@@ -169,12 +172,12 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - Claude Code CLI（必須）: ローカルインストール済み前提
 - 設定ファイル: `~/.config/claude-tui/config.toml`（予定）
 
-## 現在のプロジェクト状態（2025-07-11）
+## 現在のプロジェクト状態（2025-07-15）
 
-### 最新の実装状況（2025-07-11 更新）
+### 最新の実装状況（2025-07-15 更新）
 
-- **総実装ライン数**: 3,950行 (src/), 3,000行 (tests/)
-- **テストカバレッジ**: 510/510テスト 100%パス（FC-027完了・SQLite3統合テスト含む）
+- **総実装ライン数**: 4,311行 (src/), 3,000行 (tests/)
+- **テストカバレッジ**: 529/529テスト 100%パス（SC-2-5 Claude Code I/O統合完了）
 - **アーキテクチャ基盤**: UI、キーバインド、ログ、プロセス分離、リアルタイム協調すべて完成
 - **根本修正完了**: TextView初期化問題解決（Terminal.Gui 1.15.0対応）・CI環境最適化
 - **SQLite3 TaskStorageManager**: Repository Pattern完全実装・統合テスト成功（2025-07-02）
@@ -184,10 +187,10 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 ### 開発フェーズ再編成: 動作確認最優先
 **新しい開発方針**: セッション維持・堅牢性は後回し、まず画面表示を実現
 
-1. **Phase 1 (最優先)**: Claude Code画面表示の実現
-   - TextView初期化タイミング問題解決
-   - I/O統合実装（標準入出力キャプチャ・TUI表示）
-   - dev1ペインでの基本動作確認
+1. **Phase 1 (完了)**: Claude Code画面表示の実現
+   - ✅ TextView初期化タイミング問題解決
+   - ✅ I/O統合実装（標準入出力キャプチャ・TUI表示）
+   - ✅ dev1ペイン向けClaude Code I/O統合（SC-2-5完了）
 
 2. **Phase 2 (安定化)**: 複数ペイン展開
    - 全ペイン対応とセッション管理安定化
@@ -202,10 +205,11 @@ dotnet publish src/fcode.fsproj -c Release -r linux-x64 --self-contained true -p
 - ✅ TextView初期化問題根本解決（2025-06-29）
 - ✅ 包括的テスト強化（82テスト、実装上の不安要素すべて対応）
 
-### 直近の完了作業（2025-06-29）
-- **TextView初期化根本修正** - Terminal.Gui 1.15.0対応・リフレクション安全化 - commit 815e963
-- **包括的テスト強化** - 39テスト追加（WorkerProcessManager/IPCChannel/UIHelpers/E2E/リソース管理） - commit a6ff40e
-- **CI/CDパイプライン修正** - テストカテゴリ分離・タイムアウト対策 - commit 4cd9317
+### 直近の完了作業（2025-07-15）
+- **SC-2-5 Claude Code I/O統合完了** - dev1ペイン向けリアルタイム出力表示実装 - PR #136
+- **ClaudeCodeIOIntegration.fs**: I/O統合マネージャー（250行）・SessionBridge連携
+- **ClaudeCodeIOTrigger.fs**: トリガーシステム（111行）・タスク・エージェント要求対応
+- **品質保証**: 529/529テスト全通・0エラー・0警告ビルド成功
 
 
 ## 開発時注意事項

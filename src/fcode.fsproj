@@ -118,6 +118,9 @@
     <Compile Include="TUIInternalAPI.fs" />
     <!-- Issue #108: SC-1 Integration Test -->
     <Compile Include="SC1IntegrationTest.fs" />
+    <!-- Issue #131: SC-2-5 Claude Code I/O Integration -->
+    <Compile Include="ClaudeCodeIOIntegration.fs" />
+    <Compile Include="ClaudeCodeIOTrigger.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

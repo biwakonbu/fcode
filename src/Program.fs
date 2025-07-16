@@ -21,6 +21,8 @@ open FCode.VirtualTimeCoordinator
 open FCode.Collaboration.CollaborationTypes
 open FCode.SprintTimeDisplayManager
 open FCode.QualityGateManager
+open FCode.ClaudeCodeIOIntegration
+open FCode.ClaudeCodeIOTrigger
 open FCode
 // AgentWorkDisplayManager and AgentWorkSimulator are in FCode namespace
 
@@ -28,6 +30,8 @@ open FCode
 let mutable globalPaneTextViews: Map<string, TextView> = Map.empty
 let mutable agentStatusViews: Map<string, TextView> = Map.empty
 let mutable sessionBridges: Map<string, SessionBridge> = Map.empty
+let mutable claudeCodeIOManager: ClaudeCodeIOIntegrationManager option = None
+let mutable claudeCodeIOTrigger: ClaudeCodeIOTrigger option = None
 // Terminal.GuiのイベントはすべてUIスレッドで実行されるため、
 // これらのグローバル変数へのアクセスは同期化不要
 let mutable keyRouters: Map<string, KeyRouter> = Map.empty
@@ -923,6 +927,18 @@ let main argv =
             top.Add(convo)
             top.Add(right)
 
+            // ClaudeCodeIOIntegrationManagerを初期化
+            match globalPaneTextViews.TryFind("dev1") with
+            | Some dev1TextView ->
+                let ioManager = new ClaudeCodeIOIntegrationManager(dev1TextView)
+                claudeCodeIOManager <- Some ioManager
+                claudeCodeIOTrigger <- Some(new ClaudeCodeIOTrigger(ioManager))
+                logInfo "ClaudeCodeIOIntegration" "ClaudeCodeIOIntegrationManager and Trigger initialized for dev1 pane"
+            | None ->
+                logWarning
+                    "ClaudeCodeIOIntegration"
+                    "dev1 TextView not found, ClaudeCodeIOIntegrationManager not initialized"
+
             // エージェントペインでのClaude Code自動起動
             let agentPanes =
                 [ ("dev1", dev1)
@@ -1270,7 +1286,12 @@ let main argv =
             setupFocusTracking ()
 
             // Create Emacs key handler
-            let emacsKeyHandler = EmacsKeyHandler(focusablePanes, sessionManager)
+            let emacsKeyHandler =
+                EmacsKeyHandler(
+                    focusablePanes,
+                    sessionManager,
+                    ?claudeCodeIOTrigger = (claudeCodeIOTrigger |> Option.map (fun x -> x :> obj))
+                )
 
             // 統合キーハンドリング: Emacsキーバインド + KeyRouter透過処理
             let unifiedKeyHandler =

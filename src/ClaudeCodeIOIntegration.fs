@@ -175,7 +175,8 @@ type ClaudeCodeIOIntegrationManager(dev1Pane: TextView) =
                     logInfo "ClaudeCodeIOIntegration" "Claude Code実行停止開始"
 
                     // SessionBridge経由でセッション停止
-                    let! stopResult = Task.FromResult(Result.Ok()) // SessionBridgeにStopSessionメソッドがないため暫定対応
+                    sessionBridge.StopSession()
+                    let stopResult = Result.Ok() // 実際の停止処理を呼び出し
 
                     match stopResult with
                     | Result.Ok() ->

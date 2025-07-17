@@ -29,7 +29,9 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
     - name: 依存関係復元
-      run: dotnet restore src/fcode.fsproj
+      run: |
+        dotnet restore src/fcode.fsproj
+        dotnet restore tests/fcode.Tests.fsproj
       
     - name: ビルド
       run: |
@@ -97,6 +99,7 @@ jobs:
     - name: 依存関係復元・ビルド
       run: |
         dotnet restore src/fcode.fsproj
+        dotnet restore tests/fcode.Tests.fsproj
         dotnet build src/fcode.fsproj --no-restore --configuration Release
         dotnet build tests/fcode.Tests.fsproj --no-restore --configuration Release
         
@@ -134,6 +137,7 @@ jobs:
     - name: 依存関係復元・ビルド
       run: |
         dotnet restore src/fcode.fsproj
+        dotnet restore tests/fcode.Tests.fsproj
         dotnet build src/fcode.fsproj --no-restore --configuration Release
         dotnet build tests/fcode.Tests.fsproj --no-restore --configuration Release
         

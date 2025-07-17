@@ -114,7 +114,12 @@ module SessionPersistenceManager =
             use outputStream = new MemoryStream()
             gzipStream.CopyTo(outputStream)
             let json = System.Text.Encoding.UTF8.GetString(outputStream.ToArray())
-            JsonSerializer.Deserialize<string list>(json)
+
+            match JsonSanitizer.tryParseJson<string list> (json) with
+            | Result.Ok result -> result
+            | Result.Error errorMsg ->
+                Logger.logError "SessionPersistence" $"会話履歴JSON解析失敗: {errorMsg}"
+                []
         with ex ->
             Logger.logError "SessionPersistence" $"会話履歴展開失敗: {ex.Message}"
             []
@@ -285,7 +290,13 @@ module SessionPersistenceManager =
                 Error $"セッションが見つかりません: {sessionId}"
             else
                 let metadataJson = File.ReadAllText(metadataFile)
-                let metadata = JsonSerializer.Deserialize<SessionMetadata>(metadataJson)
+
+                let metadata =
+                    match JsonSanitizer.tryParseJson<SessionMetadata> (metadataJson) with
+                    | Result.Ok result -> result
+                    | Result.Error errorMsg ->
+                        Logger.logError "SessionPersistence" $"セッションメタデータ解析失敗: {errorMsg}"
+                        failwith $"セッションメタデータ解析失敗: {errorMsg}"
 
                 // 各ペインの状態データディレクトリを確認
                 let stateDir = Path.Combine(sessionDir, "pane-states")
@@ -356,8 +367,12 @@ module SessionPersistenceManager =
 
                         if File.Exists(metadataFile) then
                             let metadataJson = File.ReadAllText(metadataFile)
-                            let metadata = JsonSerializer.Deserialize<SessionMetadata>(metadataJson)
-                            Some metadata
+
+                            match JsonSanitizer.tryParseJson<SessionMetadata> (metadataJson) with
+                            | Result.Ok metadata -> Some metadata
+                            | Result.Error errorMsg ->
+                                Logger.logError "SessionPersistence" $"セッションメタデータ解析失敗 ({sessionId}): {errorMsg}"
+                                None
                         else
                             None
                     with ex ->
@@ -424,10 +439,11 @@ module SessionPersistenceManager =
             if File.Exists(activeSessionFile) then
                 let json = File.ReadAllText(activeSessionFile)
 
-                let data =
-                    JsonSerializer.Deserialize<{| SessionId: string; SetAt: DateTime |}>(json)
-
-                Success(Some data.SessionId)
+                match JsonSanitizer.tryParseJson<{| SessionId: string; SetAt: DateTime |}> (json) with
+                | Result.Ok data -> Success(Some data.SessionId)
+                | Result.Error errorMsg ->
+                    Logger.logError "SessionPersistence" $"アクティブセッション解析失敗: {errorMsg}"
+                    Success None
             else
                 Success None
         with ex ->

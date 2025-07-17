@@ -172,6 +172,7 @@ type AgentCollaborationDisplay(collaborationManager: RealtimeCollaborationManage
                 updateCollaborationDisplay ()
                 Logger.logInfo "AgentCollaborationUI" (sprintf "Progress update handled: %s (%d%%)" agentId progress))
 
+
     interface IDisposable with
         member this.Dispose() =
             lock lockObj (fun () ->

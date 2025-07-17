@@ -94,17 +94,8 @@ check_prerequisites() {
 build_projects() {
     log_info "プロジェクトビルド中..."
     
-    # 依存関係復元
-    log_info "依存関係復元中..."
-    dotnet restore "${SRC_PROJECT}" >> "${LOG_FILE}" 2>&1
-    
-    # ソースプロジェクトビルド
-    log_info "ソースプロジェクトビルド中..."
-    dotnet build "${SRC_PROJECT}" --no-restore --configuration Release >> "${LOG_FILE}" 2>&1
-    
-    # テストプロジェクトビルド
-    log_info "テストプロジェクトビルド中..."
-    dotnet build "${TEST_PROJECT}" --no-restore --configuration Release >> "${LOG_FILE}" 2>&1
+    # 依存関係復元とビルド
+    { log_info "依存関係復元中..."; dotnet restore "${SRC_PROJECT}"; log_info "ソースプロジェクトビルド中..."; dotnet build "${SRC_PROJECT}" --no-restore --configuration Release; log_info "テストプロジェクトビルド中..."; dotnet build "${TEST_PROJECT}" --no-restore --configuration Release; } >> "${LOG_FILE}" 2>&1
     
     log_success "プロジェクトビルド完了"
 }

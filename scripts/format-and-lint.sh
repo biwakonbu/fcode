@@ -23,10 +23,6 @@ echo "✅ Formatting complete"
 
 # Run linting (using build-based approach due to FSharpLint compatibility issues)
 echo "🔧 Running F# linting..."
-echo "Linting src/..."
-dotnet build src/fcode.fsproj --configuration Debug --verbosity normal --no-restore
-
-echo "Linting tests/..."
-dotnet build tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --no-restore
+{ echo "Linting src/..."; dotnet build src/fcode.fsproj --configuration Debug --verbosity normal --no-restore; echo "Linting tests/..."; dotnet build tests/fcode.Tests.fsproj --configuration Debug --verbosity normal --no-restore; } >> lint-output.log 2>&1
 
 echo "✅ Code quality check complete!"

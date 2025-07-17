@@ -204,7 +204,7 @@ jobs:
         echo "## 品質メトリクス" >> quality-report.md
         echo "- **CI環境**: Ubuntu Latest" >> quality-report.md
         echo "- **.NET Version**: ${{ env.DOTNET_VERSION }}" >> quality-report.md
-        echo "- **実行時間**: 合計 ${{ github.event.workflow_run.run_duration_ms }}ms" >> quality-report.md
+        echo "- **実行時間**: ワークフロー実行完了後に確認予定" >> quality-report.md
         echo "" >> quality-report.md
         
         echo "## 次回アクション" >> quality-report.md

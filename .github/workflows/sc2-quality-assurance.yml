@@ -32,12 +32,14 @@ jobs:
       run: dotnet restore src/fcode.fsproj
       
     - name: ビルド
-      run: dotnet build src/fcode.fsproj --no-restore --configuration Release
+      run: |
+        dotnet build src/fcode.fsproj --no-restore --configuration Release
+        dotnet build tests/fcode.Tests.fsproj --no-restore --configuration Release
       
     - name: SC-2統合テスト実行
       run: |
         dotnet test tests/fcode.Tests.fsproj \
-          --filter "TestCategory=Integration&FullyQualifiedName~SC2" \
+          --filter "FullyQualifiedName~SC-2" \
           --logger trx \
           --results-directory ./TestResults \
           --collect:"XPlat Code Coverage" \
@@ -47,7 +49,7 @@ jobs:
     - name: SC-2品質保証テスト実行
       run: |
         dotnet test tests/fcode.Tests.fsproj \
-          --filter "FullyQualifiedName~SC2QualityAssurance" \
+          --filter "FullyQualifiedName~SC2BasicQualityTests" \
           --logger trx \
           --results-directory ./TestResults \
           --configuration Release \
@@ -96,11 +98,12 @@ jobs:
       run: |
         dotnet restore src/fcode.fsproj
         dotnet build src/fcode.fsproj --no-restore --configuration Release
+        dotnet build tests/fcode.Tests.fsproj --no-restore --configuration Release
         
     - name: SC-2パフォーマンステスト実行
       run: |
         dotnet test tests/fcode.Tests.fsproj \
-          --filter "TestCategory=Performance&FullyQualifiedName~SC2" \
+          --filter "FullyQualifiedName~SC-2" \
           --logger trx \
           --results-directory ./PerformanceResults \
           --configuration Release \
@@ -132,11 +135,12 @@ jobs:
       run: |
         dotnet restore src/fcode.fsproj
         dotnet build src/fcode.fsproj --no-restore --configuration Release
+        dotnet build tests/fcode.Tests.fsproj --no-restore --configuration Release
         
     - name: レグレッション検出テスト実行
       run: |
         dotnet test tests/fcode.Tests.fsproj \
-          --filter "FullyQualifiedName~レグレッション" \
+          --filter "FullyQualifiedName~SC-2" \
           --logger trx \
           --results-directory ./RegressionResults \
           --configuration Release \

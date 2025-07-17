@@ -1171,7 +1171,7 @@ let main argv =
 
                 // 会話ペインにPOワークフローUI統合
                 // poWorkflowUIManager.InitializeUI(convo)
-                logInfo "POWorkflowUI" "POWorkflowUI初期化完了"
+                // logInfo "POWorkflowUI" "POWorkflowUI初期化完了"
 
                 // スタンドアップ通知ハンドラー登録（会話ペインに表示）
                 sprintTimeDisplayManager.RegisterStandupNotificationHandler(fun standupNotification ->

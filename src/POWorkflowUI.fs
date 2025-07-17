@@ -16,88 +16,90 @@ type POWorkflowUIManager(workflowManager: POWorkflowIntegrationManager) =
     let mutable stopWorkflowButton: Button option = None
     let mutable workflowResultView: TextView option = None
 
+    /// UIコンポーネントを作成
+    member private this.CreateUIComponents(parentView: View) =
+        // ワークフロー状態表示ラベル
+        let statusLabel = new Label("ワークフロー状態: 待機中")
+        statusLabel.X <- Pos.At(2)
+        statusLabel.Y <- Pos.At(1)
+        statusLabel.Width <- Dim.Fill() - Dim.Sized(2)
+        statusLabel.Height <- Dim.Sized(1)
+        workflowStatusLabel <- Some statusLabel
+        parentView.Add(statusLabel)
+
+        // スプリント進捗バー
+        let progressBar = new ProgressBar()
+        progressBar.X <- Pos.At(2)
+        progressBar.Y <- Pos.At(3)
+        progressBar.Width <- Dim.Fill() - Dim.Sized(2)
+        progressBar.Height <- Dim.Sized(1)
+        progressBar.Fraction <- 0.0f
+        sprintProgressBar <- Some progressBar
+        parentView.Add(progressBar)
+
+        // タスク指示入力エリア
+        let instructionLabel = new Label("PO指示入力:")
+        instructionLabel.X <- Pos.At(2)
+        instructionLabel.Y <- Pos.At(5)
+        instructionLabel.Width <- Dim.Fill() - Dim.Sized(2)
+        instructionLabel.Height <- Dim.Sized(1)
+        parentView.Add(instructionLabel)
+
+        let instructionText = new TextView()
+        instructionText.X <- Pos.At(2)
+        instructionText.Y <- Pos.At(6)
+        instructionText.Width <- Dim.Fill() - Dim.Sized(2)
+        instructionText.Height <- Dim.Sized(4)
+        instructionText.WordWrap <- true
+        instructionText.Text <- NStack.ustring.Make("ここにPOからの指示を入力してください...")
+        taskInstructionText <- Some instructionText
+        parentView.Add(instructionText)
+
+        // ワークフロー開始ボタン
+        let startButton = new Button("ワークフロー開始")
+        startButton.X <- Pos.At(2)
+        startButton.Y <- Pos.At(11)
+        startButton.Width <- 20
+        startButton.Height <- 1
+        startButton.add_Clicked (fun _ -> this.OnStartWorkflow())
+        startWorkflowButton <- Some startButton
+        parentView.Add(startButton)
+
+        // ワークフロー停止ボタン
+        let stopButton = new Button("ワークフロー停止")
+        stopButton.X <- Pos.At(24)
+        stopButton.Y <- Pos.At(11)
+        stopButton.Width <- 20
+        stopButton.Height <- 1
+        stopButton.add_Clicked (fun _ -> this.OnStopWorkflow())
+        stopButton.Enabled <- false
+        stopWorkflowButton <- Some stopButton
+        parentView.Add(stopButton)
+
+        // ワークフロー結果表示エリア
+        let resultLabel = new Label("ワークフロー結果:")
+        resultLabel.X <- Pos.At(2)
+        resultLabel.Y <- Pos.At(13)
+        resultLabel.Width <- Dim.Fill() - Dim.Sized(2)
+        resultLabel.Height <- Dim.Sized(1)
+        parentView.Add(resultLabel)
+
+        let resultView = new TextView()
+        resultView.X <- Pos.At(2)
+        resultView.Y <- Pos.At(14)
+        resultView.Width <- Dim.Fill() - Dim.Sized(2)
+        resultView.Height <- Dim.Fill() - Dim.Sized(14)
+        resultView.ReadOnly <- true
+        resultView.WordWrap <- true
+        workflowResultView <- Some resultView
+        parentView.Add(resultView)
+
     /// UI初期化
     member this.InitializeUI(parentView: View) =
         try
             logInfo "POWorkflowUI" "POワークフローUI初期化開始"
 
-            // ワークフロー状態表示ラベル
-            let statusLabel = new Label("ワークフロー状態: 待機中")
-            statusLabel.X <- Pos.At(2)
-            statusLabel.Y <- Pos.At(1)
-            statusLabel.Width <- Dim.Fill() - Dim.Sized(2)
-            statusLabel.Height <- Dim.Sized(1)
-            workflowStatusLabel <- Some statusLabel
-            parentView.Add(statusLabel)
-
-            // スプリント進捗バー
-            let progressBar = new ProgressBar()
-            progressBar.X <- Pos.At(2)
-            progressBar.Y <- Pos.At(3)
-            progressBar.Width <- Dim.Fill() - Dim.Sized(2)
-            progressBar.Height <- Dim.Sized(1)
-            progressBar.Fraction <- 0.0f
-            sprintProgressBar <- Some progressBar
-            parentView.Add(progressBar)
-
-            // タスク指示入力エリア
-            let instructionLabel = new Label("PO指示入力:")
-            instructionLabel.X <- Pos.At(2)
-            instructionLabel.Y <- Pos.At(5)
-            instructionLabel.Width <- Dim.Fill() - Dim.Sized(2)
-            instructionLabel.Height <- Dim.Sized(1)
-            parentView.Add(instructionLabel)
-
-            let instructionText = new TextView()
-            instructionText.X <- Pos.At(2)
-            instructionText.Y <- Pos.At(6)
-            instructionText.Width <- Dim.Fill() - Dim.Sized(2)
-            instructionText.Height <- Dim.Sized(4)
-            instructionText.WordWrap <- true
-            instructionText.Text <- NStack.ustring.Make("ここにPOからの指示を入力してください...")
-            taskInstructionText <- Some instructionText
-            parentView.Add(instructionText)
-
-            // ワークフロー開始ボタン
-            let startButton = new Button("ワークフロー開始")
-            startButton.X <- Pos.At(2)
-            startButton.Y <- Pos.At(11)
-            startButton.Width <- 20
-            startButton.Height <- 1
-            startButton.add_Clicked (fun _ -> this.OnStartWorkflow())
-            startWorkflowButton <- Some startButton
-            parentView.Add(startButton)
-
-            // ワークフロー停止ボタン
-            let stopButton = new Button("ワークフロー停止")
-            stopButton.X <- Pos.At(24)
-            stopButton.Y <- Pos.At(11)
-            stopButton.Width <- 20
-            stopButton.Height <- 1
-            stopButton.add_Clicked (fun _ -> this.OnStopWorkflow())
-            stopButton.Enabled <- false
-            stopWorkflowButton <- Some stopButton
-            parentView.Add(stopButton)
-
-            // ワークフロー結果表示エリア
-            let resultLabel = new Label("ワークフロー結果:")
-            resultLabel.X <- Pos.At(2)
-            resultLabel.Y <- Pos.At(13)
-            resultLabel.Width <- Dim.Fill() - Dim.Sized(2)
-            resultLabel.Height <- Dim.Sized(1)
-            parentView.Add(resultLabel)
-
-            let resultView = new TextView()
-            resultView.X <- Pos.At(2)
-            resultView.Y <- Pos.At(14)
-            resultView.Width <- Dim.Fill() - Dim.Sized(2)
-            resultView.Height <- Dim.Fill() - Dim.Sized(14)
-            resultView.ReadOnly <- true
-            resultView.WordWrap <- true
-            workflowResultView <- Some resultView
-            parentView.Add(resultView)
-
-            // イベントハンドラー登録
+            this.CreateUIComponents(parentView)
             this.RegisterEventHandlers()
 
             logInfo "POWorkflowUI" "POワークフローUI初期化完了"
@@ -284,4 +286,17 @@ type POWorkflowUIManager(workflowManager: POWorkflowIntegrationManager) =
     /// リソースクリーンアップ
     interface IDisposable with
         member this.Dispose() =
+            // UIコンポーネントのクリーンアップ
+            let disposeOption (opt: 'T option when 'T :> IDisposable) =
+                match opt with
+                | Some disposable -> disposable.Dispose()
+                | None -> ()
+
+            disposeOption workflowStatusLabel
+            disposeOption sprintProgressBar
+            disposeOption taskInstructionText
+            disposeOption startWorkflowButton
+            disposeOption stopWorkflowButton
+            disposeOption workflowResultView
+
             logInfo "POWorkflowUI" "POワークフローUIリソースクリーンアップ完了"

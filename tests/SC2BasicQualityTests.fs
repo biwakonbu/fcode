@@ -278,5 +278,4 @@ type SC2BasicQualityTests() =
 
         Assert.AreEqual(totalCount, successCount, $"CI統合テスト: {successCount}/{totalCount}成功")
 
-
         logInfo "SC2BasicQualityTests" "SC-2 CI/CD基本統合確認完了"

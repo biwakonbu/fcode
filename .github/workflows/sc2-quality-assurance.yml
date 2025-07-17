@@ -211,7 +211,6 @@ jobs:
         echo "- 継続的品質監視継続" >> quality-report.md
         echo "- パフォーマンス基準維持" >> quality-report.md
         echo "- レグレッション0件維持" >> quality-report.md
-
         
     - name: 品質レポートアップロード
       uses: actions/upload-artifact@v4

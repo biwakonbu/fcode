@@ -116,6 +116,10 @@
     <Compile Include="SC12IntegrationTests.fs"/>
     <!-- Issue #108: SC-1 Integration Tests -->
     <Compile Include="SC1IntegrationTests.fs"/>
+    <!-- Issue #135: SC-2-9 Integration Testing & Quality Assurance -->
+    <Compile Include="SC2BasicQualityTests.fs"/>
+    <!-- Issue #133: SC-2-7 Agent Collaboration Optimization Tests -->
+    <Compile Include="AgentCollaborationUITests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

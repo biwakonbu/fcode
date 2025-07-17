@@ -24,6 +24,7 @@ open FCode.QualityGateManager
 open FCode.ClaudeCodeIOIntegration
 open FCode.ClaudeCodeIOTrigger
 open FCode.POWorkflowIntegration
+open FCode.AgentCollaborationUI
 // open FCode.POWorkflowUI
 open FCode
 // AgentWorkDisplayManager and AgentWorkSimulator are in FCode namespace
@@ -36,6 +37,7 @@ let mutable claudeCodeIOManager: ClaudeCodeIOIntegrationManager option = None
 let mutable claudeCodeIOTrigger: ClaudeCodeIOTrigger option = None
 let mutable poWorkflowManager: POWorkflowIntegrationManager option = None
 let mutable poWorkflowUI: obj option = None
+let mutable agentCollaborationUI: AgentCollaborationDisplay option = None
 // Terminal.GuiのイベントはすべてUIスレッドで実行されるため、
 // これらのグローバル変数へのアクセスは同期化不要
 let mutable keyRouters: Map<string, KeyRouter> = Map.empty
@@ -1165,6 +1167,11 @@ let main argv =
                 poWorkflowManager <- Some poWorkflowIntegration
                 logInfo "POWorkflow" "POWorkflowIntegrationManager初期化完了"
 
+                // エージェント協調UI初期化
+                let agentCollaborationDisplay = new AgentCollaborationDisplay(realtimeCollaboration)
+                agentCollaborationUI <- Some agentCollaborationDisplay
+                logInfo "AgentCollaboration" "AgentCollaborationDisplay初期化完了"
+
                 // POWorkflowUI初期化（会話ペインに統合）
                 // let poWorkflowUIManager = new POWorkflowUI.POWorkflowUIManager(poWorkflowIntegration)
                 // poWorkflowUI <- Some poWorkflowUIManager
@@ -1217,6 +1224,29 @@ let main argv =
                         | Result.Error error -> logError "Application" (sprintf "UI registration failed: %s" error)
 
                         logInfo "Application" "UI統合マネージャー登録完了"
+
+                        // エージェント協調UI表示設定
+                        match agentCollaborationUI with
+                        | Some collaborationDisplay ->
+                            // dev1ペインに依存関係表示
+                            match paneTextViews.TryFind("dev1") with
+                            | Some dev1View -> collaborationDisplay.SetDependencyView(dev1View)
+                            | None -> ()
+
+                            // dev2ペインにブロッカー表示
+                            match paneTextViews.TryFind("dev2") with
+                            | Some dev2View -> collaborationDisplay.SetBlockerView(dev2View)
+                            | None -> ()
+
+                            // dev3ペインに協調状態表示
+                            match paneTextViews.TryFind("dev3") with
+                            | Some dev3View -> collaborationDisplay.SetCollaborationView(dev3View)
+                            | None -> ()
+
+                            // 初期表示更新
+                            collaborationDisplay.UpdateAllDisplays()
+                            logInfo "AgentCollaboration" "エージェント協調UI表示設定完了"
+                        | None -> ()
 
                         // 統合イベントループ開始（追跡可能・キャンセル可能・エラーハンドリング強化）
                         let integrationLoop = uiIntegrationManager.StartIntegrationEventLoop()

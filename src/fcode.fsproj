@@ -124,6 +124,8 @@
     <!-- Issue #132: SC-2-6 POWorkflow Integration -->
     <Compile Include="POWorkflowIntegration.fs" />
     <Compile Include="POWorkflowUI.fs" />
+    <!-- Issue #133: SC-2-7 Agent Collaboration Optimization -->
+    <Compile Include="AgentCollaborationUI.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

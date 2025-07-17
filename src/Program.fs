@@ -23,6 +23,8 @@ open FCode.SprintTimeDisplayManager
 open FCode.QualityGateManager
 open FCode.ClaudeCodeIOIntegration
 open FCode.ClaudeCodeIOTrigger
+open FCode.POWorkflowIntegration
+// open FCode.POWorkflowUI
 open FCode
 // AgentWorkDisplayManager and AgentWorkSimulator are in FCode namespace
 
@@ -32,6 +34,8 @@ let mutable agentStatusViews: Map<string, TextView> = Map.empty
 let mutable sessionBridges: Map<string, SessionBridge> = Map.empty
 let mutable claudeCodeIOManager: ClaudeCodeIOIntegrationManager option = None
 let mutable claudeCodeIOTrigger: ClaudeCodeIOTrigger option = None
+let mutable poWorkflowManager: POWorkflowIntegrationManager option = None
+let mutable poWorkflowUI: obj option = None
 // Terminal.GuiのイベントはすべてUIスレッドで実行されるため、
 // これらのグローバル変数へのアクセスは同期化不要
 let mutable keyRouters: Map<string, KeyRouter> = Map.empty
@@ -1123,6 +1127,51 @@ let main argv =
                 // SprintTimeDisplayManager初期化
                 SprintTimeDisplayGlobal.Initialize(virtualTimeCoordinator)
                 let sprintTimeDisplayManager = SprintTimeDisplayGlobal.GetManager()
+
+                // POWorkflowIntegrationManager初期化
+                let nlp = new NaturalLanguageProcessor()
+                let matcher = new AgentSpecializationMatcher()
+                let reassignmentSystem = new DynamicReassignmentSystem()
+
+                let taskAssignmentManager =
+                    new TaskAssignmentManager(nlp, matcher, reassignmentSystem)
+
+                let evaluationEngine = new QualityEvaluationEngine()
+                let reviewer = new UpstreamDownstreamReviewer()
+                let proposalGenerator = new AlternativeProposalGenerator()
+
+                let qualityGateManager =
+                    new QualityGateManager(evaluationEngine, reviewer, proposalGenerator)
+
+                let realtimeCollaboration =
+                    new FCode.RealtimeCollaboration.RealtimeCollaborationManager()
+
+                let poWorkflowConfig =
+                    { SprintDuration = System.TimeSpan.FromMinutes(18.0)
+                      StandupInterval = System.TimeSpan.FromMinutes(6.0)
+                      QualityGateThreshold = 80.0
+                      AutoAdvanceToNextSprint = true
+                      MaxConcurrentTasks = 10 }
+
+                let poWorkflowIntegration =
+                    new POWorkflowIntegrationManager(
+                        taskAssignmentManager,
+                        virtualTimeCoordinator,
+                        qualityGateManager,
+                        realtimeCollaboration,
+                        poWorkflowConfig
+                    )
+
+                poWorkflowManager <- Some poWorkflowIntegration
+                logInfo "POWorkflow" "POWorkflowIntegrationManager初期化完了"
+
+                // POWorkflowUI初期化（会話ペインに統合）
+                // let poWorkflowUIManager = new POWorkflowUI.POWorkflowUIManager(poWorkflowIntegration)
+                // poWorkflowUI <- Some poWorkflowUIManager
+
+                // 会話ペインにPOワークフローUI統合
+                // poWorkflowUIManager.InitializeUI(convo)
+                // logInfo "POWorkflowUI" "POWorkflowUI初期化完了"
 
                 // スタンドアップ通知ハンドラー登録（会話ペインに表示）
                 sprintTimeDisplayManager.RegisterStandupNotificationHandler(fun standupNotification ->

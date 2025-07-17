@@ -80,9 +80,26 @@ module JsonSanitizer =
                 // Step 4: 前後の空白・改行除去
                 let result = step4.Trim()
 
-                // 結果検証: 最小限のJSON構造要件チェック
-                if result.Length > 0 && not (result.Contains("\u001b")) then
-                    result
+                // Step 5: 最終的な制御文字・非ASCII文字の安全確認
+                let finalResult =
+                    if result.Length > 0 then
+                        // JSONに危険な文字が含まれていないか最終チェック
+                        result.ToCharArray()
+                        |> Array.filter (fun c ->
+                            let code = int c
+
+                            (code >= 32 && code <= 126)
+                            || code = 9
+                            || code = 10
+                            || code = 13
+                            || (code >= 160 && code <= 65535))
+                        |> System.String
+                    else
+                        ""
+
+                // 結果検証: エスケープシーケンス残存チェック
+                if finalResult.Length > 0 && not (finalResult.Contains("\u001b")) then
+                    finalResult
                 else
                     // エスケープシーケンスが残存している場合は空文字を返す
                     ""
@@ -93,21 +110,34 @@ module JsonSanitizer =
     /// JSON解析安全実行（ジェネリック版）
     let tryParseJson<'T> (input: string) : Result<'T, string> =
         try
-            let sanitized = sanitizeForJson input
-
-            if String.IsNullOrWhiteSpace(sanitized) then
-                Error "Empty input after sanitization"
-            elif sanitized.Length < 2 then
-                Error "Input too short to be valid JSON"
+            if String.IsNullOrWhiteSpace(input) then
+                Error "Empty input"
             else
-                // JSON解析オプション設定
-                let options = JsonSerializerOptions()
-                options.PropertyNameCaseInsensitive <- true
-                options.ReadCommentHandling <- JsonCommentHandling.Skip
-                options.AllowTrailingCommas <- true
+                let sanitized = sanitizeForJson input
 
-                let result = JsonSerializer.Deserialize<'T>(sanitized, options)
-                Ok result
+                if String.IsNullOrWhiteSpace(sanitized) then
+                    Error "Empty input after sanitization"
+                elif sanitized.Length < 2 then
+                    Error "Input too short to be valid JSON"
+                else
+                    // 追加的な制御文字除去（JSON特化）
+                    let finalSanitized =
+                        sanitized
+                        |> fun s ->
+                            Regex.Replace(s, @"[^\x20-\x7E\x09\x0A\x0D\u00A0-\uFFFF]", "", RegexOptions.Compiled)
+                        |> fun s -> s.Trim()
+
+                    if String.IsNullOrWhiteSpace(finalSanitized) then
+                        Error "No valid content after deep sanitization"
+                    else
+                        // JSON解析オプション設定
+                        let options = JsonSerializerOptions()
+                        options.PropertyNameCaseInsensitive <- true
+                        options.ReadCommentHandling <- JsonCommentHandling.Skip
+                        options.AllowTrailingCommas <- true
+
+                        let result = JsonSerializer.Deserialize<'T>(finalSanitized, options)
+                        Ok result
         with
         | :? JsonException as ex -> Error $"JSON parse failed: {ex.Message}"
         | ex -> Error $"Unexpected error: {ex.Message}"

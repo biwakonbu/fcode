@@ -67,9 +67,16 @@ module TerminalGuiControl =
             lock initLock (fun () ->
                 if not isInitialized then
                     try
-                        Terminal.Gui.Application.Init()
-                        isInitialized <- true
-                        logDebug "CITestHelper" "Terminal.Gui初期化完了"
+                        // タイムアウト付きでTerminal.Gui初期化を実行
+                        let initTask =
+                            System.Threading.Tasks.Task.Run(fun () -> Terminal.Gui.Application.Init())
+
+                        if initTask.Wait(TimeSpan.FromSeconds(5.0)) then
+                            isInitialized <- true
+                            logDebug "CITestHelper" "Terminal.Gui初期化完了"
+                        else
+                            logWarning "CITestHelper" "Terminal.Gui初期化タイムアウト（CI環境として継続）"
+                            CIEnvironment.forceCI true
                     with ex ->
                         logWarning "CITestHelper" $"Terminal.Gui初期化失敗（CI環境として継続）: {ex.Message}"
                         CIEnvironment.forceCI true)
@@ -81,11 +88,19 @@ module TerminalGuiControl =
         if not (CIEnvironment.isCI ()) && isInitialized then
             lock initLock (fun () ->
                 try
-                    Terminal.Gui.Application.Shutdown()
-                    isInitialized <- false
-                    logDebug "CITestHelper" "Terminal.Guiシャットダウン完了"
+                    // タイムアウト付きでTerminal.Guiシャットダウンを実行
+                    let shutdownTask =
+                        System.Threading.Tasks.Task.Run(fun () -> Terminal.Gui.Application.Shutdown())
+
+                    if shutdownTask.Wait(TimeSpan.FromSeconds(3.0)) then
+                        isInitialized <- false
+                        logDebug "CITestHelper" "Terminal.Guiシャットダウン完了"
+                    else
+                        logWarning "CITestHelper" "Terminal.Guiシャットダウンタイムアウト（強制終了）"
+                        isInitialized <- false
                 with ex ->
-                    logWarning "CITestHelper" $"Terminal.Guiシャットダウン失敗: {ex.Message}")
+                    logWarning "CITestHelper" $"Terminal.Guiシャットダウン失敗: {ex.Message}"
+                    isInitialized <- false)
 
 /// テストタイムアウト制御
 module TestTimeout =

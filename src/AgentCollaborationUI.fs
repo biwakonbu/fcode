@@ -9,12 +9,21 @@ open FCode.RealtimeCollaboration
 
 /// エージェント協調状態表示UI
 type AgentCollaborationDisplay(collaborationManager: RealtimeCollaborationManager) =
+    // TODO: 実際のcollaborationManagerとの統合は将来の実装で行う
 
     let mutable dependencyView: TextView option = None
     let mutable blockerView: TextView option = None
     let mutable collaborationView: TextView option = None
     let mutable disposed = false
     let lockObj = obj ()
+
+    /// 依存関係テキストの生成
+    let buildDependencyText (text: StringBuilder) =
+        text.AppendLine("🔗 タスク依存関係:") |> ignore
+        text.AppendLine("") |> ignore
+        text.AppendLine("  基本的な依存関係表示") |> ignore
+        text.AppendLine("  - dev1 → dev2") |> ignore
+        text.AppendLine("  - qa1 → dev1") |> ignore
 
     /// 依存関係表示の更新
     let updateDependencyDisplay () =
@@ -23,11 +32,7 @@ type AgentCollaborationDisplay(collaborationManager: RealtimeCollaborationManage
                 match dependencyView with
                 | Some view ->
                     let text = StringBuilder()
-                    text.AppendLine("🔗 タスク依存関係:") |> ignore
-                    text.AppendLine("") |> ignore
-                    text.AppendLine("  基本的な依存関係表示") |> ignore
-                    text.AppendLine("  - dev1 → dev2") |> ignore
-                    text.AppendLine("  - qa1 → dev1") |> ignore
+                    buildDependencyText text
 
                     view.Text <- text.ToString()
                     Logger.logInfo "Dependencies" "Updated dependency display"
@@ -133,11 +138,7 @@ type AgentCollaborationDisplay(collaborationManager: RealtimeCollaborationManage
                 match dependencyView with
                 | Some view ->
                     let text = StringBuilder()
-                    text.AppendLine("🔗 タスク依存関係:") |> ignore
-                    text.AppendLine("") |> ignore
-                    text.AppendLine("  基本的な依存関係表示") |> ignore
-                    text.AppendLine("  - dev1 → dev2") |> ignore
-                    text.AppendLine("  - qa1 → dev1") |> ignore
+                    buildDependencyText text
                     text.AppendLine("") |> ignore
                     text.AppendLine("📊 リソース可用性:") |> ignore
                     text.AppendLine("  - dev1: 作業中") |> ignore
@@ -155,7 +156,7 @@ type AgentCollaborationDisplay(collaborationManager: RealtimeCollaborationManage
                 match collaborationView with
                 | Some view ->
                     let currentText = view.Text.ToString()
-                    let timestamp = DateTime.Now.ToString("HH:mm:ss")
+                    let timestamp = DateTime.UtcNow.ToString("HH:mm:ss")
 
                     let newText =
                         sprintf "%s\n\n📢 情報共有 [%s]:\n  %s: %s" currentText timestamp agentId info

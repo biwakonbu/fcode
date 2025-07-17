@@ -121,6 +121,9 @@
     <!-- Issue #131: SC-2-5 Claude Code I/O Integration -->
     <Compile Include="ClaudeCodeIOIntegration.fs" />
     <Compile Include="ClaudeCodeIOTrigger.fs" />
+    <!-- Issue #132: SC-2-6 POWorkflow Integration -->
+    <Compile Include="POWorkflowIntegration.fs" />
+    <Compile Include="POWorkflowUI.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -1529,55 +1529,64 @@ let main argv =
 
             // Initialize TaskStorageManager and UI
             logInfo "TaskStorage" "Initializing TaskStorage components"
+
             try
-                let dbPath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "fcode", "tasks.db")
+                let dbPath =
+                    System.IO.Path.Combine(
+                        System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                        "fcode",
+                        "tasks.db"
+                    )
+
                 let dbDir = System.IO.Path.GetDirectoryName(dbPath)
+
                 if not (System.IO.Directory.Exists(dbDir)) then
                     System.IO.Directory.CreateDirectory(dbDir) |> ignore
-                
+
                 let connectionString = $"Data Source={dbPath};"
                 let storageManager = new TaskStorageManager(connectionString)
                 taskStorageManager <- Some storageManager
-                
+
                 // Initialize database
                 async {
                     let! initResult = storageManager.InitializeDatabase()
+
                     match initResult with
                     | Result.Ok() ->
                         logInfo "TaskStorage" "TaskStorage database initialized successfully"
-                        
+
                         // Initialize TaskStorageUI
                         let taskUI = new TaskStorageDisplay(storageManager)
                         taskStorageUI <- Some taskUI
-                        
+
                         // Integrate TaskStorage UI with panes
                         match globalPaneTextViews.TryFind("dev2") with
-                        | Some dev2View -> 
+                        | Some dev2View ->
                             taskUI.SetTaskListView(dev2View)
                             logInfo "TaskStorage" "TaskStorage list view integrated with dev2 pane"
                         | None -> logWarning "TaskStorage" "dev2 pane not found for TaskStorage list view"
-                        
+
                         match globalPaneTextViews.TryFind("qa1") with
-                        | Some qa1View -> 
+                        | Some qa1View ->
                             taskUI.SetTaskStatsView(qa1View)
                             logInfo "TaskStorage" "TaskStorage stats view integrated with qa1 pane"
                         | None -> logWarning "TaskStorage" "qa1 pane not found for TaskStorage stats view"
-                        
+
                         match globalPaneTextViews.TryFind("qa2") with
-                        | Some qa2View -> 
+                        | Some qa2View ->
                             taskUI.SetTaskDetailView(qa2View)
                             logInfo "TaskStorage" "TaskStorage detail view integrated with qa2 pane"
                         | None -> logWarning "TaskStorage" "qa2 pane not found for TaskStorage detail view"
-                        
+
                         // Start periodic updates
                         taskUI.StartPeriodicUpdate()
                         logInfo "TaskStorage" "TaskStorage UI integration completed"
-                        
+
                     | Result.Error(error) ->
                         logError "TaskStorage" $"TaskStorage database initialization failed: {error}"
                 }
                 |> Async.Start
-                
+
             with ex ->
                 logError "TaskStorage" $"TaskStorage initialization error: {ex.Message}"
 

@@ -117,6 +117,8 @@
     <Compile Include="SC12IntegrationTests.fs"/>
     <!-- Issue #108: SC-1 Integration Tests -->
     <Compile Include="SC1IntegrationTests.fs"/>
+    <!-- Issue #144: v2.0-1 External Tools Integration Tests -->
+    <Compile Include="ExternalIntegrationTests.fs"/>
     <!-- Issue #135: SC-2-9 Integration Testing & Quality Assurance -->
     <Compile Include="SC2BasicQualityTests.fs"/>
     <Compile Include="Program.fs"/>

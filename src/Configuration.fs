@@ -65,7 +65,8 @@ and UIConfiguration =
       QaRowHeight: int
       UpdateIntervalMs: int
       ShortSleepMs: int
-      StandardSleepMs: int }
+      StandardSleepMs: int
+      TaskStorageUpdateIntervalMs: int }
 
 /// バッファ設定
 and BufferConfiguration =
@@ -129,7 +130,8 @@ module DefaultConfig =
           QaRowHeight = 8
           UpdateIntervalMs = 500
           ShortSleepMs = 10
-          StandardSleepMs = 100 }
+          StandardSleepMs = 100
+          TaskStorageUpdateIntervalMs = 30000 }
 
     let bufferConfig =
         { MaxBufferedLines = 5

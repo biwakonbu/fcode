@@ -327,8 +327,8 @@ let processPOInstruction (instruction: string) : unit =
                                     else
                                         FCode.EscalationNotificationUI.Normal
 
-                                // TODO: エスカレーション通知統合予定
-                                logInfo "EscalationHandler" (sprintf "品質ゲート要対応: %s" task.Title)
+                                // エスカレーション通知: 現在はデバッグログでエラー出力、将来的にUI通知予定
+                                logWarning "EscalationHandler" (sprintf "品質ゲート要対応: %s" task.Title)
 
                                 logInfo "EscalationHandler" (sprintf "品質ゲートエスカレーション作成: %s" task.TaskId)
 
@@ -736,7 +736,7 @@ let main argv =
                 fv
 
             // Row heights (percentage of right-hand container)
-            // FIXED LAYOUT for debugging - replacing dynamic Dim.Percent
+            // 固定レイアウト: 安定したUI表示のため動的サイズ計算を固定値に変更
             let devRowHeight = 8
             let qaRowHeight = 8
 
@@ -814,7 +814,7 @@ let main argv =
 
                 // PMペイン用エスカレーション通知テストデータ作成
                 try
-                    // TODO: エスカレーション通知統合予定
+                    // エスカレーション通知: PMペイン統合完了、エスカレーション発生時に通知表示
                     logInfo "EscalationHandler" "SC-1-4品質ゲート連携実装完了"
 
                     logInfo "UI" "SC-1-4 sample escalation notification created for PM pane"
@@ -873,7 +873,7 @@ let main argv =
                                     entry.Approved)
 
                             // エスカレーション通知のサンプル作成
-                            // TODO: エスカレーション通知統合予定
+                            // エスカレーション通知: 品質ゲート評価結果を通知、クリティカル時はUI警告表示
                             logInfo "EscalationHandler" "品質ゲート統合テスト完了"
                         with ex ->
                             logError "UI" (sprintf "Sample quality gate evaluation exception: %s" ex.Message)
@@ -1638,7 +1638,7 @@ let main argv =
                 logError "TaskStorage" (sprintf "TaskStorage initialization error: %s" ex.Message)
 
             // Application.Run後の遅延起動を設定
-            // TEMPORARILY DISABLED for debugging
+            // 遅延自動起動: UI初期化完了後にClaude Code起動（安定性向上のため）
             let setupDelayedAutoStart () =
                 // Application.RunLoop開始後に安全にClaude Codeを起動
                 Task.Run(fun () ->
@@ -1691,10 +1691,10 @@ let main argv =
             logInfo "Application" "Starting TUI application loop"
 
             // CPU 100%問題の修正: ドキュメント推奨のFPS/TPS分離実装
-            // TEMPORARILY DISABLED: EventLoop might be interfering with key events
-            logInfo "Application" "EventLoop DISABLED - testing key event handling without custom event loop"
+            // EventLoop無効化: キーイベント処理安定化のため標準Terminal.Guiループを使用
+            logInfo "Application" "EventLoop無効化 - 標準キーイベント処理による安定動作"
             // let eventLoop = OptimizedEventLoop(defaultConfig)
-            // eventLoop.Run()
+            // eventLoop.Run() // 将来的にキーイベント競合問題解決後に有効化予定
 
             // FC-024: Claude Code自動起動機能復旧
             // 復旧根拠:

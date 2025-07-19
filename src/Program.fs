@@ -1167,10 +1167,11 @@ let main argv =
                 poWorkflowManager <- Some poWorkflowIntegration
                 logInfo "POWorkflow" "POWorkflowIntegrationManager初期化完了"
 
-                // エージェント協調UI初期化
+                // エージェント協調UI初期化（RealtimeCollaborationManager統合）
                 let agentCollaborationDisplay = new AgentCollaborationDisplay(realtimeCollaboration)
+                agentCollaborationDisplay.StartEventSubscriptions() // イベント購読開始
                 agentCollaborationUI <- Some agentCollaborationDisplay
-                logInfo "AgentCollaboration" "AgentCollaborationDisplay初期化完了"
+                logInfo "AgentCollaboration" "AgentCollaborationDisplay初期化・イベント購読完了"
 
                 // POWorkflowUI初期化（会話ペインに統合）
                 // let poWorkflowUIManager = new POWorkflowUI.POWorkflowUIManager(poWorkflowIntegration)

@@ -44,7 +44,8 @@ module IntelligentDistribution =
           AssignedAgent: string
           ConfidenceScore: float // 分散判定信頼度
           ReasoningFactors: string list // 決定理由要因
-          AlternativeAgents: (string * float) list // 代替エージェント候補
+          AlternativeAgents: (string * float) list
+          // 代替エージェント候補
           EstimatedCompletionTime: DateTime
           RiskAssessment: string
           RecommendedApproach: string }

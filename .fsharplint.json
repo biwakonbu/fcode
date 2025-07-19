@@ -37,6 +37,10 @@
     },
     "formatting": {
       "enabled": true
+    },
+    "lineLength": {
+      "enabled": true,
+      "maxLength": 80
     }
   }
 }

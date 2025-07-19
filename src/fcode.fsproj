@@ -126,6 +126,8 @@
     <Compile Include="POWorkflowUI.fs" />
     <!-- Issue #133: SC-2-7 Agent Collaboration Optimization -->
     <Compile Include="AgentCollaborationUI.fs" />
+    <!-- Issue #134: SC-2-8 SQLite3 Task Storage Implementation -->
+    <Compile Include="TaskStorageUI.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

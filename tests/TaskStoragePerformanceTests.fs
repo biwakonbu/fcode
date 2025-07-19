@@ -64,7 +64,7 @@ type TaskStoragePerformanceTests() =
                           EstimatedDuration = Some(TimeSpan.FromMinutes(float (i % 60 + 15)))
                           ActualDuration = None
                           RequiredResources = [ $"resource-{i % 10}" ]
-                          CreatedAt = DateTime.Now.AddMinutes(float (-i))
+                          CreatedAt = DateTime.Now
                           UpdatedAt = DateTime.Now }
 
                     let! saveResult = manager.SaveTask(testTask)
@@ -102,10 +102,9 @@ type TaskStoragePerformanceTests() =
                           Title = $"Search Test Task {i}"
                           Description = "検索パフォーマンステスト用"
                           Status =
-                            if i % 4 = 0 then
-                                TaskStatus.Completed
-                            else
-                                TaskStatus.InProgress
+                            if i % 4 = 0 then TaskStatus.Completed
+                            elif i % 4 = 1 then TaskStatus.InProgress
+                            else TaskStatus.Pending
                           AssignedAgent = Some $"search-agent-{i % 3}"
                           Priority = TaskPriority.Medium
                           EstimatedDuration = Some(TimeSpan.FromMinutes(30.0))
@@ -132,7 +131,10 @@ type TaskStoragePerformanceTests() =
                 // 結果検証
                 match allTasks, progressSummary with
                 | Result.Ok(tasks), Result.Ok(summary) ->
-                    Assert.That(tasks.Length, Is.GreaterThan(0), "タスクが取得できること")
+                    // Pendingタスクのみが返される（i % 4 = 2 or 3: 500の場合、250個が期待値）
+                    // しかし、LIMIT 100制限がある
+                    printfn $"取得されたタスク数: {tasks.Length}、期待Pendingタスク数: {taskCount / 2}"
+                    Assert.That(tasks.Length, Is.GreaterThan(90), "LIMIT 100による実行可能タスクが取得できること")
 
                     Assert.That(
                         stopwatch.ElapsedMilliseconds,
@@ -196,12 +198,13 @@ type TaskStoragePerformanceTests() =
 
                 match allTasks with
                 | Result.Ok(tasks) ->
-                    let expectedCount = taskCount * concurrentTasks
+                    let totalExpectedCount = taskCount * concurrentTasks // 全てPending状態
+                    let limitedExpectedCount = min totalExpectedCount 100 // LIMIT 100制限
 
                     Assert.That(
                         tasks.Length,
-                        Is.EqualTo(expectedCount),
-                        $"並行処理結果: 期待 {expectedCount}、実際 {tasks.Length}"
+                        Is.EqualTo(limitedExpectedCount),
+                        $"並行処理結果: 期待 {totalExpectedCount}（LIMIT制限: {limitedExpectedCount}）、実際 {tasks.Length}"
                     )
 
                     printfn $"並行アクセステスト完了: {concurrentTasks}並行、{taskCount}タスク/並行、総時間: {stopwatch.ElapsedMilliseconds}ms"

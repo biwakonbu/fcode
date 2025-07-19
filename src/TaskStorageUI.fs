@@ -5,6 +5,7 @@ open System.Text
 open Terminal.Gui
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.TaskStorageManager
+open FCode.Configuration
 open FCode.Logger
 
 /// タスクストレージ情報表示UI
@@ -248,14 +249,17 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
 
     /// UI統合: 定期更新開始
     member this.StartPeriodicUpdate() =
-        let timer = new System.Timers.Timer(30000.0) // 30秒間隔
+        let intervalMs =
+            float FCode.Configuration.DefaultConfig.uiConfig.TaskStorageUpdateIntervalMs
+
+        let timer = new System.Timers.Timer(intervalMs)
 
         timer.Elapsed.Add(fun _ ->
             if not disposed then
                 this.HandleTaskUpdatedEvent())
 
         timer.Start()
-        logInfo "TaskStorageUI" "タスクストレージ定期更新開始（30秒間隔）"
+        logInfo "TaskStorageUI" $"タスクストレージ定期更新開始（{intervalMs / 1000.0}秒間隔）"
 
     /// リソース解放
     member this.Dispose() =

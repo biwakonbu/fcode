@@ -153,85 +153,78 @@ module NotificationEngine =
           Channels = channels
           Tags = tags }
 
+    /// 重要度チェック実行
+    let private checkNotificationThreshold (config: NotificationConfig) (notification: NotificationMessage) =
+        let thresholdSeverity =
+            config.SeverityThresholds
+            |> Map.tryFind notification.NotificationType
+            |> Option.defaultValue NotificationSeverity.Info
+
+        notification.Severity >= thresholdSeverity
+
+    /// UI通知配信処理
+    let private deliverUINotification (notification: NotificationMessage) =
+        for subscriber in notificationSubscribers.Values do
+            try
+                subscriber notification
+            with ex ->
+                Logger.logWarning "NotificationEngine" $"UI通知配信失敗: {ex.Message}"
+
+    /// ログ通知出力処理
+    let private deliverLogNotification (notification: NotificationMessage) =
+        let message =
+            $"[{notification.NotificationType}] {notification.Title}: {notification.Content}"
+
+        match notification.Severity with
+        | NotificationSeverity.Info -> Logger.logInfo "NotificationEngine" message
+        | NotificationSeverity.Warning -> Logger.logWarning "NotificationEngine" message
+        | NotificationSeverity.Error -> Logger.logError "NotificationEngine" message
+        | NotificationSeverity.Critical -> Logger.logError "NotificationEngine" $"[CRITICAL] {message}"
+        | _ -> Logger.logInfo "NotificationEngine" message
+
+    /// ファイル通知出力処理
+    let private deliverFileNotification (config: NotificationConfig) (notification: NotificationMessage) =
+        let notificationFile =
+            Path.Combine(config.StorageDirectory, "active", $"{notification.MessageId}.json")
+
+        let json =
+            JsonSerializer.Serialize(notification, JsonSerializerOptions(WriteIndented = true))
+
+        File.WriteAllText(notificationFile, json)
+
+    /// チャンネル別配信処理
+    let private deliverToChannels (config: NotificationConfig) (notification: NotificationMessage) =
+        for channel in notification.Channels do
+            match channel with
+            | UI -> deliverUINotification notification
+            | Log -> deliverLogNotification notification
+            | File -> deliverFileNotification config notification
+            | External -> Logger.logDebug "NotificationEngine" "外部システム通知は将来実装予定"
+
+    /// バッチ通知処理
+    let private processBatchNotification (config: NotificationConfig) (notification: NotificationMessage) =
+        if config.BatchNotificationEnabled then
+            lock batchLock (fun () ->
+                batchNotifications.Add(notification)
+
+                if batchNotifications.Count >= config.BatchSize then
+                    let batchList = batchNotifications.ToArray()
+                    batchNotifications.Clear()
+                    Logger.logInfo "NotificationEngine" $"バッチ通知送信: {batchList.Length}件")
+
     /// 通知の送信
     let sendNotification (config: NotificationConfig) (notification: NotificationMessage) =
         async {
             try
                 Logger.logDebug "NotificationEngine" $"通知送信開始: {notification.Title} (重要度: {notification.Severity})"
 
-                // 重要度チェック
-                let thresholdSeverity =
-                    config.SeverityThresholds
-                    |> Map.tryFind notification.NotificationType
-                    |> Option.defaultValue NotificationSeverity.Info
-
-                if notification.Severity < thresholdSeverity then
+                if not (checkNotificationThreshold config notification) then
                     Logger.logDebug "NotificationEngine" $"通知が重要度しきい値を下回るためスキップ: {notification.Title}"
                     return false
                 else
-
-                    // 通知をキューに追加
                     notifications.Enqueue(notification)
-
-                    // チャンネル別配信
-                    for channel in notification.Channels do
-                        match channel with
-                        | UI ->
-                            // UI通知（購読者への配信）
-                            for subscriber in notificationSubscribers.Values do
-                                try
-                                    subscriber notification
-                                with ex ->
-                                    Logger.logWarning "NotificationEngine" $"UI通知配信失敗: {ex.Message}"
-
-                        | Log ->
-                            // ログ出力
-                            match notification.Severity with
-                            | NotificationSeverity.Info ->
-                                Logger.logInfo
-                                    "NotificationEngine"
-                                    $"[{notification.NotificationType}] {notification.Title}: {notification.Content}"
-                            | NotificationSeverity.Warning ->
-                                Logger.logWarning
-                                    "NotificationEngine"
-                                    $"[{notification.NotificationType}] {notification.Title}: {notification.Content}"
-                            | NotificationSeverity.Error ->
-                                Logger.logError
-                                    "NotificationEngine"
-                                    $"[{notification.NotificationType}] {notification.Title}: {notification.Content}"
-                            | NotificationSeverity.Critical ->
-                                Logger.logError
-                                    "NotificationEngine"
-                                    $"[CRITICAL] [{notification.NotificationType}] {notification.Title}: {notification.Content}"
-                            | _ ->
-                                Logger.logInfo
-                                    "NotificationEngine"
-                                    $"[{notification.NotificationType}] {notification.Title}: {notification.Content}"
-
-                        | File ->
-                            // ファイル出力
-                            let notificationFile =
-                                Path.Combine(config.StorageDirectory, "active", $"{notification.MessageId}.json")
-
-                            let json =
-                                JsonSerializer.Serialize(notification, JsonSerializerOptions(WriteIndented = true))
-
-                            File.WriteAllText(notificationFile, json)
-
-                        | External ->
-                            // 外部システム通知（将来実装）
-                            Logger.logDebug "NotificationEngine" "外部システム通知は将来実装予定"
-
-                    // バッチ通知の処理
-                    if config.BatchNotificationEnabled then
-                        lock batchLock (fun () ->
-                            batchNotifications.Add(notification)
-
-                            if batchNotifications.Count >= config.BatchSize then
-                                let batchList = batchNotifications.ToArray()
-                                batchNotifications.Clear()
-                                Logger.logInfo "NotificationEngine" $"バッチ通知送信: {batchList.Length}件")
-
+                    deliverToChannels config notification
+                    processBatchNotification config notification
                     Logger.logDebug "NotificationEngine" $"通知送信完了: {notification.MessageId}"
                     return true
 

@@ -249,13 +249,115 @@ module BackgroundTaskManager =
           Outputs = []
           Errors = [] }
 
+    /// プロセス設定の初期化
+    let private createProcessStartInfo (task: BackgroundTask) =
+        let startInfo = ProcessStartInfo()
+        startInfo.FileName <- task.Command
+        startInfo.Arguments <- String.Join(" ", task.Arguments)
+        startInfo.WorkingDirectory <- task.WorkingDirectory
+        startInfo.UseShellExecute <- false
+        startInfo.RedirectStandardOutput <- true
+        startInfo.RedirectStandardError <- true
+        startInfo.CreateNoWindow <- true
+
+        for kvp in task.Environment do
+            startInfo.Environment.[kvp.Key] <- kvp.Value
+
+        startInfo
+
+    /// プロセス出力ハンドラーの設定
+    let private setupOutputHandlers
+        (proc: Process)
+        (task: BackgroundTask)
+        (outputs: ResizeArray<string>)
+        (errors: ResizeArray<string>)
+        =
+        proc.OutputDataReceived.Add(fun args ->
+            if not (String.IsNullOrEmpty(args.Data)) then
+                outputs.Add(args.Data)
+                Logger.logDebug "BackgroundTaskManager" $"タスク出力 ({task.TaskId}): {args.Data}")
+
+        proc.ErrorDataReceived.Add(fun args ->
+            if not (String.IsNullOrEmpty(args.Data)) then
+                errors.Add(args.Data)
+                Logger.logWarning "BackgroundTaskManager" $"タスクエラー出力 ({task.TaskId}): {args.Data}")
+
+    /// プロセス実行結果の処理
+    let private processExecutionResult
+        (waitResult: TaskExecutionResult)
+        (runningTask: BackgroundTask)
+        (errors: ResizeArray<string>)
+        =
+        match waitResult with
+        | TaskExecutionResult.Success outputs ->
+            { runningTask with
+                Status = Completed
+                CompletedAt = Some DateTime.Now
+                Progress = 1.0
+                Outputs = outputs
+                Errors = errors.ToArray() |> Array.toList }
+        | TaskExecutionResult.Failure(errorMsg, outputs) ->
+            { runningTask with
+                Status = Failed
+                CompletedAt = Some DateTime.Now
+                Outputs = outputs
+                Errors = errorMsg :: (errors.ToArray() |> Array.toList) }
+        | _ ->
+            { runningTask with
+                Status = Failed
+                CompletedAt = Some DateTime.Now }
+
+    /// プロセス実行とモニタリング
+    let private executeProcess (config: BackgroundTaskConfig) (task: BackgroundTask) (startedTask: BackgroundTask) =
+        async {
+            let cancellationSource = new CancellationTokenSource()
+            let maxRuntime = defaultArg task.MaxRuntime config.DefaultMaxRuntime
+            cancellationSource.CancelAfter(maxRuntime)
+            taskCancellations.TryAdd(task.TaskId, cancellationSource) |> ignore
+
+            use proc = new Process()
+            proc.StartInfo <- createProcessStartInfo task
+            let outputs = ResizeArray<string>()
+            let errors = ResizeArray<string>()
+
+            setupOutputHandlers proc task outputs errors
+
+            if proc.Start() then
+                proc.BeginOutputReadLine()
+                proc.BeginErrorReadLine()
+
+                let runningTask =
+                    { startedTask with
+                        ProcessId = Some proc.Id }
+
+                activeTasks.TryUpdate(task.TaskId, runningTask, startedTask) |> ignore
+                let! _ = persistTask config runningTask
+
+                let! waitResult =
+                    async {
+                        try
+                            proc.WaitForExit()
+                            return TaskExecutionResult.Success(outputs.ToArray() |> Array.toList)
+                        with ex ->
+                            return TaskExecutionResult.Failure(ex.Message, outputs.ToArray() |> Array.toList)
+                    }
+
+                let finalTask = processExecutionResult waitResult runningTask errors
+                activeTasks.TryUpdate(task.TaskId, finalTask, runningTask) |> ignore
+                let! _ = persistTask config finalTask
+                taskCancellations.TryRemove(task.TaskId) |> ignore
+                Logger.logInfo "BackgroundTaskManager" $"タスク実行完了: {task.TaskId} - {finalTask.Status}"
+                return waitResult
+            else
+                return TaskExecutionResult.Failure("プロセス開始失敗", [])
+        }
+
     /// タスクの実行
     let executeTask (config: BackgroundTaskConfig) (task: BackgroundTask) =
         async {
             try
                 Logger.logInfo "BackgroundTaskManager" $"タスク実行開始: {task.TaskId} - {task.Description}"
 
-                // タスク状態の更新
                 let startedTask =
                     { task with
                         Status = Running
@@ -263,111 +365,7 @@ module BackgroundTaskManager =
 
                 activeTasks.TryUpdate(task.TaskId, startedTask, task) |> ignore
                 let! _ = persistTask config startedTask
-
-                // キャンセレーショントークンの作成
-                let cancellationSource = new CancellationTokenSource()
-
-                // タイムアウト設定
-                let maxRuntime = defaultArg task.MaxRuntime config.DefaultMaxRuntime
-                cancellationSource.CancelAfter(maxRuntime)
-
-                taskCancellations.TryAdd(task.TaskId, cancellationSource) |> ignore
-
-                // プロセス開始情報の設定
-                let startInfo = ProcessStartInfo()
-                startInfo.FileName <- task.Command
-                startInfo.Arguments <- String.Join(" ", task.Arguments)
-                startInfo.WorkingDirectory <- task.WorkingDirectory
-                startInfo.UseShellExecute <- false
-                startInfo.RedirectStandardOutput <- true
-                startInfo.RedirectStandardError <- true
-                startInfo.CreateNoWindow <- true
-
-                // 環境変数の設定
-                for kvp in task.Environment do
-                    startInfo.Environment.[kvp.Key] <- kvp.Value
-
-                // プロセスの開始
-                use proc = new Process()
-                proc.StartInfo <- startInfo
-
-                let outputs = ResizeArray<string>()
-                let errors = ResizeArray<string>()
-
-                proc.OutputDataReceived.Add(fun args ->
-                    if not (String.IsNullOrEmpty(args.Data)) then
-                        outputs.Add(args.Data)
-                        Logger.logDebug "BackgroundTaskManager" $"タスク出力 ({task.TaskId}): {args.Data}")
-
-                proc.ErrorDataReceived.Add(fun args ->
-                    if not (String.IsNullOrEmpty(args.Data)) then
-                        errors.Add(args.Data)
-                        Logger.logWarning "BackgroundTaskManager" $"タスクエラー出力 ({task.TaskId}): {args.Data}")
-
-                let processStarted = proc.Start()
-
-                if processStarted then
-                    proc.BeginOutputReadLine()
-                    proc.BeginErrorReadLine()
-
-                    // プロセスIDの記録
-                    let runningTask =
-                        { startedTask with
-                            ProcessId = Some proc.Id }
-
-                    activeTasks.TryUpdate(task.TaskId, runningTask, startedTask) |> ignore
-                    let! _ = persistTask config runningTask
-
-                    // プロセスの完了を待機
-                    let! waitResult =
-                        async {
-                            try
-                                proc.WaitForExit()
-                                return TaskExecutionResult.Success(outputs.ToArray() |> Array.toList)
-                            with ex ->
-                                return TaskExecutionResult.Failure(ex.Message, outputs.ToArray() |> Array.toList)
-                        }
-
-                    // 結果に基づく状態更新
-                    let finalTask =
-                        match waitResult with
-                        | TaskExecutionResult.Success outputs ->
-                            { runningTask with
-                                Status = Completed
-                                CompletedAt = Some DateTime.Now
-                                Progress = 1.0
-                                Outputs = outputs
-                                Errors = errors.ToArray() |> Array.toList }
-                        | TaskExecutionResult.Failure(errorMsg, outputs) ->
-                            { runningTask with
-                                Status = Failed
-                                CompletedAt = Some DateTime.Now
-                                Outputs = outputs
-                                Errors = errorMsg :: (errors.ToArray() |> Array.toList) }
-                        | _ ->
-                            { runningTask with
-                                Status = Failed
-                                CompletedAt = Some DateTime.Now }
-
-                    activeTasks.TryUpdate(task.TaskId, finalTask, runningTask) |> ignore
-                    let! _ = persistTask config finalTask
-
-                    // キャンセレーショントークンのクリーンアップ
-                    taskCancellations.TryRemove(task.TaskId) |> ignore
-
-                    Logger.logInfo "BackgroundTaskManager" $"タスク実行完了: {task.TaskId} - {finalTask.Status}"
-                    return waitResult
-
-                else
-                    let failedTask =
-                        { startedTask with
-                            Status = Failed
-                            CompletedAt = Some DateTime.Now
-                            Errors = [ "プロセス開始失敗" ] }
-
-                    activeTasks.TryUpdate(task.TaskId, failedTask, startedTask) |> ignore
-                    let! _ = persistTask config failedTask
-                    return TaskExecutionResult.Failure("プロセス開始失敗", [])
+                return! executeProcess config task startedTask
 
             with ex ->
                 Logger.logError "BackgroundTaskManager" $"タスク実行エラー ({task.TaskId}): {ex.Message}"

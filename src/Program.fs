@@ -1226,27 +1226,62 @@ let main argv =
 
                         logInfo "Application" "UI統合マネージャー登録完了"
 
-                        // エージェント協調UI表示設定
+                        // エージェント協調UI表示設定（全ペイン対応）
                         match agentCollaborationUI with
                         | Some collaborationDisplay ->
                             // dev1ペインに依存関係表示
                             match paneTextViews.TryFind("dev1") with
-                            | Some dev1View -> collaborationDisplay.SetDependencyView(dev1View)
+                            | Some dev1View ->
+                                collaborationDisplay.SetDependencyView(dev1View)
+                                logInfo "AgentCollaboration" "dev1ペインに依存関係表示を設定"
                             | None -> ()
 
                             // dev2ペインにブロッカー表示
                             match paneTextViews.TryFind("dev2") with
-                            | Some dev2View -> collaborationDisplay.SetBlockerView(dev2View)
+                            | Some dev2View ->
+                                collaborationDisplay.SetBlockerView(dev2View)
+                                logInfo "AgentCollaboration" "dev2ペインにブロッカー表示を設定"
                             | None -> ()
 
                             // dev3ペインに協調状態表示
                             match paneTextViews.TryFind("dev3") with
-                            | Some dev3View -> collaborationDisplay.SetCollaborationView(dev3View)
+                            | Some dev3View ->
+                                collaborationDisplay.SetCollaborationView(dev3View)
+                                logInfo "AgentCollaboration" "dev3ペインに協調状態表示を設定"
+                            | None -> ()
+
+                            // qa1ペインに依存関係表示（副表示）
+                            match paneTextViews.TryFind("qa1") with
+                            | Some qa1View ->
+                                collaborationDisplay.SetDependencyView(qa1View)
+                                logInfo "AgentCollaboration" "qa1ペインに依存関係表示を設定"
+                            | None -> ()
+
+                            // qa2ペインにブロッカー表示（副表示）
+                            match paneTextViews.TryFind("qa2") with
+                            | Some qa2View ->
+                                collaborationDisplay.SetBlockerView(qa2View)
+                                logInfo "AgentCollaboration" "qa2ペインにブロッカー表示を設定"
+                            | None -> ()
+
+                            // uxペインに協調状態表示（副表示）
+                            match paneTextViews.TryFind("ux") with
+                            | Some uxView ->
+                                collaborationDisplay.SetCollaborationView(uxView)
+                                logInfo "AgentCollaboration" "uxペインに協調状態表示を設定"
+                            | None -> ()
+
+                            // PMペインにリソース可用性・協力要請表示
+                            match paneTextViews.TryFind("PM / PdM タイムライン") with
+                            | Some pmView ->
+                                collaborationDisplay.SetCollaborationView(pmView)
+                                collaborationDisplay.ShowResourceAvailability()
+                                logInfo "AgentCollaboration" "PMペインにリソース可用性・協力要請表示を設定"
                             | None -> ()
 
                             // 初期表示更新
                             collaborationDisplay.UpdateAllDisplays()
-                            logInfo "AgentCollaboration" "エージェント協調UI表示設定完了"
+                            logInfo "AgentCollaboration" "エージェント協調UI表示設定完了（全ペイン対応）"
                         | None -> ()
 
                         // 統合イベントループ開始（追跡可能・キャンセル可能・エラーハンドリング強化）

@@ -4,10 +4,10 @@ open System
 open System.Collections.Concurrent
 open System.Threading.Tasks
 open FCode
-open FCode.AdvancedCollaboration.KnowledgeRepository
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.IAgentStateManager
 open FCode.Collaboration.ITaskDependencyGraph
+open FCode.AdvancedCollaboration.KnowledgeRepository
 
 /// AI最適タスク分散システム
 module IntelligentDistribution =
@@ -44,8 +44,7 @@ module IntelligentDistribution =
           AssignedAgent: string
           ConfidenceScore: float // 分散判定信頼度
           ReasoningFactors: string list // 決定理由要因
-          AlternativeAgents: (string * float) list
-          // 代替エージェント候補
+          AlternativeAgents: (string * float) list // 代替エージェント候補
           EstimatedCompletionTime: DateTime
           RiskAssessment: string
           RecommendedApproach: string }

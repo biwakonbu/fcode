@@ -4,9 +4,9 @@ open System
 open System.Collections.Concurrent
 open System.Threading.Tasks
 open FCode
+open FCode.Collaboration.CollaborationTypes
 open FCode.AdvancedCollaboration.IntelligentDistribution
 open FCode.AdvancedCollaboration.KnowledgeRepository
-open FCode.Collaboration.CollaborationTypes
 
 /// 高度競合解決システム
 module ConflictResolution =
@@ -133,8 +133,7 @@ module ConflictResolution =
     let executeResolution (config: ConflictResolutionConfig) (proposal: ResolutionProposal) =
         async {
             try
-                Logger.logInfo "ConflictResolution" $"解決提案実行開始: {proposal.ConflictId}"
-                Logger.logInfo "ConflictResolution" $"戦略: {proposal.Strategy}"
+                Logger.logInfo "ConflictResolution" $"解決提案実行開始: {proposal.ConflictId} - {proposal.Strategy}"
 
                 let result =
                     { ConflictId = proposal.ConflictId
@@ -148,8 +147,7 @@ module ConflictResolution =
                       FollowUpRequired = false }
 
                 resolutionHistory.Enqueue(result)
-                Logger.logInfo "ConflictResolution" $"解決提案実行完了: {proposal.ConflictId}"
-                Logger.logInfo "ConflictResolution" $"成功: {result.Success}"
+                Logger.logInfo "ConflictResolution" $"解決提案実行完了: {proposal.ConflictId} - 成功: {result.Success}"
                 return result
             with ex ->
                 Logger.logError "ConflictResolution" $"解決提案実行失敗: {ex.Message}"

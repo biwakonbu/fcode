@@ -4,9 +4,9 @@ open System
 open System.Collections.Concurrent
 open System.Threading.Tasks
 open FCode
+open FCode.Collaboration.CollaborationTypes
 open FCode.AdvancedCollaboration.IntelligentDistribution
 open FCode.AdvancedCollaboration.KnowledgeRepository
-open FCode.Collaboration.CollaborationTypes
 
 /// 動的ワークフロー最適化システム
 module AdaptiveWorkflow =
@@ -69,8 +69,7 @@ module AdaptiveWorkflow =
           PerformanceTrackingEnabled = true }
 
     /// ワークフロー状態管理
-    let private workflowStates = ConcurrentDictionary<string, string>()
-    // 簡略化
+    let private workflowStates = ConcurrentDictionary<string, string>() // 簡略化
     let private executionHistory = ConcurrentQueue<ExecutionMetrics>()
 
     /// ワークフロー状態の初期化
@@ -78,8 +77,7 @@ module AdaptiveWorkflow =
         async {
             try
                 workflowStates.TryAdd(workflowId, "Active") |> ignore
-                Logger.logInfo "AdaptiveWorkflow" $"ワークフロー初期化: {workflowId}"
-                Logger.logInfo "AdaptiveWorkflow" $"パターン: {initialPattern}"
+                Logger.logInfo "AdaptiveWorkflow" $"ワークフロー初期化: {workflowId} ({initialPattern})"
                 return true
             with ex ->
                 Logger.logError "AdaptiveWorkflow" $"ワークフロー初期化失敗 ({workflowId}): {ex.Message}"

@@ -4,13 +4,13 @@ open System
 open System.Collections.Concurrent
 open System.Threading.Tasks
 open FCode
+open FCode.Collaboration.CollaborationTypes
+open FCode.Collaboration.IAgentStateManager
+open FCode.Collaboration.ITaskDependencyGraph
 open FCode.AdvancedCollaboration.AdaptiveWorkflow
 open FCode.AdvancedCollaboration.ConflictResolution
 open FCode.AdvancedCollaboration.IntelligentDistribution
 open FCode.AdvancedCollaboration.KnowledgeRepository
-open FCode.Collaboration.CollaborationTypes
-open FCode.Collaboration.IAgentStateManager
-open FCode.Collaboration.ITaskDependencyGraph
 
 /// 高度協調機能統合ファサード
 module AdvancedCoordinationFacade =
@@ -168,7 +168,6 @@ module AdvancedCoordinationFacade =
                        SystemHealth = result.SuccessRate }
 
                 Logger.logInfo "AdvancedCoordinationFacade" $"統合協調実行完了: {executionId} - 成功率: {result.SuccessRate:F2}"
-
                 return result
             with ex ->
                 Logger.logError "AdvancedCoordinationFacade" $"統合協調実行失敗: {ex.Message}"
@@ -221,7 +220,6 @@ module AdvancedCoordinationFacade =
                       OptimizationRationale = "利用可能なエージェントによる最適チーム構成" }
 
                 Logger.logInfo "AdvancedCoordinationFacade" $"動的チーム最適化完了: {optimization.RecommendedTeam.Length}名推奨"
-
                 return Some optimization
             with ex ->
                 Logger.logError "AdvancedCoordinationFacade" $"動的チーム最適化失敗: {ex.Message}"

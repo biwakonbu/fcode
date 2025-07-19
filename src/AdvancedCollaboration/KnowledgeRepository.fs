@@ -95,6 +95,9 @@ module KnowledgeRepository =
     let private agentExpertise = ConcurrentDictionary<string, AgentExpertise>()
     let private usageStats = ConcurrentDictionary<string, int>()
 
+    /// JSON シリアライゼーション設定
+    let private jsonOptions = JsonSerializerOptions(WriteIndented = true)
+
     /// ストレージディレクトリの初期化
     let initializeStorage (config: KnowledgeRepositoryConfig) =
         async {

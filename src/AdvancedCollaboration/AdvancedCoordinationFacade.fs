@@ -126,7 +126,7 @@ module AdvancedCoordinationFacade =
                     Logger.logError "AdvancedCoordinationFacade" "高度協調システム初期化失敗"
                     return false
             with ex ->
-                Logger.logError "AdvancedCoordinationFacade" (sprintf "高度協調システム初期化エラー: %s" ex.Message)
+                Logger.logError "AdvancedCoordinationFacade" $"高度協調システム初期化エラー: {ex.Message}"
                 return false
         }
 
@@ -142,7 +142,7 @@ module AdvancedCoordinationFacade =
                 let executionId = Guid.NewGuid().ToString()
                 let startTime = DateTime.Now
 
-                Logger.logInfo "AdvancedCoordinationFacade" (sprintf "統合協調実行開始: %s" executionId)
+                Logger.logInfo "AdvancedCoordinationFacade" $"統合協調実行開始: {executionId}"
 
                 // 基本的な統計収集
                 let executionTime = DateTime.Now - startTime
@@ -167,13 +167,11 @@ module AdvancedCoordinationFacade =
                        LastIntegrationTime = DateTime.Now
                        SystemHealth = result.SuccessRate }
 
-                Logger.logInfo
-                    "AdvancedCoordinationFacade"
-                    (sprintf "統合協調実行完了: %s - 成功率: %.2f" executionId result.SuccessRate)
+                Logger.logInfo "AdvancedCoordinationFacade" $"統合協調実行完了: {executionId} - 成功率: {result.SuccessRate:F2}"
 
                 return result
             with ex ->
-                Logger.logError "AdvancedCoordinationFacade" (sprintf "統合協調実行失敗: %s" ex.Message)
+                Logger.logError "AdvancedCoordinationFacade" $"統合協調実行失敗: {ex.Message}"
 
                 return
                     { ExecutionId = "error"
@@ -199,10 +197,10 @@ module AdvancedCoordinationFacade =
                       ContextualTips = [ "タスクに集中してください" ]
                       OptimizationSuggestions = [] }
 
-                Logger.logDebug "AdvancedCoordinationFacade" (sprintf "プロアクティブ推奨生成: %s" agentId)
+                Logger.logDebug "AdvancedCoordinationFacade" $"プロアクティブ推奨生成: {agentId}"
                 return Some recommendations
             with ex ->
-                Logger.logError "AdvancedCoordinationFacade" (sprintf "プロアクティブ推奨生成失敗: %s" ex.Message)
+                Logger.logError "AdvancedCoordinationFacade" $"プロアクティブ推奨生成失敗: {ex.Message}"
                 return None
         }
 
@@ -222,13 +220,11 @@ module AdvancedCoordinationFacade =
                       CollaborationPatterns = [ "ペアプログラミング" ]
                       OptimizationRationale = "利用可能なエージェントによる最適チーム構成" }
 
-                Logger.logInfo
-                    "AdvancedCoordinationFacade"
-                    (sprintf "動的チーム最適化完了: %d名推奨" optimization.RecommendedTeam.Length)
+                Logger.logInfo "AdvancedCoordinationFacade" $"動的チーム最適化完了: {optimization.RecommendedTeam.Length}名推奨"
 
                 return Some optimization
             with ex ->
-                Logger.logError "AdvancedCoordinationFacade" (sprintf "動的チーム最適化失敗: %s" ex.Message)
+                Logger.logError "AdvancedCoordinationFacade" $"動的チーム最適化失敗: {ex.Message}"
                 return None
         }
 
@@ -252,10 +248,10 @@ module AdvancedCoordinationFacade =
                 := { !coordinationState with
                        SystemHealth = overallHealth }
 
-                Logger.logDebug "AdvancedCoordinationFacade" (sprintf "協調監視完了: 健全性 %.2f" overallHealth)
+                Logger.logDebug "AdvancedCoordinationFacade" $"協調監視完了: 健全性 {overallHealth:F2}"
                 return healthReport
             with ex ->
-                Logger.logError "AdvancedCoordinationFacade" (sprintf "協調監視失敗: %s" ex.Message)
+                Logger.logError "AdvancedCoordinationFacade" $"協調監視失敗: {ex.Message}"
 
                 return
                     { SystemHealth = 0.0
@@ -296,7 +292,7 @@ module AdvancedCoordinationFacade =
 
                 return Some statistics
             with ex ->
-                Logger.logError "AdvancedCoordinationFacade" (sprintf "統合協調統計取得失敗: %s" ex.Message)
+                Logger.logError "AdvancedCoordinationFacade" $"統合協調統計取得失敗: {ex.Message}"
                 return None
         }
 

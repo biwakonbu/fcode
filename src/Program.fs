@@ -1543,7 +1543,7 @@ let main argv =
                 if not (System.IO.Directory.Exists(dbDir)) then
                     System.IO.Directory.CreateDirectory(dbDir) |> ignore
 
-                let connectionString = $"Data Source={dbPath};"
+                let connectionString = sprintf "Data Source=%s;" dbPath
                 let storageManager = new TaskStorageManager(connectionString)
                 taskStorageManager <- Some storageManager
 
@@ -1582,13 +1582,13 @@ let main argv =
                         taskUI.StartPeriodicUpdate()
                         logInfo "TaskStorage" "TaskStorage UI integration completed"
 
-                    | Result.Error(error) ->
-                        logError "TaskStorage" $"TaskStorage database initialization failed: {error}"
+                    | Result.Error error ->
+                        logError "TaskStorage" (sprintf "TaskStorage database initialization failed: %O" error)
                 }
                 |> Async.Start
 
             with ex ->
-                logError "TaskStorage" $"TaskStorage initialization error: {ex.Message}"
+                logError "TaskStorage" (sprintf "TaskStorage initialization error: %s" ex.Message)
 
             // Application.Run後の遅延起動を設定
             // TEMPORARILY DISABLED for debugging

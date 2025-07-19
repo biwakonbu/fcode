@@ -45,9 +45,9 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
                             let displayText = this.BuildTaskListText(tasks)
                             Application.MainLoop.Invoke(fun () -> view.Text <- displayText)
                         | Result.Error error ->
-                            let errorText = $"📋 タスク一覧取得エラー: {error}"
+                            let errorText = sprintf "📋 タスク一覧取得エラー: %O" error
                             Application.MainLoop.Invoke(fun () -> view.Text <- errorText)
-                            logError "TaskStorageUI" $"タスク一覧取得失敗: {error}"
+                            logError "TaskStorageUI" (sprintf "タスク一覧取得失敗: %O" error)
                     }
                     |> Async.Start
                 | None -> ())
@@ -66,9 +66,9 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
                             let statsText = this.BuildTaskStatsText(tasks)
                             Application.MainLoop.Invoke(fun () -> view.Text <- statsText)
                         | Result.Error error ->
-                            let errorText = $"📊 タスク統計取得エラー: {error}"
+                            let errorText = sprintf "📊 タスク統計取得エラー: %O" error
                             Application.MainLoop.Invoke(fun () -> view.Text <- errorText)
-                            logError "TaskStorageUI" $"タスク統計取得失敗: {error}"
+                            logError "TaskStorageUI" (sprintf "タスク統計取得失敗: %O" error)
                     }
                     |> Async.Start
                 | None -> ())
@@ -92,9 +92,9 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
                             let detailText = this.BuildTaskDetailText(recentTasks)
                             Application.MainLoop.Invoke(fun () -> view.Text <- detailText)
                         | Result.Error error ->
-                            let errorText = $"🔍 最近のタスク詳細取得エラー: {error}"
+                            let errorText = sprintf "🔍 最近のタスク詳細取得エラー: %O" error
                             Application.MainLoop.Invoke(fun () -> view.Text <- errorText)
-                            logError "TaskStorageUI" $"タスク詳細取得失敗: {error}"
+                            logError "TaskStorageUI" (sprintf "タスク詳細取得失敗: %O" error)
                     }
                     |> Async.Start
                 | None -> ())
@@ -124,18 +124,21 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
                     | TaskPriority.Medium -> "🟡"
                     | TaskPriority.High -> "🔴"
                     | TaskPriority.Critical -> "🚨"
+                    | _ -> "❓" // 未知の優先度値への対応
 
-                text.AppendLine($"  {statusIcon} {priorityIcon} {task.Title}") |> ignore
-                text.AppendLine($"    ID: {task.TaskId}") |> ignore
+                text.AppendLine(sprintf "  %s %s %s" statusIcon priorityIcon task.Title)
+                |> ignore
+
+                text.AppendLine(sprintf "    ID: %s" task.TaskId) |> ignore
 
                 match task.AssignedAgent with
-                | Some agent -> text.AppendLine($"    エージェント: {agent}") |> ignore
+                | Some agent -> text.AppendLine(sprintf "    エージェント: %s" agent) |> ignore
                 | None -> text.AppendLine("    エージェント: 未割り当て") |> ignore
 
                 text.AppendLine() |> ignore
 
             if tasks.Length > 20 then
-                text.AppendLine($"  ... および他 {tasks.Length - 20} 件") |> ignore
+                text.AppendLine(sprintf "  ... および他 %d 件" (tasks.Length - 20)) |> ignore
 
         text.ToString()
 
@@ -160,13 +163,13 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
         let cancelledTasks =
             tasks |> List.filter (fun t -> t.Status = TaskStatus.Cancelled) |> List.length
 
-        text.AppendLine($"  📈 総タスク数: {totalTasks}") |> ignore
+        text.AppendLine(sprintf "  📈 総タスク数: %d" totalTasks) |> ignore
         text.AppendLine() |> ignore
         text.AppendLine("  ステータス別:") |> ignore
-        text.AppendLine($"    ⏳ 待機中: {pendingTasks}") |> ignore
-        text.AppendLine($"    🔄 進行中: {inProgressTasks}") |> ignore
-        text.AppendLine($"    ✅ 完了: {completedTasks}") |> ignore
-        text.AppendLine($"    🚫 キャンセル: {cancelledTasks}") |> ignore
+        text.AppendLine(sprintf "    ⏳ 待機中: %d" pendingTasks) |> ignore
+        text.AppendLine(sprintf "    🔄 進行中: %d" inProgressTasks) |> ignore
+        text.AppendLine(sprintf "    ✅ 完了: %d" completedTasks) |> ignore
+        text.AppendLine(sprintf "    🚫 キャンセル: %d" cancelledTasks) |> ignore
         text.AppendLine() |> ignore
 
         // 優先度別統計
@@ -182,9 +185,9 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
             tasks |> List.filter (fun t -> t.Priority = TaskPriority.Low) |> List.length
 
         text.AppendLine("  優先度別:") |> ignore
-        text.AppendLine($"    🔴 高/緊急: {highPriorityTasks}") |> ignore
-        text.AppendLine($"    🟡 中: {mediumPriorityTasks}") |> ignore
-        text.AppendLine($"    🔵 低: {lowPriorityTasks}") |> ignore
+        text.AppendLine(sprintf "    🔴 高/緊急: %d" highPriorityTasks) |> ignore
+        text.AppendLine(sprintf "    🟡 中: %d" mediumPriorityTasks) |> ignore
+        text.AppendLine(sprintf "    🔵 低: %d" lowPriorityTasks) |> ignore
         text.AppendLine() |> ignore
 
         // エージェント別統計
@@ -199,7 +202,7 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
             text.AppendLine("  エージェント別:") |> ignore
 
             for (agent, count) in agentGroups |> List.take (min 5 agentGroups.Length) do
-                text.AppendLine($"    👤 {agent}: {count}") |> ignore
+                text.AppendLine(sprintf "    👤 %s: %d" agent count) |> ignore
 
         text.ToString()
 
@@ -214,24 +217,24 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
             text.AppendLine("  最近のタスクがありません") |> ignore
         else
             for task in recentTasks do
-                text.AppendLine($"📝 {task.Title}") |> ignore
-                text.AppendLine($"   ID: {task.TaskId}") |> ignore
-                text.AppendLine($"   説明: {task.Description}") |> ignore
-                text.AppendLine($"   ステータス: {task.Status}") |> ignore
-                text.AppendLine($"   優先度: {task.Priority}") |> ignore
+                text.AppendLine(sprintf "📝 %s" task.Title) |> ignore
+                text.AppendLine(sprintf "   ID: %s" task.TaskId) |> ignore
+                text.AppendLine(sprintf "   説明: %s" task.Description) |> ignore
+                text.AppendLine(sprintf "   ステータス: %O" task.Status) |> ignore
+                text.AppendLine(sprintf "   優先度: %O" task.Priority) |> ignore
 
                 match task.AssignedAgent with
-                | Some agent -> text.AppendLine($"   担当: {agent}") |> ignore
+                | Some agent -> text.AppendLine(sprintf "   担当: %s" agent) |> ignore
                 | None -> text.AppendLine("   担当: 未割り当て") |> ignore
 
                 match task.EstimatedDuration with
-                | Some duration -> text.AppendLine($"   見積時間: {duration.TotalMinutes:F0}分") |> ignore
+                | Some duration -> text.AppendLine(sprintf "   見積時間: %.0f分" duration.TotalMinutes) |> ignore
                 | None -> text.AppendLine("   見積時間: 未設定") |> ignore
 
                 let createdAtText = task.CreatedAt.ToString("yyyy-MM-dd HH:mm")
                 let updatedAtText = task.UpdatedAt.ToString("yyyy-MM-dd HH:mm")
-                text.AppendLine($"   作成日時: {createdAtText}") |> ignore
-                text.AppendLine($"   更新日時: {updatedAtText}") |> ignore
+                text.AppendLine(sprintf "   作成日時: %s" createdAtText) |> ignore
+                text.AppendLine(sprintf "   更新日時: %s" updatedAtText) |> ignore
                 text.AppendLine() |> ignore
 
         text.ToString()

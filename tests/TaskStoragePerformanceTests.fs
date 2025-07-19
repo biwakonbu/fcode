@@ -16,8 +16,8 @@ type TaskStoragePerformanceTests() =
 
     [<SetUp>]
     member _.SetUp() =
-        tempDbPath <- Path.Combine(Path.GetTempPath(), $"perf_test_tasks_{Guid.NewGuid()}.db")
-        let connectionString = $"Data Source={tempDbPath};"
+        tempDbPath <- Path.Combine(Path.GetTempPath(), sprintf "perf_test_tasks_%s.db" (Guid.NewGuid().ToString()))
+        let connectionString = sprintf "Data Source=%s;" tempDbPath
 
         let manager = new TaskStorageManager(connectionString)
         storageManager <- Some manager

@@ -1352,6 +1352,17 @@ let main argv =
                                     with ex ->
                                         logError "Application" (sprintf "スプリントタイマークリーンアップエラー: %s" ex.Message)
 
+                                    // AgentCollaborationDisplay のクリーンアップ
+                                    try
+                                        agentCollaborationUI
+                                        |> Option.iter (fun ui -> (ui :> System.IDisposable).Dispose())
+
+                                        logInfo "Application" "AgentCollaborationDisplay をクリーンアップしました"
+                                    with ex ->
+                                        logError
+                                            "Application"
+                                            (sprintf "AgentCollaborationDisplay クリーンアップエラー: %s" ex.Message)
+
                                     if not integrationCancellationSource.IsCancellationRequested then
                                         integrationCancellationSource.Cancel()
 

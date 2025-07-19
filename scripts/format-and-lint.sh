@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # F# formatting and linting script
 

@@ -128,6 +128,12 @@
     <Compile Include="AgentCollaborationUI.fs" />
     <!-- Issue #134: SC-2-8 SQLite3 Task Storage Implementation -->
     <Compile Include="TaskStorageUI.fs" />
+    <!-- Issue #146: v2.0-3 Session Persistence Implementation -->
+    <Compile Include="SessionManagement/SessionPersistenceEngine.fs" />
+    <Compile Include="SessionManagement/BackgroundTaskManager.fs" />
+    <Compile Include="SessionManagement/MultiSessionCoordinator.fs" />
+    <Compile Include="SessionManagement/NotificationEngine.fs" />
+    <Compile Include="SessionManagement/SessionManagementFacade.fs" />
     <!-- Issue #144: v2.0-1 External Tools Integration - Temporarily disabled due to compilation errors -->
     <!-- <Compile Include="ExternalIntegration/GitWorkflowAgent.fs" /> -->
     <!-- <Compile Include="ExternalIntegration/CIPipelineAgent.fs" /> -->

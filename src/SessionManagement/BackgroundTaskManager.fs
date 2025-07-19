@@ -86,14 +86,17 @@ module BackgroundTaskManager =
                 "background-tasks"
             ) }
 
+    /// 共通のJSON設定
+    let private jsonOptions = JsonSerializerOptions(WriteIndented = true)
+
     /// アクティブタスクの管理
     let private activeTasks = ConcurrentDictionary<string, BackgroundTask>()
 
     let private taskCancellations =
         ConcurrentDictionary<string, CancellationTokenSource>()
 
-    let private taskSemaphore =
-        ref (new SemaphoreSlim(defaultBackgroundTaskConfig.MaxConcurrentTasks))
+    let mutable private taskSemaphore =
+        new SemaphoreSlim(defaultBackgroundTaskConfig.MaxConcurrentTasks)
 
     /// タスクIDの生成
     let generateTaskId (sessionId: string) (paneId: string) =
@@ -136,8 +139,7 @@ module BackgroundTaskManager =
 
                 let taskFile = Path.Combine(config.StorageDirectory, subDir, $"{task.TaskId}.json")
 
-                let json =
-                    JsonSerializer.Serialize(task, JsonSerializerOptions(WriteIndented = true))
+                let json = JsonSerializer.Serialize(task, jsonOptions)
 
                 File.WriteAllText(taskFile, json)
 
@@ -386,7 +388,7 @@ module BackgroundTaskManager =
         async {
             try
                 // セマフォを使用して同時実行数を制限
-                do! (!taskSemaphore).WaitAsync() |> Async.AwaitTask
+                do! taskSemaphore.WaitAsync() |> Async.AwaitTask
 
                 // アクティブタスクに追加
                 activeTasks.TryAdd(task.TaskId, task) |> ignore
@@ -408,19 +410,19 @@ module BackgroundTaskManager =
                                 let! result = executeTask config task
                                 Logger.logDebug "BackgroundTaskManager" $"バックグラウンドタスク完了: {task.TaskId}"
                             finally
-                                (!taskSemaphore).Release() |> ignore
+                                taskSemaphore.Release() |> ignore
                         }
                     )
 
                     Logger.logInfo "BackgroundTaskManager" $"タスクスケジューリング完了: {task.TaskId}"
                     return true
                 else
-                    (!taskSemaphore).Release() |> ignore
+                    taskSemaphore.Release() |> ignore
                     Logger.logWarning "BackgroundTaskManager" $"タスク依存関係未解決: {task.TaskId}"
                     return false
 
             with ex ->
-                (!taskSemaphore).Release() |> ignore
+                taskSemaphore.Release() |> ignore
                 Logger.logError "BackgroundTaskManager" $"タスクスケジューリング失敗 ({task.TaskId}): {ex.Message}"
                 return false
         }

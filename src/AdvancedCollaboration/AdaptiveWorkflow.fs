@@ -77,10 +77,10 @@ module AdaptiveWorkflow =
         async {
             try
                 workflowStates.TryAdd(workflowId, "Active") |> ignore
-                Logger.logInfo "AdaptiveWorkflow" (sprintf "ワークフロー初期化: %s (%A)" workflowId initialPattern)
+                Logger.logInfo "AdaptiveWorkflow" $"ワークフロー初期化: {workflowId} ({initialPattern})"
                 return true
             with ex ->
-                Logger.logError "AdaptiveWorkflow" (sprintf "ワークフロー初期化失敗 (%s): %s" workflowId ex.Message)
+                Logger.logError "AdaptiveWorkflow" $"ワークフロー初期化失敗 ({workflowId}): {ex.Message}"
                 return false
         }
 
@@ -92,10 +92,10 @@ module AdaptiveWorkflow =
         =
         async {
             try
-                Logger.logDebug "AdaptiveWorkflow" (sprintf "タスク実行状況更新: %s/%s - %A" workflowId taskId task.Status)
+                Logger.logDebug "AdaptiveWorkflow" $"タスク実行状況更新: {workflowId}/{taskId} - {task.Status}"
                 return true
             with ex ->
-                Logger.logError "AdaptiveWorkflow" (sprintf "タスク実行状況監視失敗: %s" ex.Message)
+                Logger.logError "AdaptiveWorkflow" $"タスク実行状況監視失敗: {ex.Message}"
                 return false
         }
 
@@ -118,10 +118,10 @@ module AdaptiveWorkflow =
                       Timestamp = DateTime.Now }
 
                 executionHistory.Enqueue(metrics)
-                Logger.logDebug "AdaptiveWorkflow" (sprintf "実行メトリクス収集完了: %s" workflowId)
+                Logger.logDebug "AdaptiveWorkflow" $"実行メトリクス収集完了: {workflowId}"
                 return Some metrics
             with ex ->
-                Logger.logError "AdaptiveWorkflow" (sprintf "実行メトリクス収集失敗: %s" ex.Message)
+                Logger.logError "AdaptiveWorkflow" $"実行メトリクス収集失敗: {ex.Message}"
                 return None
         }
 
@@ -130,10 +130,10 @@ module AdaptiveWorkflow =
         async {
             try
                 let suggestions = []
-                Logger.logInfo "AdaptiveWorkflow" (sprintf "最適化提案生成: %s - %d件" workflowId suggestions.Length)
+                Logger.logInfo "AdaptiveWorkflow" $"最適化提案生成: {workflowId} - {suggestions.Length}件"
                 return suggestions
             with ex ->
-                Logger.logError "AdaptiveWorkflow" (sprintf "最適化提案生成失敗: %s" ex.Message)
+                Logger.logError "AdaptiveWorkflow" $"最適化提案生成失敗: {ex.Message}"
                 return []
         }
 
@@ -142,12 +142,12 @@ module AdaptiveWorkflow =
         async {
             try
                 if config.AutoOptimizationEnabled then
-                    Logger.logInfo "AdaptiveWorkflow" (sprintf "自動最適化実行: %s" workflowId)
+                    Logger.logInfo "AdaptiveWorkflow" $"自動最適化実行: {workflowId}"
                     return true
                 else
                     return false
             with ex ->
-                Logger.logError "AdaptiveWorkflow" (sprintf "自動最適化実行失敗: %s" ex.Message)
+                Logger.logError "AdaptiveWorkflow" $"自動最適化実行失敗: {ex.Message}"
                 return false
         }
 
@@ -168,6 +168,6 @@ module AdaptiveWorkflow =
 
                 return Some statistics
             with ex ->
-                Logger.logError "AdaptiveWorkflow" (sprintf "ワークフロー統計取得失敗: %s" ex.Message)
+                Logger.logError "AdaptiveWorkflow" $"ワークフロー統計取得失敗: {ex.Message}"
                 return None
         }

@@ -103,7 +103,7 @@ module KnowledgeRepository =
                 Logger.logInfo "KnowledgeRepository" "ナレッジベースストレージ初期化完了"
                 return true
             with ex ->
-                Logger.logError "KnowledgeRepository" (sprintf "ストレージ初期化失敗: %s" ex.Message)
+                Logger.logError "KnowledgeRepository" $"ストレージ初期化失敗: {ex.Message}"
                 return false
         }
 
@@ -112,10 +112,10 @@ module KnowledgeRepository =
         async {
             try
                 let allEntries = knowledgeEntries.Values |> Seq.toList
-                Logger.logDebug "KnowledgeRepository" (sprintf "知識検索実行: %d件見つかりました" allEntries.Length)
+                Logger.logDebug "KnowledgeRepository" $"知識検索実行: {allEntries.Length}件見つかりました"
                 return allEntries |> List.take (min query.MaxResults allEntries.Length)
             with ex ->
-                Logger.logError "KnowledgeRepository" (sprintf "知識検索失敗: %s" ex.Message)
+                Logger.logError "KnowledgeRepository" $"知識検索失敗: {ex.Message}"
                 return []
         }
 
@@ -125,10 +125,10 @@ module KnowledgeRepository =
             try
                 knowledgeEntries.TryAdd(entry.Id, entry) |> ignore
                 usageStats.TryAdd(entry.Id, 0) |> ignore
-                Logger.logInfo "KnowledgeRepository" (sprintf "知識エントリ追加: %s" entry.Title)
+                Logger.logInfo "KnowledgeRepository" $"知識エントリ追加: {entry.Title}"
                 return true
             with ex ->
-                Logger.logError "KnowledgeRepository" (sprintf "知識エントリ追加失敗: %s" ex.Message)
+                Logger.logError "KnowledgeRepository" $"知識エントリ追加失敗: {ex.Message}"
                 return false
         }
 
@@ -154,10 +154,10 @@ module KnowledgeRepository =
                 agentExpertise.AddOrUpdate(agentId, newExpertise, fun _ _ -> newExpertise)
                 |> ignore
 
-                Logger.logInfo "KnowledgeRepository" (sprintf "エージェント専門知識更新: %s - %s" agentId domain)
+                Logger.logInfo "KnowledgeRepository" $"エージェント専門知識更新: {agentId} - {domain}"
                 return true
             with ex ->
-                Logger.logError "KnowledgeRepository" (sprintf "専門知識更新失敗 (%s): %s" agentId ex.Message)
+                Logger.logError "KnowledgeRepository" $"専門知識更新失敗 ({agentId}): {ex.Message}"
                 return false
         }
 
@@ -166,10 +166,10 @@ module KnowledgeRepository =
         async {
             try
                 let experts = agentExpertise.Values |> Seq.toList
-                Logger.logDebug "KnowledgeRepository" (sprintf "専門家推奨: %s - %d名見つかりました" domain experts.Length)
+                Logger.logDebug "KnowledgeRepository" $"専門家推奨: {domain} - {experts.Length}名見つかりました"
                 return experts
             with ex ->
-                Logger.logError "KnowledgeRepository" (sprintf "専門家推奨失敗: %s" ex.Message)
+                Logger.logError "KnowledgeRepository" $"専門家推奨失敗: {ex.Message}"
                 return []
         }
 
@@ -178,10 +178,10 @@ module KnowledgeRepository =
         async {
             try
                 let recommendations = []
-                Logger.logDebug "KnowledgeRepository" (sprintf "知識推奨: %s - %d件" agentId recommendations.Length)
+                Logger.logDebug "KnowledgeRepository" $"知識推奨: {agentId} - {recommendations.Length}件"
                 return recommendations
             with ex ->
-                Logger.logError "KnowledgeRepository" (sprintf "知識推奨失敗: %s" ex.Message)
+                Logger.logError "KnowledgeRepository" $"知識推奨失敗: {ex.Message}"
                 return []
         }
 
@@ -208,7 +208,7 @@ module KnowledgeRepository =
 
                 return Some statistics
             with ex ->
-                Logger.logError "KnowledgeRepository" (sprintf "統計情報取得失敗: %s" ex.Message)
+                Logger.logError "KnowledgeRepository" $"統計情報取得失敗: {ex.Message}"
                 return None
         }
 

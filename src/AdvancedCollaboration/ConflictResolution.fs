@@ -96,10 +96,10 @@ module ConflictResolution =
         async {
             try
                 let conflicts = []
-                Logger.logInfo "ConflictResolution" (sprintf "競合検出完了: %d件" conflicts.Length)
+                Logger.logInfo "ConflictResolution" $"競合検出完了: {conflicts.Length}件"
                 return conflicts
             with ex ->
-                Logger.logError "ConflictResolution" (sprintf "競合検出失敗: %s" ex.Message)
+                Logger.logError "ConflictResolution" $"競合検出失敗: {ex.Message}"
                 return []
         }
 
@@ -108,10 +108,10 @@ module ConflictResolution =
         async {
             try
                 let proposals = []
-                Logger.logInfo "ConflictResolution" (sprintf "解決提案生成: %s - %d件" conflictId proposals.Length)
+                Logger.logInfo "ConflictResolution" $"解決提案生成: {conflictId} - {proposals.Length}件"
                 return proposals
             with ex ->
-                Logger.logError "ConflictResolution" (sprintf "解決提案生成失敗: %s" ex.Message)
+                Logger.logError "ConflictResolution" $"解決提案生成失敗: {ex.Message}"
                 return []
         }
 
@@ -122,10 +122,10 @@ module ConflictResolution =
                 if proposals.IsEmpty then
                     return None
                 else
-                    Logger.logInfo "ConflictResolution" (sprintf "最適解決提案選択: %s" conflictId)
+                    Logger.logInfo "ConflictResolution" $"最適解決提案選択: {conflictId}"
                     return Some proposals.[0]
             with ex ->
-                Logger.logError "ConflictResolution" (sprintf "最適解決提案選択失敗: %s" ex.Message)
+                Logger.logError "ConflictResolution" $"最適解決提案選択失敗: {ex.Message}"
                 return None
         }
 
@@ -133,7 +133,7 @@ module ConflictResolution =
     let executeResolution (config: ConflictResolutionConfig) (proposal: ResolutionProposal) =
         async {
             try
-                Logger.logInfo "ConflictResolution" (sprintf "解決提案実行開始: %s - %A" proposal.ConflictId proposal.Strategy)
+                Logger.logInfo "ConflictResolution" $"解決提案実行開始: {proposal.ConflictId} - {proposal.Strategy}"
 
                 let result =
                     { ConflictId = proposal.ConflictId
@@ -147,17 +147,17 @@ module ConflictResolution =
                       FollowUpRequired = false }
 
                 resolutionHistory.Enqueue(result)
-                Logger.logInfo "ConflictResolution" (sprintf "解決提案実行完了: %s - 成功: %b" proposal.ConflictId result.Success)
+                Logger.logInfo "ConflictResolution" $"解決提案実行完了: {proposal.ConflictId} - 成功: {result.Success}"
                 return result
             with ex ->
-                Logger.logError "ConflictResolution" (sprintf "解決提案実行失敗: %s" ex.Message)
+                Logger.logError "ConflictResolution" $"解決提案実行失敗: {ex.Message}"
 
                 return
                     { ConflictId = proposal.ConflictId
                       ProposalId = proposal.ProposalId
                       Strategy = proposal.Strategy
                       Success = false
-                      ActualOutcome = (sprintf "実行エラー: %s" ex.Message)
+                      ActualOutcome = $"実行エラー: {ex.Message}"
                       LessonsLearned = [ "エラーハンドリング改善が必要" ]
                       PerformanceImpact = -0.2
                       CompletedAt = DateTime.Now
@@ -181,6 +181,6 @@ module ConflictResolution =
 
                 return Some statistics
             with ex ->
-                Logger.logError "ConflictResolution" (sprintf "競合解決統計取得失敗: %s" ex.Message)
+                Logger.logError "ConflictResolution" $"競合解決統計取得失敗: {ex.Message}"
                 return None
         }

@@ -103,10 +103,10 @@ module IntelligentDistribution =
                 taskCharacteristics.AddOrUpdate(task.TaskId, characteristics, fun _ _ -> characteristics)
                 |> ignore
 
-                Logger.logDebug "IntelligentDistribution" (sprintf "タスク特性分析完了: %s" task.TaskId)
+                Logger.logDebug "IntelligentDistribution" $"タスク特性分析完了: {task.TaskId}"
                 return Some characteristics
             with ex ->
-                Logger.logError "IntelligentDistribution" (sprintf "タスク特性分析失敗 (%s): %s" task.TaskId ex.Message)
+                Logger.logError "IntelligentDistribution" $"タスク特性分析失敗 ({task.TaskId}): {ex.Message}"
                 return None
         }
 
@@ -129,10 +129,10 @@ module IntelligentDistribution =
                 agentCapabilities.AddOrUpdate(agentId, capability, fun _ _ -> capability)
                 |> ignore
 
-                Logger.logDebug "IntelligentDistribution" (sprintf "エージェント能力評価完了: %s" agentId)
+                Logger.logDebug "IntelligentDistribution" $"エージェント能力評価完了: {agentId}"
                 return Some capability
             with ex ->
-                Logger.logError "IntelligentDistribution" (sprintf "エージェント能力評価失敗 (%s): %s" agentId ex.Message)
+                Logger.logError "IntelligentDistribution" $"エージェント能力評価失敗 ({agentId}): {ex.Message}"
                 return None
         }
 
@@ -162,13 +162,13 @@ module IntelligentDistribution =
                               RecommendedApproach = "標準的なアプローチ" }
 
                         distributionHistory.Enqueue(decision)
-                        Logger.logInfo "IntelligentDistribution" (sprintf "AI分散決定完了: %s -> %s" task.TaskId bestAgent)
+                        Logger.logInfo "IntelligentDistribution" $"AI分散決定完了: {task.TaskId} -> {bestAgent}"
                         return Some decision
                     else
                         return None
                 | None -> return None
             with ex ->
-                Logger.logError "IntelligentDistribution" (sprintf "AI分散決定失敗 (%s): %s" task.TaskId ex.Message)
+                Logger.logError "IntelligentDistribution" $"AI分散決定失敗 ({task.TaskId}): {ex.Message}"
                 return None
         }
 
@@ -194,6 +194,6 @@ module IntelligentDistribution =
 
                 return Some statistics
             with ex ->
-                Logger.logError "IntelligentDistribution" (sprintf "分散統計取得失敗: %s" ex.Message)
+                Logger.logError "IntelligentDistribution" $"分散統計取得失敗: {ex.Message}"
                 return None
         }

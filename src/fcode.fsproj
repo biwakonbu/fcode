@@ -94,6 +94,11 @@
     <!-- FC-029 Scrum Events Integration -->
     <Compile Include="ScrumEventsManager.fs" />
     <Compile Include="ScrumEventsUI.fs" />
+    <!-- FC-030 PO Workflow Enhanced Implementation - Minimal Version -->
+    <Compile Include="POWorkflowEnhanced.fs" />
+    <!-- Temporarily commented out for build stability -->
+    <!-- <Compile Include="RealtimeWorkflowUI.fs" /> -->
+    <!-- <Compile Include="SprintExecutionEngine.fs" /> -->
     <!-- WorkflowCore - Minimal Working Architecture -->
     <Compile Include="WorkflowCore/WorkflowTypes.fs" />
     <Compile Include="WorkflowCore/MinimalWorkflowCoordinator.fs" />

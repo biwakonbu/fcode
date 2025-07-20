@@ -69,7 +69,8 @@ module AdaptiveWorkflow =
           PerformanceTrackingEnabled = true }
 
     /// ワークフロー状態管理
-    let private workflowStates = ConcurrentDictionary<string, string>() // 簡略化
+    let private workflowStates = ConcurrentDictionary<string, string>()
+    // 簡略化
     let private executionHistory = ConcurrentQueue<ExecutionMetrics>()
 
     /// ワークフロー状態の初期化

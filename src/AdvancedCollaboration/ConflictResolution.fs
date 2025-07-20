@@ -3,10 +3,10 @@ namespace FCode.AdvancedCollaboration
 open System
 open System.Collections.Concurrent
 open System.Threading.Tasks
-open FCode.Collaboration.CollaborationTypes
-open FCode.AdvancedCollaboration.KnowledgeRepository
-open FCode.AdvancedCollaboration.IntelligentDistribution
 open FCode
+open FCode.AdvancedCollaboration.IntelligentDistribution
+open FCode.AdvancedCollaboration.KnowledgeRepository
+open FCode.Collaboration.CollaborationTypes
 
 /// 高度競合解決システム
 module ConflictResolution =

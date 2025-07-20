@@ -3,11 +3,11 @@ namespace FCode.AdvancedCollaboration
 open System
 open System.Collections.Concurrent
 open System.Threading.Tasks
-open FCode.Collaboration.CollaborationTypes
-open FCode.Collaboration.ITaskDependencyGraph
-open FCode.Collaboration.IAgentStateManager
-open FCode.AdvancedCollaboration.KnowledgeRepository
 open FCode
+open FCode.AdvancedCollaboration.KnowledgeRepository
+open FCode.Collaboration.CollaborationTypes
+open FCode.Collaboration.IAgentStateManager
+open FCode.Collaboration.ITaskDependencyGraph
 
 /// AI最適タスク分散システム
 module IntelligentDistribution =

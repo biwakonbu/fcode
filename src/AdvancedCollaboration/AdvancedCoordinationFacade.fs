@@ -3,14 +3,14 @@ namespace FCode.AdvancedCollaboration
 open System
 open System.Collections.Concurrent
 open System.Threading.Tasks
+open FCode
+open FCode.AdvancedCollaboration.AdaptiveWorkflow
+open FCode.AdvancedCollaboration.ConflictResolution
+open FCode.AdvancedCollaboration.IntelligentDistribution
+open FCode.AdvancedCollaboration.KnowledgeRepository
 open FCode.Collaboration.CollaborationTypes
 open FCode.Collaboration.IAgentStateManager
 open FCode.Collaboration.ITaskDependencyGraph
-open FCode.AdvancedCollaboration.KnowledgeRepository
-open FCode.AdvancedCollaboration.IntelligentDistribution
-open FCode.AdvancedCollaboration.AdaptiveWorkflow
-open FCode.AdvancedCollaboration.ConflictResolution
-open FCode
 
 /// 高度協調機能統合ファサード
 module AdvancedCoordinationFacade =

@@ -205,12 +205,15 @@ module SessionPersistenceManager =
                 // JsonSanitizerによる制御文字・エスケープシーケンス完全除去
                 let cleanStateJson = JsonSanitizer.sanitizeForJson stateJson
 
+                // JSON構造抽出（埋め込まれたJSONを検出・抽出）
+                let extractedJson = JsonSanitizer.extractJsonContent stateJson
+
                 // JsonSanitizerによる事前検証
-                if not (JsonSanitizer.isValidJsonCandidate cleanStateJson) then
+                if not (JsonSanitizer.isValidJsonCandidate stateJson) then
                     raise (JsonException("Invalid JSON format in state file after sanitization"))
 
-                // JsonSanitizerによる安全なJSON解析
-                let paneStateResult = JsonSanitizer.tryParseJson<PaneState> cleanStateJson
+                // JsonSanitizerによる安全なJSON解析（抽出されたJSONを使用）
+                let paneStateResult = JsonSanitizer.tryParseJson<PaneState> extractedJson
 
                 let basePaneState =
                     match paneStateResult with

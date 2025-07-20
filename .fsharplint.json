@@ -5,7 +5,7 @@
     },
     "functionLength": {
       "enabled": true,
-      "maxLength": 100
+      "maxLength": 80
     },
     "cyclomaticComplexity": {
       "enabled": true,
@@ -37,6 +37,10 @@
     },
     "formatting": {
       "enabled": true
+    },
+    "lineLength": {
+      "enabled": true,
+      "maxLength": 80
     }
   }
 }

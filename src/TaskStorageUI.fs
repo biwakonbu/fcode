@@ -44,10 +44,12 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
                         match tasksResult with
                         | Result.Ok tasks ->
                             let displayText = this.BuildTaskListText(tasks)
-                            Application.MainLoop.Invoke(fun () -> view.Text <- displayText)
+
+                            Application.MainLoop.Invoke(fun () ->
+                                view.Text <- NStack.ustring.Make(displayText: string))
                         | Result.Error error ->
                             let errorText = sprintf "📋 タスク一覧取得エラー: %O" error
-                            Application.MainLoop.Invoke(fun () -> view.Text <- errorText)
+                            Application.MainLoop.Invoke(fun () -> view.Text <- NStack.ustring.Make(errorText: string))
                             logError "TaskStorageUI" (sprintf "タスク一覧取得失敗: %O" error)
                     }
                     |> Async.Start
@@ -65,10 +67,10 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
                         match tasksResult with
                         | Result.Ok tasks ->
                             let statsText = this.BuildTaskStatsText(tasks)
-                            Application.MainLoop.Invoke(fun () -> view.Text <- statsText)
+                            Application.MainLoop.Invoke(fun () -> view.Text <- NStack.ustring.Make(statsText: string))
                         | Result.Error error ->
                             let errorText = sprintf "📊 タスク統計取得エラー: %O" error
-                            Application.MainLoop.Invoke(fun () -> view.Text <- errorText)
+                            Application.MainLoop.Invoke(fun () -> view.Text <- NStack.ustring.Make(errorText: string))
                             logError "TaskStorageUI" (sprintf "タスク統計取得失敗: %O" error)
                     }
                     |> Async.Start
@@ -91,10 +93,10 @@ type TaskStorageDisplay(storageManager: TaskStorageManager) =
                                 |> List.take (min 5 allTasks.Length)
 
                             let detailText = this.BuildTaskDetailText(recentTasks)
-                            Application.MainLoop.Invoke(fun () -> view.Text <- detailText)
+                            Application.MainLoop.Invoke(fun () -> view.Text <- NStack.ustring.Make(detailText: string))
                         | Result.Error error ->
                             let errorText = sprintf "🔍 最近のタスク詳細取得エラー: %O" error
-                            Application.MainLoop.Invoke(fun () -> view.Text <- errorText)
+                            Application.MainLoop.Invoke(fun () -> view.Text <- NStack.ustring.Make(errorText: string))
                             logError "TaskStorageUI" (sprintf "タスク詳細取得失敗: %O" error)
                     }
                     |> Async.Start

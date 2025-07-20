@@ -134,6 +134,8 @@
     <Compile Include="AdvancedCollaboration/AdaptiveWorkflow.fs" />
     <Compile Include="AdvancedCollaboration/ConflictResolution.fs" />
     <Compile Include="AdvancedCollaboration/AdvancedCoordinationFacade.fs" />
+    <!-- Issue #147: v2.0-4 Performance Optimization Implementation -->
+    <Compile Include="Performance/PerformanceOptimizationCore.fs" />
     <!-- Issue #146: v2.0-3 Session Persistence Implementation -->
     <Compile Include="SessionManagement/SessionPersistenceEngine.fs" />
     <Compile Include="SessionManagement/BackgroundTaskManager.fs" />

@@ -121,6 +121,8 @@
     <Compile Include="ExternalIntegrationTests.fs"/>
     <!-- Issue #135: SC-2-9 Integration Testing & Quality Assurance -->
     <Compile Include="SC2BasicQualityTests.fs"/>
+    <!-- Issue #147: v2.0-4 Performance Optimization Tests -->
+    <Compile Include="PerformanceOptimizationTests.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

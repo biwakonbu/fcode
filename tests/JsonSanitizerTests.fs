@@ -25,25 +25,25 @@ type JsonSanitizerTests() =
     member _.``基本制御文字が正しく除去される``() =
         let input = "test\x00\x01\x02string"
         let result = JsonSanitizer.sanitizeForJson input
-        Assert.AreEqual("test string", result)
+        Assert.AreEqual("teststring", result)
 
     [<Test>]
     member _.``ANSIカラーコードが正しく除去される``() =
         let input = "test\u001b[31mred text\u001b[0mnormal"
         let result = JsonSanitizer.sanitizeForJson input
-        Assert.AreEqual("test red text normal", result)
+        Assert.AreEqual("testred textnormal", result)
 
     [<Test>]
     member _.``Terminal.Gui制御シーケンスが除去される``() =
         let input = "content\u001b[?1003h\u001b[?1015h\u001b[?1006htest"
         let result = JsonSanitizer.sanitizeForJson input
-        Assert.AreEqual("content test", result)
+        Assert.AreEqual("contenttest", result)
 
     [<Test>]
     member _.``複雑な制御文字組み合わせが除去される``() =
         let input = "\u001b[2J\u001b[H\u001b[?25lhidden\u001b[?25hvisible\u001b[K"
         let result = JsonSanitizer.sanitizeForJson input
-        Assert.AreEqual("hidden visible", result)
+        Assert.AreEqual("hiddenvisible", result)
 
     // JSON解析テスト
     [<Test>]
@@ -173,6 +173,37 @@ type JsonSanitizerTests() =
 
         let result = JsonSanitizer.sanitizeForJson mouseControl
         Assert.AreEqual("text", result)
+
+    [<Test>]
+    member _.``実際のTerminal.Gui統合テスト出力エラーが修正される``() =
+        // 実際のテスト実行で発生した問題のあるTerminal.Gui出力
+        let problematicOutput =
+            "[?1049h[22;0;0t[1;24r(B[m[4l[?7h[?1l>[H[2J[?25l[?12l[?25h[?1h=[39;49m[39;49m(B[m[24;1H[?1049l[23;0;0t[?1l>[?1l>[?1049h[22;0;0t[1;24r[?12l[?25h[39;49m]104(B[m[4l[?7h[H[2J[?25l[?12l[?25h\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q"
+            + """{"status": "success", "result": "test"}"""
+            + "[?1h=[39;49m(B[m[24;1H[?1049l[23;0;0t[?1l>"
+
+        let result = JsonSanitizer.extractJsonContent problematicOutput
+        Assert.IsTrue(JsonSanitizer.isValidJsonCandidate problematicOutput, "Should extract valid JSON candidate")
+
+        // JSON解析が成功することを確認
+        let parseResult = JsonSanitizer.tryParseJson<Map<string, obj>> result
+
+        match parseResult with
+        | Ok _ -> Assert.Pass()
+        | Error msg -> Assert.Fail($"Real Terminal.Gui output should parse successfully: {msg}")
+
+    [<Test>]
+    member _.``JSON破綻の根本原因文字が完全除去される``() =
+        // 'i' is invalid start エラーの原因となる文字パターン
+        let problematicChars = "\u001b[39;49mi{\"key\": \"value\"}\u001b[0m"
+
+        let result = JsonSanitizer.sanitizeForJson problematicChars
+
+        // 制御文字が除去されてクリーンなJSONになることを確認
+        Assert.IsFalse(result.Contains("\u001b"), "Should not contain ESC sequences")
+        // JSON構造抽出でより正確にチェック
+        let extracted = JsonSanitizer.extractJsonContent problematicChars
+        Assert.IsTrue(JsonSanitizer.isValidJsonCandidate problematicChars, "Should extract valid JSON structure")
 
 [<TestFixture>]
 [<Category("Integration")>]

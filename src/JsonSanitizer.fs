@@ -11,30 +11,54 @@ module JsonSanitizer =
     /// 制御文字・エスケープシーケンス・ANSI制御コード完全除去パターン（強化版）
     let private sanitizePatterns =
         [|
-           // 最も包括的なESCシーケンス除去（優先適用）
-           @"\u001b\[[?!>]*[0-9;]*[A-Za-z@]", " " // 包括的CSI
-           @"\u001b\][^\u0007\u001b]*[\u0007\u001b\\]", " " // OSC完全版
-           @"\u001b[NOPQRSTUVWXYZ\[\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~]", " " // ESC + 制御文字
+           // ============= Terminal.Gui特化パターン（最優先） =============
+           // Terminal.Guiの代替画面バッファ制御
+           @"\u001b\[\?1049[hl]", ""
+           @"\u001b\[22;0;0t", ""
+           @"\u001b\[23;0;0t", ""
+           @"\u001b\[1;24r", ""
+
+           // Terminal.Guiカーソル・表示制御
+           @"\u001b\[\?25[hl]", ""
+           @"\u001b\[\?12[hl]", ""
+           @"\u001b\[\?7[hl]", ""
+           @"\u001b\[\?1[hl]", ""
+           @"\u001b\[>[hl]", ""
+           @"\u001b\[4[hl]", ""
+
+           // Terminal.Guiマウス制御（問題の根本原因）
+           @"\u001b\[\?1003[hl]", ""
+           @"\u001b\[\?1015[hl]", ""
+           @"\u001b\[\?1006[hl]", ""
+           @"\u001b\[0 q", ""
+
+           // Terminal.Guiカラー・描画制御
+           @"\u001b\[39;49m", ""
+           @"\u001b\(B\u001b\[m", ""
+           @"\u001b\]104\u001b\(B\u001b\[m", ""
+           @"\u001b\[H\u001b\[2J", ""
+           @"\u001b\[K", ""
+
+           // ============= 汎用ANSIエスケープシーケンス =============
+           // 最も包括的なESCシーケンス除去
+           @"\u001b\[[?!>]*[0-9;,]*[A-Za-z@]", ""
+           @"\u001b\][^\u0007\u001b]*[\u0007\u001b\\]", ""
+           @"\u001b[NOPQRSTUVWXYZ\[\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~]", ""
 
            // ANSI カラー・制御シーケンス
-           @"\u001b\[[0-9;]*[mK]", " " // カラー・クリア
-           @"\u001b\[\?[0-9;]*[hl]", " " // プライベートモード設定
-           @"\u001b\[[0-9;]*[ABCDHJ]", " " // カーソル制御
-           @"\u001b\[[0-9]+[;,][0-9]*[HfGr]", " " // 位置制御
+           @"\u001b\[[0-9;]*[mK]", ""
+           @"\u001b\[\?[0-9;]*[hl]", ""
+           @"\u001b\[[0-9;]*[ABCDHJ]", ""
+           @"\u001b\[[0-9]+[;,][0-9]*[HfGr]", ""
 
-           // Terminal.Gui特有制御シーケンス（強化）
-           @"\u001b\[\?[0-9]+[hl]", " " // モード設定
-           @"\u001b\[\d+[;,]\d*[a-zA-Z]", " " // パラメータ付き制御
-           @"\u001b\][0-9;]*[^\u0007]*", " " // OSC不完全版
-           @"\][0-9]+[a-zA-Z]", " " // 残存OSC断片
-
+           // ============= 基本制御文字・問題文字 =============
            // 基本制御文字・null文字・非印刷文字
-           @"[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]", " " // 制御文字（TAB・LF保持）
-           @"[\uFEFF]", " " // BOM文字
+           @"[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]", ""
+           @"[\uFEFF]", "" // BOM文字
 
-           // JSON特有の問題文字（日本語文字は保持）
-           @"[^\x09\x0A\x0D\x20-\x7E\u00A0-\uFFFF]", " " // ASCII+Unicode印刷可能文字以外
-           @"\\x[0-9a-fA-F]{2}", " " |] // 16進エスケープ残存
+           // JSON破綻文字（より厳格）
+           @"[^\x09\x0A\x0D\x20-\x7E\u00A0-\uFFFF]", ""
+           @"\\x[0-9a-fA-F]{2}", "" |]
 
     /// 入力文字列から制御文字・エスケープシーケンスを完全除去（強化版）
     let sanitizeForJson (input: string) : string =
@@ -62,20 +86,30 @@ module JsonSanitizer =
                             | _ -> acc)
                         step1
 
-                // Step 2: 残存制御文字の徹底除去
+                // Step 2: 残存制御文字の徹底除去（空白置換で構造保持）
                 let step3 =
                     step2.ToCharArray()
                     |> Array.map (fun c ->
                         let code = int c
-                        // 安全なASCII+Unicode文字保持（日本語対応）
-                        if (code >= 32 && code <= 126) || code = 9 || code = 10 || code = 13 || code >= 160 then
+                        // JSON安全文字のみ保持、制御文字は空白に置換
+                        if
+                            (code >= 32 && code <= 126)
+                            || code = 9
+                            || code = 10
+                            || code = 13
+                            || (code >= 160 && code <= 65535)
+                        then
                             c
                         else
                             ' ')
                     |> System.String
 
-                // Step 3: 連続空白・改行正規化
-                let step4 = Regex.Replace(step3, @"\s+", " ", RegexOptions.Compiled)
+                // Step 3: 連続空白・改行正規化（空白は保持）
+                let step4 =
+                    if step3.Length > 0 then
+                        Regex.Replace(step3, @"\s+", " ", RegexOptions.Compiled)
+                    else
+                        ""
 
                 // Step 4: 前後の空白・改行除去
                 let result = step4.Trim()
@@ -97,12 +131,28 @@ module JsonSanitizer =
                     else
                         ""
 
-                // 結果検証: エスケープシーケンス残存チェック
-                if finalResult.Length > 0 && not (finalResult.Contains("\u001b")) then
-                    finalResult
-                else
-                    // エスケープシーケンスが残存している場合は空文字を返す
+                // 結果検証: 制御文字・ESCシーケンス完全除去確認
+                if String.IsNullOrWhiteSpace(finalResult) then
                     ""
+                else
+                    // 制御文字残存チェック（厳格）
+                    let hasControlChars =
+                        finalResult.Contains("\u001b")
+                        || finalResult.ToCharArray()
+                           |> Array.exists (fun c ->
+                               let code = int c
+                               code < 32 && c <> '\t' && c <> '\n' && c <> '\r')
+
+                    if hasControlChars then
+                        // 制御文字が残存している場合は完全除去して再試行
+                        finalResult.ToCharArray()
+                        |> Array.filter (fun c ->
+                            let code = int c
+                            code >= 32 || c = '\t' || c = '\n' || c = '\r')
+                        |> System.String
+                        |> fun s -> s.Trim()
+                    else
+                        finalResult
             with ex ->
                 // サニタイズ失敗時は空文字で安全側に
                 ""
@@ -156,15 +206,46 @@ module JsonSanitizer =
             let normalized = Regex.Replace(sanitized, @"\s+", " ", RegexOptions.Compiled)
             normalized.Trim()
 
+    /// JSON構造抽出（埋め込まれたJSONを検出・抽出）
+    let extractJsonContent (input: string) : string =
+        if String.IsNullOrWhiteSpace(input) then
+            ""
+        else
+            let sanitized = sanitizeForJson input
+
+            if String.IsNullOrWhiteSpace(sanitized) then
+                ""
+            else
+                // JSON構造パターンマッチング（オブジェクト・配列）
+                let jsonObjectPattern = @"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}"
+                let jsonArrayPattern = @"\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]"
+
+                try
+                    // オブジェクト形式のJSON抽出を試行
+                    let objectMatch = Regex.Match(sanitized, jsonObjectPattern, RegexOptions.Compiled)
+
+                    if objectMatch.Success then
+                        objectMatch.Value.Trim()
+                    else
+                        // 配列形式のJSON抽出を試行
+                        let arrayMatch = Regex.Match(sanitized, jsonArrayPattern, RegexOptions.Compiled)
+
+                        if arrayMatch.Success then
+                            arrayMatch.Value.Trim()
+                        else
+                            sanitized.Trim()
+                with _ ->
+                    sanitized.Trim()
+
     /// JSON解析可能性チェック（事前検証）
     let isValidJsonCandidate (input: string) : bool =
-        let sanitized = sanitizeForJson input
+        let extracted = extractJsonContent input
 
-        if String.IsNullOrWhiteSpace(sanitized) then
+        if String.IsNullOrWhiteSpace(extracted) then
             false
         else
             // 基本的なJSON構造チェック
-            let trimmed = sanitized.Trim()
+            let trimmed = extracted.Trim()
 
             (trimmed.StartsWith("{") && trimmed.EndsWith("}"))
             || (trimmed.StartsWith("[") && trimmed.EndsWith("]"))

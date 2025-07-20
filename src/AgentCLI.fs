@@ -192,14 +192,14 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
                 // JsonSanitizerを使用した制御文字・エスケープシーケンス完全除去
                 let sanitizedOutput = JsonSanitizer.sanitizeForJson rawOutput
 
+                // JSON構造抽出（埋め込まれたJSONを検出・抽出）
+                let extractedJson = JsonSanitizer.extractJsonContent rawOutput
+
                 // JSON形式チェック（JsonSanitizerの事前検証を利用）
-                if
-                    config.OutputFormat = "json"
-                    && JsonSanitizer.isValidJsonCandidate sanitizedOutput
-                then
-                    // JsonSanitizerによる安全なJSON解析
+                if config.OutputFormat = "json" && JsonSanitizer.isValidJsonCandidate rawOutput then
+                    // JsonSanitizerによる安全なJSON解析（抽出されたJSONを使用）
                     match
-                        JsonSanitizer.tryParseJsonWithLogging<JsonDocument> sanitizedOutput (logDebug "CustomScriptCLI")
+                        JsonSanitizer.tryParseJsonWithLogging<JsonDocument> extractedJson (logDebug "CustomScriptCLI")
                     with
                     | Result.Ok jsonDoc ->
                         let root = jsonDoc.RootElement

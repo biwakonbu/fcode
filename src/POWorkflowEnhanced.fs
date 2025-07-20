@@ -82,7 +82,7 @@ type POWorkflowEnhancedManager() =
     let mutable isWorkflowActive = false
     let mutable currentSprintId = ""
     let mutable currentInstruction = ""
-    let workflowResults = ConcurrentDictionary<string, WorkflowResult>()
+    let workflowResults = new ConcurrentDictionary<string, WorkflowResult>()
 
     // イベント定義
     let workflowStartedEvent = Event<SprintInfo>()

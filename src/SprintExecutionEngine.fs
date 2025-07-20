@@ -1,7 +1,6 @@
 module FCode.SprintExecutionEngine
 
 open System
-open System.Collections.Concurrent
 open System.Threading.Tasks
 open FCode.Logger
 open FCode.POWorkflowEnhanced
@@ -10,21 +9,28 @@ open FCode.POWorkflowEnhanced
 /// 18分スプリントの実際の実行・制御・監視機能
 type SprintExecutionEngine() =
 
+    let lockObject = Object()
     let mutable isExecuting = false
     let mutable currentSprint: SprintInfo option = None
 
     /// スプリント実行開始
     member this.ExecuteSprint(sprintInfo: SprintInfo) : Task<Result<WorkflowResult, string>> =
-        Task.Run(fun () ->
+        async {
             try
-                if isExecuting then
-                    Error "既にスプリントが実行中です"
-                else
-                    isExecuting <- true
-                    currentSprint <- Some sprintInfo
+                let result =
+                    lock lockObject (fun () ->
+                        if isExecuting then
+                            Error "既にスプリントが実行中です"
+                        else
+                            isExecuting <- true
+                            currentSprint <- Some sprintInfo
+                            Ok())
 
+                match result with
+                | Error msg -> return Error msg
+                | Ok _ ->
                     // 簡単な結果を返す
-                    let result =
+                    let workflowResult =
                         { SprintId = sprintInfo.SprintId
                           Instruction = sprintInfo.Instruction
                           StartTime = sprintInfo.StartTime
@@ -41,20 +47,24 @@ type SprintExecutionEngine() =
                           AgentPerformance = Map [ ("dev1", 90.0); ("qa1", 85.0); ("pm", 95.0) ]
                           Deliverables = [ "実装完了"; "テスト完了" ] }
 
-                    isExecuting <- false
-                    Ok result
+                    lock lockObject (fun () -> isExecuting <- false)
+                    return Ok workflowResult
 
             with ex ->
-                isExecuting <- false
-                Error $"スプリント実行エラー: {ex.Message}")
+                lock lockObject (fun () -> isExecuting <- false)
+                return Error $"スプリント実行エラー: {ex.Message}"
+        }
+        |> Async.StartAsTask
 
     /// 現在の実行状況取得
     member this.GetCurrentExecution() : SprintInfo option =
-        if isExecuting then currentSprint else None
+        lock lockObject (fun () -> if isExecuting then currentSprint else None)
 
     /// スプリント停止
-    member this.StopExecution() = isExecuting <- false
+    member this.StopExecution() =
+        lock lockObject (fun () -> isExecuting <- false)
 
     /// リソース解放
     interface IDisposable with
-        member this.Dispose() = isExecuting <- false
+        member this.Dispose() =
+            lock lockObject (fun () -> isExecuting <- false)

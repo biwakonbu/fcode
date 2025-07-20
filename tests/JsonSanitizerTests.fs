@@ -174,6 +174,35 @@ type JsonSanitizerTests() =
         let result = JsonSanitizer.sanitizeForJson mouseControl
         Assert.AreEqual("text", result)
 
+    [<Test>]
+    member _.``実際のTerminal.Gui統合テスト出力エラーが修正される``() =
+        // 実際のテスト実行で発生した問題のあるTerminal.Gui出力
+        let problematicOutput =
+            "[?1049h[22;0;0t[1;24r(B[m[4l[?7h[?1l>[H[2J[?25l[?12l[?25h[?1h=[39;49m[39;49m(B[m[24;1H[?1049l[23;0;0t[?1l>[?1l>[?1049h[22;0;0t[1;24r[?12l[?25h[39;49m]104(B[m[4l[?7h[H[2J[?25l[?12l[?25h\u001b[?1003h\u001b[?1015h\u001b[?1006h\u001b[?1003l\u001b[?1015l\u001b[?1006l\u001b[0 q"
+            + """{"status": "success", "result": "test"}"""
+            + "[?1h=[39;49m(B[m[24;1H[?1049l[23;0;0t[?1l>"
+
+        let result = JsonSanitizer.extractJsonContent problematicOutput
+        Assert.IsTrue(JsonSanitizer.isValidJsonCandidate problematicOutput, "Should extract valid JSON candidate")
+
+        // JSON解析が成功することを確認
+        let parseResult = JsonSanitizer.tryParseJson<Map<string, obj>> result
+
+        match parseResult with
+        | Ok _ -> Assert.Pass()
+        | Error msg -> Assert.Fail($"Real Terminal.Gui output should parse successfully: {msg}")
+
+    [<Test>]
+    member _.``JSON破綻の根本原因文字が完全除去される``() =
+        // 'i' is invalid start エラーの原因となる文字パターン
+        let problematicChars = "\u001b[39;49mi{\"key\": \"value\"}\u001b[0m"
+
+        let result = JsonSanitizer.sanitizeForJson problematicChars
+
+        // 'i'文字が先頭に来ないことを確認
+        Assert.IsFalse(result.StartsWith("i"), "Sanitized result should not start with 'i'")
+        Assert.IsTrue(JsonSanitizer.isValidJsonCandidate result, "Should be valid JSON structure")
+
 [<TestFixture>]
 [<Category("Integration")>]
 type JsonSanitizerIntegrationTests() =

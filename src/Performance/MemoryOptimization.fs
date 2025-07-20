@@ -87,4 +87,5 @@ module MemoryOptimization =
             }
 
         interface IDisposable with
-            member _.Dispose() = ()
+            member _.Dispose() = (poolManager :> IDisposable).Dispose()
+// gcOptimizer and leakDetector don't implement IDisposable, so no disposal needed

@@ -3,6 +3,7 @@ module FCode.Tests.PerformanceOptimizationTests
 open NUnit.Framework
 open System
 open FCode.Performance.PerformanceOptimizationCore
+open FCode.Performance.PerformanceTestingUtils
 
 [<TestFixture>]
 [<Category("Unit")>]

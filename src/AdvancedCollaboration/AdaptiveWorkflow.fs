@@ -78,7 +78,8 @@ module AdaptiveWorkflow =
         async {
             try
                 workflowStates.TryAdd(workflowId, "Active") |> ignore
-                Logger.logInfo "AdaptiveWorkflow" $"ワークフロー初期化: {workflowId} ({initialPattern})"
+                Logger.logInfo "AdaptiveWorkflow" $"ワークフロー初期化: {workflowId}"
+                Logger.logInfo "AdaptiveWorkflow" $"パターン: {initialPattern}"
                 return true
             with ex ->
                 Logger.logError "AdaptiveWorkflow" $"ワークフロー初期化失敗 ({workflowId}): {ex.Message}"

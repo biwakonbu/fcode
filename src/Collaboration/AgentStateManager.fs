@@ -62,7 +62,8 @@ type AgentStateManager(config: CollaborationConfig) =
                                   LastUpdate = DateTime.UtcNow
                                   CurrentTask = currentTask
                                   WorkingDirectory = defaultArg workingDir ""
-                                  ProcessId = processId }
+                                  ProcessId = processId
+                                  ActiveTasks = [] }
 
                             states.AddOrUpdate(validId, newState, fun _ _ -> newState) |> ignore
                             stateChangedEvent.Trigger(newState)

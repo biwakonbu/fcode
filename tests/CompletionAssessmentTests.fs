@@ -23,6 +23,7 @@ let ``CompletionAssessmentManager - 基本的なタスク完成度評価テス�
             EstimatedDuration = None
             ActualDuration = None
             RequiredResources = []
+            Dependencies = []
             CreatedAt = now
             UpdatedAt = now }
           { TaskId = "task2"
@@ -34,6 +35,7 @@ let ``CompletionAssessmentManager - 基本的なタスク完成度評価テス�
             EstimatedDuration = None
             ActualDuration = None
             RequiredResources = []
+            Dependencies = []
             CreatedAt = now
             UpdatedAt = now }
           { TaskId = "task3"
@@ -45,6 +47,7 @@ let ``CompletionAssessmentManager - 基本的なタスク完成度評価テス�
             EstimatedDuration = None
             ActualDuration = None
             RequiredResources = []
+            Dependencies = []
             CreatedAt = now
             UpdatedAt = now } ]
 
@@ -80,6 +83,7 @@ let ``CompletionAssessmentManager - 高品質完成ケースでの評価テス�
             EstimatedDuration = None
             ActualDuration = None
             RequiredResources = []
+            Dependencies = []
             CreatedAt = now
             UpdatedAt = now }
           { TaskId = "task2"
@@ -91,6 +95,7 @@ let ``CompletionAssessmentManager - 高品質完成ケースでの評価テス�
             EstimatedDuration = None
             ActualDuration = None
             RequiredResources = []
+            Dependencies = []
             CreatedAt = now
             UpdatedAt = now }
           { TaskId = "task3"
@@ -102,6 +107,7 @@ let ``CompletionAssessmentManager - 高品質完成ケースでの評価テス�
             EstimatedDuration = None
             ActualDuration = None
             RequiredResources = []
+            Dependencies = []
             CreatedAt = now
             UpdatedAt = now } ]
 
@@ -157,6 +163,7 @@ let ``CompletionAssessmentManager - 品質閾値境界値テスト`` () =
             EstimatedDuration = None
             ActualDuration = None
             RequiredResources = []
+            Dependencies = []
             CreatedAt = now
             UpdatedAt = now } // High=0.90
           { TaskId = "task2"
@@ -168,6 +175,7 @@ let ``CompletionAssessmentManager - 品質閾値境界値テスト`` () =
             EstimatedDuration = None
             ActualDuration = None
             RequiredResources = []
+            Dependencies = []
             CreatedAt = now
             UpdatedAt = now } ] // Medium=0.75
 

@@ -118,6 +118,7 @@ let ``DynamicReassignmentSystem - ブロック状態再配分判定テスト`` (
           EstimatedDuration = Some(TimeSpan.FromHours(2.0))
           ActualDuration = None
           RequiredResources = []
+          Dependencies = []
           CreatedAt = DateTime.UtcNow.AddHours(-1.0)
           UpdatedAt = DateTime.UtcNow.AddMinutes(-30.0) }
 
@@ -128,7 +129,8 @@ let ``DynamicReassignmentSystem - ブロック状態再配分判定テスト`` (
           LastUpdate = DateTime.UtcNow.AddMinutes(-5.0)
           CurrentTask = Some "task1"
           WorkingDirectory = "/tmp/test"
-          ProcessId = Some 1234 }
+          ProcessId = Some 1234
+          ActiveTasks = [] }
 
     // Act
     let needsReassignment = system.NeedsReassignment(task, agent)
@@ -154,6 +156,7 @@ let ``DynamicReassignmentSystem - エラー状態再配分判定テスト`` () =
           EstimatedDuration = Some(TimeSpan.FromHours(2.0))
           ActualDuration = None
           RequiredResources = []
+          Dependencies = []
           CreatedAt = DateTime.UtcNow.AddHours(-1.0)
           UpdatedAt = DateTime.UtcNow.AddMinutes(-30.0) }
 
@@ -164,7 +167,8 @@ let ``DynamicReassignmentSystem - エラー状態再配分判定テスト`` () =
           LastUpdate = DateTime.UtcNow.AddMinutes(-10.0)
           CurrentTask = Some "task1"
           WorkingDirectory = "/tmp/test"
-          ProcessId = None }
+          ProcessId = None
+          ActiveTasks = [] }
 
     // Act
     let needsReassignment = system.NeedsReassignment(task, agent)
@@ -278,6 +282,7 @@ let ``TaskAssignmentManager - 再配分チェック機能テスト`` () =
           EstimatedDuration = Some(TimeSpan.FromHours(3.0))
           ActualDuration = None
           RequiredResources = [ "dev-environment" ]
+          Dependencies = []
           CreatedAt = DateTime.UtcNow.AddHours(-2.0)
           UpdatedAt = DateTime.UtcNow.AddMinutes(-45.0) }
 
@@ -288,7 +293,8 @@ let ``TaskAssignmentManager - 再配分チェック機能テスト`` () =
           LastUpdate = DateTime.UtcNow.AddMinutes(-30.0)
           CurrentTask = Some "task1"
           WorkingDirectory = "/tmp/blocked"
-          ProcessId = Some 1234 }
+          ProcessId = Some 1234
+          ActiveTasks = [] }
 
     // Act
     let reassignments = manager.CheckForReassignment([ blockedTask ], [ blockedAgent ])

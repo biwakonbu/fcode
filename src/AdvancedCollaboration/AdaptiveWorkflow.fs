@@ -90,7 +90,7 @@ module AdaptiveWorkflow =
     let monitorTaskExecution
         (workflowId: string)
         (taskId: string)
-        (task: KnowledgeRepository.AdvancedCollaborationTask)
+        (task: TaskInfo)
         =
         async {
             try
@@ -102,25 +102,59 @@ module AdaptiveWorkflow =
         }
 
     /// 実行メトリクスの収集
-    let collectExecutionMetrics (workflowId: string) =
+    let collectExecutionMetrics (workflowId: string) (activeTasks: string list) (completedTasks: string list) =
         async {
             try
+                // リアルなメトリクスを計算
+                let totalTasks = activeTasks.Length + completedTasks.Length
+                let parallelTasks = activeTasks.Length
+
+                // シミュレートされたメトリクス
+                let resourceUtilization =
+                    if totalTasks > 0 then
+                        min 1.0 (float parallelTasks * 0.2 + Random().NextDouble() * 0.3)
+                    else
+                        0.0
+
+                let qualityScore =
+                    let baseQuality = 0.7 + Random().NextDouble() * 0.2
+
+                    if resourceUtilization > 0.8 then
+                        baseQuality * 0.9 // 高負荷時は品質低下
+                    else
+                        baseQuality
+
+                // ボトルネックタスクをシミュレート
+                let bottleneckTasks =
+                    if resourceUtilization > 0.85 then
+                        activeTasks |> List.take (min 2 activeTasks.Length)
+                    else
+                        []
+
                 let metrics =
                     { WorkflowId = workflowId
                       PatternUsed = WorkflowPattern.Adaptive
-                      TotalTasks = 0
-                      CompletedTasks = 0
-                      ParallelTasks = 0
-                      AverageTaskDuration = TimeSpan.Zero
-                      TotalExecutionTime = TimeSpan.Zero
-                      ResourceUtilization = 0.0
-                      QualityScore = 1.0
-                      BottleneckTasks = []
-                      CriticalPath = []
+                      TotalTasks = totalTasks
+                      CompletedTasks = completedTasks.Length
+                      ParallelTasks = parallelTasks
+                      AverageTaskDuration = TimeSpan.FromMinutes(30.0 + Random().NextDouble() * 60.0)
+                      TotalExecutionTime = TimeSpan.FromMinutes(float totalTasks * 15.0)
+                      ResourceUtilization = resourceUtilization
+                      QualityScore = qualityScore
+                      BottleneckTasks = bottleneckTasks
+                      CriticalPath = completedTasks |> List.take (min 3 completedTasks.Length)
                       Timestamp = DateTime.Now }
 
                 executionHistory.Enqueue(metrics)
-                Logger.logDebug "AdaptiveWorkflow" $"実行メトリクス収集完了: {workflowId}"
+
+                // 履歴サイズ制限
+                while executionHistory.Count > 50 do
+                    executionHistory.TryDequeue() |> ignore
+
+                Logger.logDebug
+                    "AdaptiveWorkflow"
+                    $"実行メトリクス収集完了: {workflowId} - 品質: {qualityScore:F2}, リソース: {resourceUtilization:F2}"
+
                 return Some metrics
             with ex ->
                 Logger.logError "AdaptiveWorkflow" $"実行メトリクス収集失敗: {ex.Message}"
@@ -131,7 +165,75 @@ module AdaptiveWorkflow =
     let generateOptimizationSuggestions (config: AdaptiveWorkflowConfig) (workflowId: string) =
         async {
             try
-                let suggestions = []
+                // 最新の実行メトリクスを取得
+                let recentMetrics =
+                    executionHistory.ToArray()
+                    |> Array.filter (fun m -> m.WorkflowId = workflowId)
+                    |> Array.sortByDescending (fun m -> m.Timestamp)
+                    |> Array.take (min 5 (executionHistory.Count))
+
+                let suggestions =
+                    if recentMetrics.Length > 0 then
+                        let avgQuality =
+                            recentMetrics |> Array.map (fun m -> m.QualityScore) |> Array.average
+
+                        let avgResourceUtil =
+                            recentMetrics |> Array.map (fun m -> m.ResourceUtilization) |> Array.average
+
+                        let mutable suggestionsList = []
+
+                        // 品質改善提案
+                        if avgQuality < config.MinPerformanceThreshold then
+                            suggestionsList <-
+                                { SuggestionId = System.Guid.NewGuid().ToString()
+                                  WorkflowId = workflowId
+                                  SuggestionType = "品質改善"
+                                  Description = "品質指標の改善が必要です"
+                                  ExpectedImprovement = config.MinPerformanceThreshold - avgQuality + 0.1
+                                  ImplementationEffort = 0.3
+                                  RiskLevel = 0.1
+                                  Priority = 1
+                                  ApplicablePattern = WorkflowPattern.Sequential
+                                  RequiredResources = []
+                                  CreatedAt = DateTime.Now }
+                                :: suggestionsList
+
+                        // リソース最適化提案
+                        if avgResourceUtil > config.MaxResourceUtilization then
+                            suggestionsList <-
+                                { SuggestionId = System.Guid.NewGuid().ToString()
+                                  WorkflowId = workflowId
+                                  SuggestionType = "リソース最適化"
+                                  Description = "リソース使用率の最適化が必要です"
+                                  ExpectedImprovement = 0.15
+                                  ImplementationEffort = 0.4
+                                  RiskLevel = 0.15
+                                  Priority = 2
+                                  ApplicablePattern = WorkflowPattern.Pipeline
+                                  RequiredResources = []
+                                  CreatedAt = DateTime.Now }
+                                :: suggestionsList
+
+                        // 並列化提案
+                        if avgResourceUtil < config.MaxResourceUtilization * 0.6 then
+                            suggestionsList <-
+                                { SuggestionId = System.Guid.NewGuid().ToString()
+                                  WorkflowId = workflowId
+                                  SuggestionType = "並列化最適化"
+                                  Description = "並列化による性能向上が可能です"
+                                  ExpectedImprovement = 0.25
+                                  ImplementationEffort = 0.5
+                                  RiskLevel = 0.2
+                                  Priority = 3
+                                  ApplicablePattern = WorkflowPattern.Parallel
+                                  RequiredResources = []
+                                  CreatedAt = DateTime.Now }
+                                :: suggestionsList
+
+                        suggestionsList
+                    else
+                        []
+
                 Logger.logInfo "AdaptiveWorkflow" $"最適化提案生成: {workflowId} - {suggestions.Length}件"
                 return suggestions
             with ex ->

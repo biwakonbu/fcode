@@ -133,7 +133,7 @@ module AdvancedCoordinationFacade =
     /// 統合協調実行
     let executeIntegratedCoordination
         (config: AdvancedCoordinationConfig)
-        (tasks: KnowledgeRepository.AdvancedCollaborationTask list)
+        (tasks: TaskInfo list)
         (agents: string list)
         (agentStateManager: IAgentStateManager)
         =
@@ -188,7 +188,7 @@ module AdvancedCoordinationFacade =
         }
 
     /// プロアクティブ知識推奨
-    let provideProactiveRecommendations (agentId: string) (currentTask: KnowledgeRepository.AdvancedCollaborationTask) =
+    let provideProactiveRecommendations (agentId: string) (currentTask: TaskInfo) =
         async {
             try
                 let recommendations =
@@ -206,7 +206,7 @@ module AdvancedCoordinationFacade =
 
     /// 動的チーム最適化
     let optimizeTeamComposition
-        (tasks: KnowledgeRepository.AdvancedCollaborationTask list)
+        (tasks: TaskInfo list)
         (availableAgents: string list)
         =
         async {

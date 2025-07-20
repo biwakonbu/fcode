@@ -71,6 +71,7 @@ type StorageDesignIntegrationTests() =
                   EstimatedDuration = Some(TimeSpan.FromMinutes(45.0))
                   ActualDuration = None
                   RequiredResources = [ "cpu"; "memory" ]
+                  Dependencies = []
                   CreatedAt = DateTime.Now
                   UpdatedAt = DateTime.Now }
 
@@ -166,6 +167,7 @@ type StorageDesignIntegrationTests() =
                   EstimatedDuration = None
                   ActualDuration = None
                   RequiredResources = []
+                  Dependencies = []
                   CreatedAt = DateTime.Now
                   UpdatedAt = DateTime.Now }
 

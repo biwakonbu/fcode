@@ -62,10 +62,15 @@ module MemoryOptimization =
     /// メモリリーク検出システム
     type MemoryLeakDetector() =
         let memorySnapshots = ConcurrentQueue<int64 * DateTime>()
+        let maxSnapshotCount = 100 // スナップショット最大保持数
 
         member _.TakeSnapshot(operationName: string) =
             let currentMemory = GC.GetTotalMemory(false)
             memorySnapshots.Enqueue((currentMemory, DateTime.Now))
+
+            // サイズ制限: 古いスナップショットを削除
+            while memorySnapshots.Count > maxSnapshotCount do
+                memorySnapshots.TryDequeue() |> ignore
 
             Logger.logDebug "MemoryLeakDetector" $"メモリスナップショット: {operationName}"
 
@@ -83,7 +88,9 @@ module MemoryOptimization =
             async {
                 let currentMemoryMB = GC.GetTotalMemory(false) / 1024L / 1024L
 
-                return {| CurrentMemoryMB = currentMemoryMB IsOptimized = true |}
+                return
+                    {| CurrentMemoryMB = currentMemoryMB
+                       IsOptimized = true |}
             }
 
         interface IDisposable with

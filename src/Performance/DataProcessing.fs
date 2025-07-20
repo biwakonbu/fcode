@@ -37,16 +37,22 @@ module DataProcessing =
         member _.ProcessLargeFileAsync(filePath: string, lineProcessor: string -> Async<unit>) =
             async {
                 if not (File.Exists(filePath)) then
-                    return failwith $"File not found: {filePath}"
+                    Logger.logError "LargeFileProcessor" $"ファイルが見つかりません: {filePath}"
+                    return Error $"File not found: {filePath}"
 
-                Logger.logInfo "LargeFileProcessor" $"ファイル処理開始: {filePath}"
+                try
+                    Logger.logInfo "LargeFileProcessor" $"ファイル処理開始: {filePath}"
 
-                let! content = File.ReadAllTextAsync(filePath) |> Async.AwaitTask
-                let lines = content.Split([| '\n'; '\r' |], StringSplitOptions.RemoveEmptyEntries)
+                    let! content = File.ReadAllTextAsync(filePath) |> Async.AwaitTask
+                    let lines = content.Split([| '\n'; '\r' |], StringSplitOptions.RemoveEmptyEntries)
 
-                do! lines |> Array.map lineProcessor |> Async.Parallel |> Async.Ignore
+                    do! lines |> Array.map lineProcessor |> Async.Parallel |> Async.Ignore
 
-                Logger.logInfo "LargeFileProcessor" $"ファイル処理完了: {lines.Length}行"
+                    Logger.logInfo "LargeFileProcessor" $"ファイル処理完了: {lines.Length}行"
+                    return Ok()
+                with ex ->
+                    Logger.logError "LargeFileProcessor" $"ファイル処理失敗: {ex.Message}"
+                    return Error ex.Message
             }
 
     /// データ処理統合管理
@@ -61,7 +67,9 @@ module DataProcessing =
             async {
                 let cacheStats = fileCache.GetStatistics()
 
-                return {| FileCache = cacheStats Timestamp = DateTime.Now |}
+                return
+                    {| FileCache = cacheStats
+                       Timestamp = DateTime.Now |}
             }
 
         interface IDisposable with

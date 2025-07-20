@@ -17,14 +17,18 @@ module MemoryOptimization =
         member _.Get() =
             match items.TryTake() with
             | true, item ->
+                Interlocked.Decrement(&currentCount) |> ignore
                 reset item
                 item
             | false, _ -> factory ()
 
         member _.Return(item: 'T) =
-            if currentCount < maxSize then
-                Interlocked.Increment(&currentCount) |> ignore
+            let newCount = Interlocked.Increment(&currentCount)
+
+            if newCount <= maxSize then
                 items.Add(item)
+            else
+                Interlocked.Decrement(&currentCount) |> ignore
 
     /// メモリプール管理システム
     type MemoryPoolManager() =

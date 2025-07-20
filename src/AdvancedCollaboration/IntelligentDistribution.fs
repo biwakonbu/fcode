@@ -12,6 +12,9 @@ open FCode.AdvancedCollaboration.KnowledgeRepository
 /// AI最適タスク分散システム
 module IntelligentDistribution =
 
+    /// テスト可能なランダムジェネレーター
+    let private random = Random()
+
     /// タスク特性分析結果
     type TaskCharacteristics =
         { TaskId: string
@@ -216,7 +219,7 @@ module IntelligentDistribution =
                       SpecializationAreas = specializationAreas
                       AverageCompletionTime = TimeSpan.FromHours(2.0 + (currentWorkload * 2.0))
                       QualityScore = qualityScore
-                      CollaborationRating = 0.7 + (Random().NextDouble() * 0.2)
+                      CollaborationRating = 0.7 + (random.NextDouble() * 0.2)
                       LastUpdated = DateTime.Now }
 
                 agentCapabilities.AddOrUpdate(agentId, capability, fun _ _ -> capability)

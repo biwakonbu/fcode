@@ -11,6 +11,9 @@ open FCode.AdvancedCollaboration.KnowledgeRepository
 /// 動的ワークフロー最適化システム
 module AdaptiveWorkflow =
 
+    /// テスト可能なランダムジェネレーター
+    let private random = Random()
+
     /// ワークフロー実行パターン
     type WorkflowPattern =
         | Sequential = 1 // 順次実行
@@ -108,12 +111,12 @@ module AdaptiveWorkflow =
                 // シミュレートされたメトリクス
                 let resourceUtilization =
                     if totalTasks > 0 then
-                        min 1.0 (float parallelTasks * 0.2 + Random().NextDouble() * 0.3)
+                        min 1.0 (float parallelTasks * 0.2 + random.NextDouble() * 0.3)
                     else
                         0.0
 
                 let qualityScore =
-                    let baseQuality = 0.7 + Random().NextDouble() * 0.2
+                    let baseQuality = 0.7 + random.NextDouble() * 0.2
 
                     if resourceUtilization > 0.8 then
                         baseQuality * 0.9 // 高負荷時は品質低下
@@ -133,7 +136,7 @@ module AdaptiveWorkflow =
                       TotalTasks = totalTasks
                       CompletedTasks = completedTasks.Length
                       ParallelTasks = parallelTasks
-                      AverageTaskDuration = TimeSpan.FromMinutes(30.0 + Random().NextDouble() * 60.0)
+                      AverageTaskDuration = TimeSpan.FromMinutes(30.0 + random.NextDouble() * 60.0)
                       TotalExecutionTime = TimeSpan.FromMinutes(float totalTasks * 15.0)
                       ResourceUtilization = resourceUtilization
                       QualityScore = qualityScore
@@ -176,57 +179,58 @@ module AdaptiveWorkflow =
                         let avgResourceUtil =
                             recentMetrics |> Array.map (fun m -> m.ResourceUtilization) |> Array.average
 
-                        let mutable suggestionsList = []
+                        let qualitySuggestion =
+                            if avgQuality < config.MinPerformanceThreshold then
+                                Some
+                                    { SuggestionId = System.Guid.NewGuid().ToString()
+                                      WorkflowId = workflowId
+                                      SuggestionType = "品質改善"
+                                      Description = "品質指標の改善が必要です"
+                                      ExpectedImprovement = config.MinPerformanceThreshold - avgQuality + 0.1
+                                      ImplementationEffort = 0.3
+                                      RiskLevel = 0.1
+                                      Priority = 1
+                                      ApplicablePattern = WorkflowPattern.Sequential
+                                      RequiredResources = []
+                                      CreatedAt = DateTime.Now }
+                            else
+                                None
 
-                        // 品質改善提案
-                        if avgQuality < config.MinPerformanceThreshold then
-                            suggestionsList <-
-                                { SuggestionId = System.Guid.NewGuid().ToString()
-                                  WorkflowId = workflowId
-                                  SuggestionType = "品質改善"
-                                  Description = "品質指標の改善が必要です"
-                                  ExpectedImprovement = config.MinPerformanceThreshold - avgQuality + 0.1
-                                  ImplementationEffort = 0.3
-                                  RiskLevel = 0.1
-                                  Priority = 1
-                                  ApplicablePattern = WorkflowPattern.Sequential
-                                  RequiredResources = []
-                                  CreatedAt = DateTime.Now }
-                                :: suggestionsList
+                        let resourceSuggestion =
+                            if avgResourceUtil > config.MaxResourceUtilization then
+                                Some
+                                    { SuggestionId = System.Guid.NewGuid().ToString()
+                                      WorkflowId = workflowId
+                                      SuggestionType = "リソース最適化"
+                                      Description = "リソース使用率の最適化が必要です"
+                                      ExpectedImprovement = 0.15
+                                      ImplementationEffort = 0.4
+                                      RiskLevel = 0.15
+                                      Priority = 2
+                                      ApplicablePattern = WorkflowPattern.Pipeline
+                                      RequiredResources = []
+                                      CreatedAt = DateTime.Now }
+                            else
+                                None
 
-                        // リソース最適化提案
-                        if avgResourceUtil > config.MaxResourceUtilization then
-                            suggestionsList <-
-                                { SuggestionId = System.Guid.NewGuid().ToString()
-                                  WorkflowId = workflowId
-                                  SuggestionType = "リソース最適化"
-                                  Description = "リソース使用率の最適化が必要です"
-                                  ExpectedImprovement = 0.15
-                                  ImplementationEffort = 0.4
-                                  RiskLevel = 0.15
-                                  Priority = 2
-                                  ApplicablePattern = WorkflowPattern.Pipeline
-                                  RequiredResources = []
-                                  CreatedAt = DateTime.Now }
-                                :: suggestionsList
+                        let parallelSuggestion =
+                            if avgResourceUtil < config.MaxResourceUtilization * 0.6 then
+                                Some
+                                    { SuggestionId = System.Guid.NewGuid().ToString()
+                                      WorkflowId = workflowId
+                                      SuggestionType = "並列化最適化"
+                                      Description = "並列化による性能向上が可能です"
+                                      ExpectedImprovement = 0.25
+                                      ImplementationEffort = 0.5
+                                      RiskLevel = 0.2
+                                      Priority = 3
+                                      ApplicablePattern = WorkflowPattern.Parallel
+                                      RequiredResources = []
+                                      CreatedAt = DateTime.Now }
+                            else
+                                None
 
-                        // 並列化提案
-                        if avgResourceUtil < config.MaxResourceUtilization * 0.6 then
-                            suggestionsList <-
-                                { SuggestionId = System.Guid.NewGuid().ToString()
-                                  WorkflowId = workflowId
-                                  SuggestionType = "並列化最適化"
-                                  Description = "並列化による性能向上が可能です"
-                                  ExpectedImprovement = 0.25
-                                  ImplementationEffort = 0.5
-                                  RiskLevel = 0.2
-                                  Priority = 3
-                                  ApplicablePattern = WorkflowPattern.Parallel
-                                  RequiredResources = []
-                                  CreatedAt = DateTime.Now }
-                                :: suggestionsList
-
-                        suggestionsList
+                        [ qualitySuggestion; resourceSuggestion; parallelSuggestion ] |> List.choose id
                     else
                         []
 

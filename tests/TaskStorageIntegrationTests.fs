@@ -72,6 +72,7 @@ type TaskStorageIntegrationTests() =
                       EstimatedDuration = Some(TimeSpan.FromMinutes(30.0))
                       ActualDuration = None
                       RequiredResources = [ "test-resource" ]
+                      Dependencies = []
                       CreatedAt = DateTime.Now
                       UpdatedAt = DateTime.Now }
 
@@ -121,6 +122,7 @@ type TaskStorageIntegrationTests() =
                       EstimatedDuration = None
                       ActualDuration = None
                       RequiredResources = []
+                      Dependencies = []
                       CreatedAt = DateTime.Now
                       UpdatedAt = DateTime.Now }
 
@@ -134,6 +136,7 @@ type TaskStorageIntegrationTests() =
                       EstimatedDuration = None
                       ActualDuration = None
                       RequiredResources = []
+                      Dependencies = []
                       CreatedAt = DateTime.Now
                       UpdatedAt = DateTime.Now }
 

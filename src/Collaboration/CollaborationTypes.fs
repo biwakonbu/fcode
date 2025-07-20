@@ -51,7 +51,8 @@ type AgentState =
       LastUpdate: DateTime
       CurrentTask: string option
       WorkingDirectory: string
-      ProcessId: int option }
+      ProcessId: int option
+      ActiveTasks: string list }
 
     static member Create(agentId: string) =
         if String.IsNullOrWhiteSpace(agentId) then
@@ -64,7 +65,8 @@ type AgentState =
                   LastUpdate = DateTime.UtcNow
                   CurrentTask = None
                   WorkingDirectory = ""
-                  ProcessId = None }
+                  ProcessId = None
+                  ActiveTasks = [] }
 
 /// タスク情報
 type TaskInfo =
@@ -77,6 +79,7 @@ type TaskInfo =
       EstimatedDuration: TimeSpan option
       ActualDuration: TimeSpan option
       RequiredResources: string list
+      Dependencies: string list
       CreatedAt: DateTime
       UpdatedAt: DateTime }
 
@@ -98,6 +101,7 @@ type TaskInfo =
                   EstimatedDuration = None
                   ActualDuration = None
                   RequiredResources = []
+                  Dependencies = []
                   CreatedAt = now
                   UpdatedAt = now }
 

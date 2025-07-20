@@ -107,13 +107,63 @@ module KnowledgeRepository =
                 return false
         }
 
+    /// キーワードマッチングスコアを計算
+    let private calculateKeywordScore (entryKeywords: string list) (queryKeywords: string list) =
+        if queryKeywords.IsEmpty then
+            0.0
+        else
+            let matches =
+                queryKeywords
+                |> List.filter (fun qk -> entryKeywords |> List.exists (fun ek -> ek.ToLower().Contains(qk.ToLower())))
+                |> List.length
+
+            float matches / float queryKeywords.Length
+
+    /// コンテンツ的適度を計算
+    let private calculateContentRelevance (entry: KnowledgeEntry) (query: KnowledgeQuery) =
+        let keywordScore = calculateKeywordScore entry.Keywords query.Keywords
+
+        let typeMatch =
+            match query.KnowledgeType with
+            | Some kt when kt = entry.Type -> 0.3
+            | _ -> 0.0
+
+        let domainMatch =
+            match query.Domain with
+            | Some domain when
+                entry.Context.ContainsKey("domain")
+                && entry.Context.["domain"].ToString().Contains(domain)
+                ->
+                0.2
+            | _ -> 0.0
+
+        let effectivenessScore =
+            match query.MinEffectiveness with
+            | Some minEff when entry.Effectiveness >= minEff -> entry.Effectiveness * 0.2
+            | None -> entry.Effectiveness * 0.2
+            | _ -> 0.0
+
+        keywordScore * 0.5 + typeMatch + domainMatch + effectivenessScore
+
     /// 知識エントリの検索
     let searchKnowledge (query: KnowledgeQuery) =
         async {
             try
                 let allEntries = knowledgeEntries.Values |> Seq.toList
-                Logger.logDebug "KnowledgeRepository" $"知識検索実行: {allEntries.Length}件見つかりました"
-                return allEntries |> List.take (min query.MaxResults allEntries.Length)
+
+                // 関連度スコアでソートして結果を返す
+                let scoredEntries =
+                    allEntries
+                    |> List.map (fun entry ->
+                        let relevanceScore = calculateContentRelevance entry query
+                        (entry, relevanceScore))
+                    |> List.filter (fun (_, score) -> score > 0.1) // 関連性が低いものをフィルタリング
+                    |> List.sortByDescending (fun (_, score) -> score)
+                    |> List.take (min query.MaxResults (allEntries.Length))
+                    |> List.map fst
+
+                Logger.logDebug "KnowledgeRepository" $"知識検索実行: {scoredEntries.Length}/{allEntries.Length}件見つかりました"
+                return scoredEntries
             with ex ->
                 Logger.logError "KnowledgeRepository" $"知識検索失敗: {ex.Message}"
                 return []
@@ -161,23 +211,131 @@ module KnowledgeRepository =
                 return false
         }
 
+    /// 専門家の適合度を計算
+    let private calculateExpertFitScore (expert: AgentExpertise) (domain: string) (requiredSkills: string list) =
+        // ドメインマッチスコア
+        let domainScore =
+            expert.ExpertiseAreas
+            |> List.tryFind (fun area -> area.Domain.ToLower().Contains(domain.ToLower()))
+            |> function
+                | Some area -> area.ExperienceLevel * 0.4
+                | None -> 0.0
+
+        // スキルマッチスコア
+        let skillScore =
+            let allExpertSkills =
+                expert.ExpertiseAreas |> List.collect (fun area -> area.Skills)
+
+            let matchedSkills =
+                requiredSkills
+                |> List.filter (fun skill ->
+                    allExpertSkills
+                    |> List.exists (fun expertSkill -> expertSkill.ToLower().Contains(skill.ToLower())))
+                |> List.length
+
+            if requiredSkills.Length > 0 then
+                float matchedSkills / float requiredSkills.Length * 0.3
+            else
+                0.0
+
+        // 品質・経験スコア
+        let qualityScore = expert.QualityRating * 0.2
+        let contributionScore = min 0.1 (float expert.KnowledgeContributions / 100.0)
+
+        domainScore + skillScore + qualityScore + contributionScore
+
     /// 専門家推奨システム
     let recommendExpert (domain: string) (requiredSkills: string list) =
         async {
             try
                 let experts = agentExpertise.Values |> Seq.toList
-                Logger.logDebug "KnowledgeRepository" $"専門家推奨: {domain} - {experts.Length}名見つかりました"
-                return experts
+
+                // 適合度スコアでソート
+                let rankedExperts =
+                    experts
+                    |> List.map (fun expert ->
+                        let score = calculateExpertFitScore expert domain requiredSkills
+                        (expert, score))
+                    |> List.filter (fun (_, score) -> score > 0.2) // 一定以上の適合度を持つ専門家のみ
+                    |> List.sortByDescending (fun (_, score) -> score)
+                    |> List.take (min 5 experts.Length)
+                    |> List.map fst
+
+                Logger.logDebug
+                    "KnowledgeRepository"
+                    $"専門家推奨: {domain} - {rankedExperts.Length}/{experts.Length}名見つかりました"
+
+                return rankedExperts
             with ex ->
                 Logger.logError "KnowledgeRepository" $"専門家推奨失敗: {ex.Message}"
                 return []
         }
 
+    /// コンテキストベースの推奨スコアを計算
+    let private calculateRecommendationScore (entry: KnowledgeEntry) (agentId: string) (context: Map<string, string>) =
+        // 現在のタスクコンテキストとの関連性
+        let contextScore =
+            context
+            |> Map.toList
+            |> List.sumBy (fun (key, value) ->
+                if
+                    entry.Context.ContainsKey(key)
+                    && entry.Context.[key].ToString().ToLower().Contains(value.ToLower())
+                then
+                    0.2
+                else
+                    0.0)
+
+        // エージェントの過去の利用履歴
+        let usageScore =
+            if usageStats.ContainsKey(entry.Id) && entry.AgentId = agentId then
+                min 0.3 (float usageStats.[entry.Id] / 10.0)
+            else
+                0.0
+
+        // 有効性と新鮮度
+        let effectivenessScore = entry.Effectiveness * 0.3
+
+        let freshnessScore =
+            let daysSinceCreated = (DateTime.Now - entry.CreatedAt).TotalDays
+            max 0.0 (0.2 - (daysSinceCreated / 365.0) * 0.1) // 1年で新鮮度スコアが減衰
+
+        contextScore + usageScore + effectivenessScore + freshnessScore
+
     /// 知識推奨システム
     let recommendKnowledge (agentId: string) (context: Map<string, string>) =
         async {
             try
-                let recommendations = []
+                let allEntries = knowledgeEntries.Values |> Seq.toList
+
+                // 推奨スコアでソートして上位5件を返す
+                let recommendations =
+                    allEntries
+                    |> List.map (fun entry ->
+                        let score = calculateRecommendationScore entry agentId context
+
+                        let recommendation =
+                            { Entry = entry
+                              RelevanceScore = score
+                              ExpertOpinion =
+                                if entry.Effectiveness > 0.8 then Some "高品質なナレッジ"
+                                elif entry.UsageCount > 10 then Some "実績豊富"
+                                else None
+                              SimilarCases =
+                                allEntries
+                                |> List.filter (fun e ->
+                                    e.Id <> entry.Id
+                                    && e.Type = entry.Type
+                                    && (e.Keywords |> List.exists (fun k -> entry.Keywords |> List.contains k)))
+                                |> List.take 3
+                                |> List.map (fun e -> e.Id) }
+
+                        (recommendation, score))
+                    |> List.filter (fun (_, score) -> score > 0.1)
+                    |> List.sortByDescending (fun (_, score) -> score)
+                    |> List.take 5
+                    |> List.map fst
+
                 Logger.logDebug "KnowledgeRepository" $"知識推奨: {agentId} - {recommendations.Length}件"
                 return recommendations
             with ex ->
@@ -212,22 +370,8 @@ module KnowledgeRepository =
                 return None
         }
 
-    /// AdvancedCollaboration用のタスク型定義
-    type AdvancedCollaborationTask =
-        { TaskId: string
-          Description: string
-          AgentInstructions: string
-          Dependencies: string list
-          Priority: TaskPriority
-          Status: TaskStatus
-          AssignedAgent: string option
-          Deadline: DateTime option
-          StartedAt: DateTime option
-          CompletedAt: DateTime option
-          WorkflowId: string }
-
     /// 必要スキル抽出（他のモジュールで使用）
-    let extractRequiredSkills (task: AdvancedCollaborationTask) =
+    let extractRequiredSkills (task: TaskInfo) =
         let keywords =
             [ "F#"
               "API"
@@ -243,10 +387,10 @@ module KnowledgeRepository =
         keywords
         |> List.filter (fun keyword ->
             task.Description.ToLower().Contains(keyword.ToLower())
-            || task.AgentInstructions.ToLower().Contains(keyword.ToLower()))
+            || task.Title.ToLower().Contains(keyword.ToLower()))
 
     /// 専門領域識別（他のモジュールで使用）
-    let identifyDomainExpertise (task: AdvancedCollaborationTask) =
+    let identifyDomainExpertise (task: TaskInfo) =
         let domains =
             [ ("UI", [ "interface"; "user"; "design"; "frontend" ])
               ("Backend", [ "api"; "service"; "database"; "server" ])
@@ -254,7 +398,7 @@ module KnowledgeRepository =
               ("Performance", [ "performance"; "optimization"; "speed"; "memory" ])
               ("Security", [ "security"; "auth"; "encryption"; "permission" ]) ]
 
-        let taskText = (task.Description + " " + task.AgentInstructions).ToLower()
+        let taskText = (task.Description + " " + task.Title).ToLower()
 
         domains
         |> List.tryFind (fun (domain, keywords) -> keywords |> List.exists (fun keyword -> taskText.Contains(keyword)))

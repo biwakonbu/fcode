@@ -4,13 +4,13 @@ open System
 open System.Collections.Concurrent
 open System.Threading.Tasks
 open FCode
+open FCode.Collaboration.CollaborationTypes
+open FCode.Collaboration.IAgentStateManager
+open FCode.Collaboration.ITaskDependencyGraph
 open FCode.AdvancedCollaboration.AdaptiveWorkflow
 open FCode.AdvancedCollaboration.ConflictResolution
 open FCode.AdvancedCollaboration.IntelligentDistribution
 open FCode.AdvancedCollaboration.KnowledgeRepository
-open FCode.Collaboration.CollaborationTypes
-open FCode.Collaboration.IAgentStateManager
-open FCode.Collaboration.ITaskDependencyGraph
 
 /// 高度協調機能統合ファサード
 module AdvancedCoordinationFacade =
@@ -133,7 +133,7 @@ module AdvancedCoordinationFacade =
     /// 統合協調実行
     let executeIntegratedCoordination
         (config: AdvancedCoordinationConfig)
-        (tasks: KnowledgeRepository.AdvancedCollaborationTask list)
+        (tasks: TaskInfo list)
         (agents: string list)
         (agentStateManager: IAgentStateManager)
         =
@@ -188,7 +188,7 @@ module AdvancedCoordinationFacade =
         }
 
     /// プロアクティブ知識推奨
-    let provideProactiveRecommendations (agentId: string) (currentTask: KnowledgeRepository.AdvancedCollaborationTask) =
+    let provideProactiveRecommendations (agentId: string) (currentTask: TaskInfo) =
         async {
             try
                 let recommendations =
@@ -205,10 +205,7 @@ module AdvancedCoordinationFacade =
         }
 
     /// 動的チーム最適化
-    let optimizeTeamComposition
-        (tasks: KnowledgeRepository.AdvancedCollaborationTask list)
-        (availableAgents: string list)
-        =
+    let optimizeTeamComposition (tasks: TaskInfo list) (availableAgents: string list) =
         async {
             try
                 Logger.logInfo "AdvancedCoordinationFacade" "動的チーム最適化実行開始"

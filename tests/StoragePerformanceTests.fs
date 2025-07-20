@@ -42,6 +42,7 @@ type StoragePerformanceTests() =
             | 0 -> [ "cpu"; "memory" ]
             | 1 -> [ "disk"; "network"; "gpu" ]
             | _ -> []
+          Dependencies = []
           CreatedAt = DateTime.Now.AddHours(-(float (id % 48)))
           UpdatedAt = DateTime.Now.AddMinutes(-(float (id % 1440))) }
 

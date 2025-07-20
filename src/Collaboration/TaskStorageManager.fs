@@ -338,6 +338,7 @@ type TaskStorageManager(connectionString: string) =
                             else
                                 Some(TimeSpan.FromMinutes(reader.GetDouble("actual_duration_minutes")))
                           RequiredResources = [] // 別途取得が必要
+                          Dependencies = [] // 別途取得が必要
                           CreatedAt = reader.GetDateTime("created_at")
                           UpdatedAt = reader.GetDateTime("updated_at") }
 
@@ -393,6 +394,7 @@ type TaskStorageManager(connectionString: string) =
                             else
                                 Some(TimeSpan.FromMinutes(reader.GetDouble("actual_duration_minutes")))
                           RequiredResources = [] // 別途取得が必要
+                          Dependencies = [] // 別途取得が必要
                           CreatedAt = reader.GetDateTime("created_at")
                           UpdatedAt = reader.GetDateTime("updated_at") }
 

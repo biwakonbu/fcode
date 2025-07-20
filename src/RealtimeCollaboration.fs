@@ -61,7 +61,8 @@ type RealtimeCollaborationManager() =
                   LastUpdate = DateTime.UtcNow
                   CurrentTask = currentTask
                   WorkingDirectory = ""
-                  ProcessId = None }
+                  ProcessId = None
+                  ActiveTasks = [] }
 
             agentStates.AddOrUpdate(agentId, newState, fun _ _ -> newState) |> ignore
             stateChangedEvent.Trigger(agentId, newState)
@@ -91,6 +92,7 @@ type RealtimeCollaborationManager() =
                   EstimatedDuration = None
                   ActualDuration = None
                   RequiredResources = []
+                  Dependencies = []
                   CreatedAt = now
                   UpdatedAt = now }
 

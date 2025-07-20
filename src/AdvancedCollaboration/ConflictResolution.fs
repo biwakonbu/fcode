@@ -4,9 +4,9 @@ open System
 open System.Collections.Concurrent
 open System.Threading.Tasks
 open FCode
+open FCode.Collaboration.CollaborationTypes
 open FCode.AdvancedCollaboration.IntelligentDistribution
 open FCode.AdvancedCollaboration.KnowledgeRepository
-open FCode.Collaboration.CollaborationTypes
 
 /// 高度競合解決システム
 module ConflictResolution =
@@ -92,12 +92,64 @@ module ConflictResolution =
     let private resolutionHistory = ConcurrentQueue<ResolutionResult>()
 
     /// 競合の検出
-    let detectConflict (tasks: KnowledgeRepository.AdvancedCollaborationTask list) (agents: string list) =
+    let detectConflict (tasks: TaskInfo list) (agents: string list) =
         async {
             try
-                let conflicts = []
-                Logger.logInfo "ConflictResolution" $"競合検出完了: {conflicts.Length}件"
-                return conflicts
+                let mutable detectedConflicts = []
+
+                // リソース競合を検出
+                let agentTaskCounts =
+                    tasks
+                    |> List.filter (fun t -> t.AssignedAgent.IsSome && t.Status <> TaskStatus.Completed)
+                    |> List.groupBy (fun t -> t.AssignedAgent.Value)
+                    |> List.filter (fun (_, tasks) -> tasks.Length > 2)
+
+                let resourceConflicts =
+                    agentTaskCounts
+                    |> List.map (fun (agent, tasks) ->
+                        { ConflictId = System.Guid.NewGuid().ToString()
+                          ConflictType = ConflictType.ResourceConflict
+                          InvolvedTasks = tasks |> List.map (fun t -> t.TaskId)
+                          InvolvedAgents = [ agent ]
+                          ConflictSource = $"エージェント {agent} のオーバーロード"
+                          Severity = min 1.0 (float tasks.Length * 0.2)
+                          ImpactScope = tasks |> List.map (fun t -> t.TaskId)
+                          DetectedAt = DateTime.Now
+                          Description = $"{tasks.Length}個のタスクが同じエージェントに割り当てられています"
+                          ContextData = Map.empty })
+
+                detectedConflicts <- detectedConflicts @ resourceConflicts
+
+                // 依存関係競合を検出
+                let dependencyConflicts =
+                    tasks
+                    |> List.filter (fun t ->
+                        // TaskInfoには依存関係フィールドがないため、空リストでフィルタリング
+                        false)
+                    |> List.take (min 3 tasks.Length)
+                    |> List.map (fun task ->
+                        { ConflictId = System.Guid.NewGuid().ToString()
+                          ConflictType = ConflictType.DependencyConflict
+                          InvolvedTasks = [ task.TaskId ]
+                          InvolvedAgents =
+                            match task.AssignedAgent with
+                            | Some agent -> [ agent ]
+                            | None -> []
+                          ConflictSource = $"タスク {task.TaskId} の依存関係"
+                          Severity = 0.6
+                          ImpactScope = []
+                          DetectedAt = DateTime.Now
+                          Description = $"タスク {task.TaskId} の依存タスクが未完了です"
+                          ContextData = Map.empty })
+
+                detectedConflicts <- detectedConflicts @ dependencyConflicts
+
+                // 競合をアクティブリストに追加
+                detectedConflicts
+                |> List.iter (fun conflict -> activeConflicts.TryAdd(conflict.ConflictId, conflict) |> ignore)
+
+                Logger.logInfo "ConflictResolution" $"競合検出完了: {detectedConflicts.Length}件"
+                return detectedConflicts
             with ex ->
                 Logger.logError "ConflictResolution" $"競合検出失敗: {ex.Message}"
                 return []
@@ -107,9 +159,85 @@ module ConflictResolution =
     let generateResolutionProposals (config: ConflictResolutionConfig) (conflictId: string) =
         async {
             try
-                let proposals = []
-                Logger.logInfo "ConflictResolution" $"解決提案生成: {conflictId} - {proposals.Length}件"
-                return proposals
+                match activeConflicts.TryGetValue(conflictId) with
+                | true, conflict ->
+                    let mutable proposals = []
+
+                    // 競合タイプに応じた解決提案を生成
+                    match conflict.ConflictType with
+                    | ConflictType.ResourceConflict ->
+                        // リソース再配分提案
+                        proposals <-
+                            { ProposalId = System.Guid.NewGuid().ToString()
+                              ConflictId = conflictId
+                              Strategy = ResolutionStrategy.ResourceReallocation
+                              Description = "タスクを他のエージェントに再配分して負荷を分散します"
+                              RequiredActions = [ "タスク割り当ての見直し"; "エージェント能力の再評価" ]
+                              ExpectedOutcome = "エージェントの負荷均等化"
+                              ImplementationCost = 0.3
+                              SuccessProbability = 0.8
+                              RiskLevel = 0.2
+                              TimeToImplement = TimeSpan.FromMinutes(15.0)
+                              ProposedBy = "ConflictResolutionEngine"
+                              CreatedAt = DateTime.Now }
+                            :: proposals
+
+                    | ConflictType.DependencyConflict ->
+                        // タスク再構造化提案
+                        proposals <-
+                            { ProposalId = System.Guid.NewGuid().ToString()
+                              ConflictId = conflictId
+                              Strategy = ResolutionStrategy.TaskRestructuring
+                              Description = "依存関係を見直してタスクの実行順序を最適化します"
+                              RequiredActions = [ "依存関係の再評価"; "タスク順序の最適化" ]
+                              ExpectedOutcome = "ブロッキングタスクの解消"
+                              ImplementationCost = 0.4
+                              SuccessProbability = 0.7
+                              RiskLevel = 0.25
+                              TimeToImplement = TimeSpan.FromMinutes(20.0)
+                              ProposedBy = "ConflictResolutionEngine"
+                              CreatedAt = DateTime.Now }
+                            :: proposals
+
+                    | _ ->
+                        // 交渉・調整提案
+                        proposals <-
+                            { ProposalId = System.Guid.NewGuid().ToString()
+                              ConflictId = conflictId
+                              Strategy = ResolutionStrategy.Negotiation
+                              Description = "関係者間での調整と合意形成を図ります"
+                              RequiredActions = [ "ステークホルダー会議"; "合意事項の文書化" ]
+                              ExpectedOutcome = "関係者全員の合意による解決"
+                              ImplementationCost = 0.2
+                              SuccessProbability = 0.6
+                              RiskLevel = 0.1
+                              TimeToImplement = TimeSpan.FromMinutes(30.0)
+                              ProposedBy = "ConflictResolutionEngine"
+                              CreatedAt = DateTime.Now }
+                            :: proposals
+
+                    // 重大度が高い場合は専門家相談も提案
+                    if conflict.Severity >= config.ExpertConsultationThreshold then
+                        proposals <-
+                            { ProposalId = System.Guid.NewGuid().ToString()
+                              ConflictId = conflictId
+                              Strategy = ResolutionStrategy.ExpertConsultation
+                              Description = "専門家による解決方針の相談と推奨を求めます"
+                              RequiredActions = [ "専門家の特定"; "相談セッションの設定" ]
+                              ExpectedOutcome = "専門知識に基づいた最適解決"
+                              ImplementationCost = 0.6
+                              SuccessProbability = 0.9
+                              RiskLevel = 0.05
+                              TimeToImplement = TimeSpan.FromHours(1.0)
+                              ProposedBy = "ConflictResolutionEngine"
+                              CreatedAt = DateTime.Now }
+                            :: proposals
+
+                    Logger.logInfo "ConflictResolution" $"解決提案生成: {conflictId} - {proposals.Length}件"
+                    return proposals
+                | false, _ ->
+                    Logger.logWarning "ConflictResolution" $"競合が見つかりません: {conflictId}"
+                    return []
             with ex ->
                 Logger.logError "ConflictResolution" $"解決提案生成失敗: {ex.Message}"
                 return []

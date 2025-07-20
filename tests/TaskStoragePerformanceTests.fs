@@ -64,6 +64,7 @@ type TaskStoragePerformanceTests() =
                           EstimatedDuration = Some(TimeSpan.FromMinutes(float (i % 60 + 15)))
                           ActualDuration = None
                           RequiredResources = [ $"resource-{i % 10}" ]
+                          Dependencies = []
                           CreatedAt = DateTime.Now
                           UpdatedAt = DateTime.Now }
 
@@ -110,6 +111,7 @@ type TaskStoragePerformanceTests() =
                           EstimatedDuration = Some(TimeSpan.FromMinutes(30.0))
                           ActualDuration = None
                           RequiredResources = []
+                          Dependencies = []
                           CreatedAt = DateTime.Now
                           UpdatedAt = DateTime.Now }
 
@@ -178,6 +180,7 @@ type TaskStoragePerformanceTests() =
                                       EstimatedDuration = Some(TimeSpan.FromMinutes(15.0))
                                       ActualDuration = None
                                       RequiredResources = []
+                                      Dependencies = []
                                       CreatedAt = DateTime.Now
                                       UpdatedAt = DateTime.Now }
 

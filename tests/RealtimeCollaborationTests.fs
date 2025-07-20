@@ -42,6 +42,7 @@ let createTestTask taskId title priority estimatedDuration =
       EstimatedDuration = Some estimatedDuration
       ActualDuration = None
       RequiredResources = []
+      Dependencies = []
       CreatedAt = DateTime.UtcNow
       UpdatedAt = DateTime.UtcNow }
 
@@ -53,7 +54,8 @@ let createTestAgentState agentId status progress =
       LastUpdate = DateTime.UtcNow
       CurrentTask = None
       WorkingDirectory = "/test"
-      ProcessId = None }
+      ProcessId = None
+      ActiveTasks = [] }
 
 [<Category("Unit")>]
 [<Test>]

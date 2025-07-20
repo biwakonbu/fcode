@@ -46,6 +46,7 @@ type QualityGateUIManager(qualityGateManager: QualityGateManager) =
             | QualityLevel.Acceptable -> "🟠"
             | QualityLevel.Poor -> "🔴"
             | QualityLevel.Unacceptable -> "🔴"
+            | _ -> "⚪" // 未定義・将来追加値への対応
 
         sb.AppendFormat("{0} 総合スコア: {1:F2} ({2})\n", scoreIcon, result.OverallScore, result.QualityLevel)
         |> ignore

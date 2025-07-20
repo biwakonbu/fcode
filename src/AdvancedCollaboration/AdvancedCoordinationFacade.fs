@@ -205,10 +205,7 @@ module AdvancedCoordinationFacade =
         }
 
     /// 動的チーム最適化
-    let optimizeTeamComposition
-        (tasks: TaskInfo list)
-        (availableAgents: string list)
-        =
+    let optimizeTeamComposition (tasks: TaskInfo list) (availableAgents: string list) =
         async {
             try
                 Logger.logInfo "AdvancedCoordinationFacade" "動的チーム最適化実行開始"

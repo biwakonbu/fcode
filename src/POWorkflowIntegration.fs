@@ -173,7 +173,7 @@ type POWorkflowIntegrationManager
                           LastUpdate = DateTime.Now
                           WorkingDirectory = ""
                           ProcessId = None
-                          ActiveTasks = [task.TaskId] }
+                          ActiveTasks = [ task.TaskId ] }
 
                     realtimeCollaboration.UpdateAgentState(agentId, Working, 0.0, task.TaskId)
 

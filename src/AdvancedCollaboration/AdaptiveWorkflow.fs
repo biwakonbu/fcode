@@ -87,11 +87,7 @@ module AdaptiveWorkflow =
         }
 
     /// タスク実行状況の監視
-    let monitorTaskExecution
-        (workflowId: string)
-        (taskId: string)
-        (task: TaskInfo)
-        =
+    let monitorTaskExecution (workflowId: string) (taskId: string) (task: TaskInfo) =
         async {
             try
                 Logger.logDebug "AdaptiveWorkflow" $"タスク実行状況更新: {workflowId}/{taskId} - {task.Status}"

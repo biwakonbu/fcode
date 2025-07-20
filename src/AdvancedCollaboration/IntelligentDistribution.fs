@@ -176,7 +176,7 @@ module IntelligentDistribution =
                 let agentStateResult = agentStateManager.GetAgentState(agentId)
 
                 match agentStateResult with
-                | Result.Ok (Some state) ->
+                | Result.Ok(Some state) ->
                     // アクティブタスク数から作業負荷を推定
                     let activeTasks = state.ActiveTasks.Length
                     let workloadScore = min 1.0 (float activeTasks * 0.2)

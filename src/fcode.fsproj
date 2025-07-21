@@ -5,6 +5,30 @@
     <LangVersion>latest</LangVersion>
     <!-- Suppress PTY.Net platform-specific binary warnings on Linux CI -->
     <NoWarn>$(NoWarn);MSB3246</NoWarn>
+    
+    <!-- Single File Publish Optimization -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>embedded</DebugType>
+    <DebuggerSupport>false</DebuggerSupport>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    
+    <!-- Performance Optimization -->
+    <TieredCompilation>true</TieredCompilation>
+    <TieredPGO>true</TieredPGO>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    
+    <!-- Package metadata -->
+    <AssemblyTitle>fcode</AssemblyTitle>
+    <AssemblyDescription>AI Team Collaboration TUI</AssemblyDescription>
+    <AssemblyCompany>biwakonbu</AssemblyCompany>
+    <AssemblyProduct>fcode</AssemblyProduct>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SecurityUtils.fs" />

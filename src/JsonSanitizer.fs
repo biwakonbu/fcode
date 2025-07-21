@@ -8,9 +8,17 @@ open System.Text.RegularExpressions
 /// Terminal.GuiのANSI制御コード・制御文字がJSON解析を破綻させる問題の根本解決
 module JsonSanitizer =
 
-    /// 制御文字・エスケープシーケンス・ANSI制御コード完全除去パターン（強化版）
+    /// 制御文字・エスケープシーケンス・ANSI制御コード完全除去パターン（FC-034強化版）
     let private sanitizePatterns =
         [|
+           // ============= 最危険制御文字優先除去（FC-034追加） =============
+           // JSON構造破壊文字（'i' is invalid start の根本原因）
+           @"[\x01-\x08\x0B-\x0C\x0E-\x1F]", "" // 基本制御文字強化
+           @"[\x7F-\x9F]", "" // DEL文字・C1制御文字
+           @"[\uFFFE\uFFFF]", "" // 非文字
+           @"[\u200B-\u200F]", "" // ゼロ幅文字
+           @"[\u2028\u2029]", "" // ライン・パラグラフセパレータ
+
            // ============= Terminal.Gui特化パターン（最優先） =============
            // Terminal.Guiの代替画面バッファ制御
            @"\u001b\[\?1049[hl]", ""
@@ -40,25 +48,46 @@ module JsonSanitizer =
            @"\u001b\[K", ""
 
            // ============= 汎用ANSIエスケープシーケンス =============
-           // 最も包括的なESCシーケンス除去
+           // FC-034: より包括的なESCシーケンス除去（失敗テスト対応）
            @"\u001b\[[?!>]*[0-9;,]*[A-Za-z@]", ""
            @"\u001b\][^\u0007\u001b]*[\u0007\u001b\\]", ""
            @"\u001b[NOPQRSTUVWXYZ\[\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~]", ""
 
-           // ANSI カラー・制御シーケンス
+           // FC-034: 失敗テスト特化パターン追加
+           @"\u001b\[[0-9]*m", "" // カラーリセット
+           @"\u001b\[[31]m", "" // 赤色テキスト
+           @"\u001b\[[0]m", "" // 全リセット
+           @"\u001b\[\?1003[hl]", "" // マウス制御
+           @"\u001b\[\?1015[hl]", "" // マウス制御拡張
+           @"\u001b\[\?1006[hl]", "" // マウス制御SGR
+           @"\u001b\[0 q", "" // カーソル形状
+
+           // ANSI カラー・制御シーケンス（強化）
            @"\u001b\[[0-9;]*[mK]", ""
            @"\u001b\[\?[0-9;]*[hl]", ""
            @"\u001b\[[0-9;]*[ABCDHJ]", ""
            @"\u001b\[[0-9]+[;,][0-9]*[HfGr]", ""
+           @"\u001b\[[2J]", "" // 画面クリア
+           @"\u001b\[[H]", "" // カーソルホーム
+           @"\u001b\[\?25[lh]", "" // カーソル表示切替
+           @"\u001b\[\?12[lh]", "" // カーソル点滅制御
 
            // ============= 基本制御文字・問題文字 =============
-           // 基本制御文字・null文字・非印刷文字
+           // 基本制御文字・null文字・非印刷文字（強化）
            @"[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]", ""
            @"[\uFEFF]", "" // BOM文字
 
            // JSON破綻文字（より厳格）
            @"[^\x09\x0A\x0D\x20-\x7E\u00A0-\uFFFF]", ""
-           @"\\x[0-9a-fA-F]{2}", "" |]
+           @"\\x[0-9a-fA-F]{2}", ""
+
+           // ============= FC-034追加: JSON特化制御文字除去 =============
+           // JSONパーサーを混乱させる文字パターン
+           @"[\x00\x01\x02\x03\x04\x05\x06\x07\x08]", "" // C0制御文字 (0x00-0x08)
+           @"[\x0B\x0C]", "" // VT・FF
+           @"[\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17]", "" // 0x0E-0x17
+           @"[\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F]", "" // 0x18-0x1F
+           @"[\x7F]", "" |] // DEL
 
     /// 入力文字列から制御文字・エスケープシーケンスを完全除去（強化版）
     let sanitizeForJson (input: string) : string =
@@ -69,7 +98,29 @@ module JsonSanitizer =
                 // 段階的サニタイズで確実に除去
                 let step1 = input.Trim()
 
-                // Step 1: 最も危険なエスケープシーケンス優先除去
+                // FC-034: Step 1 - よりバランス良いESCシーケンス除去
+                let step1_5 =
+                    try
+                        // より精密な万能パターン（コンテンツ保持）
+                        let patterns =
+                            [| @"\u001b\[[0-9;]*[A-Za-z]", "" // 標準ANSIシーケンス
+                               @"\u001b\[\?[0-9;]*[hl]", "" // プライベートモード
+                               @"\u001b\[[0-9;]*;[0-9;]*[a-z]", "" // 複雑パラメータ
+                               @"\u001b\][\d]*;[^\\]*\\", "" // OSCシーケンス
+                               @"\u001b\([AB]", "" |] // 文字セット指定
+
+                        patterns
+                        |> Array.fold
+                            (fun acc (pattern, replacement) ->
+                                try
+                                    Regex.Replace(acc, pattern, replacement, RegexOptions.Compiled)
+                                with _ ->
+                                    acc)
+                            step1
+                    with _ ->
+                        step1
+
+                // Step 2: 個別パターンによる精密除去
                 let step2 =
                     sanitizePatterns
                     |> Array.fold
@@ -84,7 +135,7 @@ module JsonSanitizer =
                             with
                             | :? ArgumentException -> acc // 無効な正規表現はスキップ
                             | _ -> acc)
-                        step1
+                        step1_5
 
                 // Step 2: 残存制御文字の徹底除去（空白置換で構造保持）
                 let step3 =
@@ -250,13 +301,58 @@ module JsonSanitizer =
             (trimmed.StartsWith("{") && trimmed.EndsWith("}"))
             || (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
 
-    /// JSON解析ログ付き安全実行
+    /// JSON解析ログ付き安全実行（FC-034強化版）
     let tryParseJsonWithLogging<'T> (input: string) (logFunc: string -> unit) : Result<'T, string> =
         let originalLength = if isNull input then 0 else input.Length
         let sanitized = sanitizeForJson input
         let sanitizedLength = sanitized.Length
 
+        // FC-034: 詳細ログ・デバッグ情報強化
         if originalLength <> sanitizedLength then
-            logFunc $"JsonSanitizer: Removed {originalLength - sanitizedLength} control characters"
+            let removedCount = originalLength - sanitizedLength
+
+            logFunc
+                $"JsonSanitizer: Removed {removedCount} control characters (orig: {originalLength}, clean: {sanitizedLength})"
+
+            // 制御文字検出の詳細ログ
+            if input.Contains("\u001b") then
+                logFunc "JsonSanitizer: Detected ANSI escape sequences"
+
+            let hasControlChars =
+                input.ToCharArray()
+                |> Array.exists (fun c -> int c < 32 && c <> '\t' && c <> '\n' && c <> '\r')
+
+            if hasControlChars then
+                logFunc "JsonSanitizer: Detected dangerous control characters"
+
+        // JSON構造検証強化
+        if not (isValidJsonCandidate sanitized) && sanitized.Length > 0 then
+            logFunc
+                $"JsonSanitizer: Warning - Input may not be valid JSON structure: '{sanitized.Substring(0, min sanitized.Length 50)}...'"
 
         tryParseJson<'T> sanitized
+
+    /// FC-034追加: 強化されたフォールバック解析
+    let tryParseJsonWithFallback<'T> (input: string) (logFunc: string -> unit) : Result<'T * string, string> =
+        // 段階的解析: 最も厳格→段階的に寛容
+        let attempts =
+            [ ("strict", sanitizeForJson input)
+              ("plain_text", sanitizeForPlainText input)
+              ("extracted", extractJsonContent input)
+              ("minimal", input.Trim()) ]
+
+        let rec tryAttempts remaining =
+            match remaining with
+            | [] -> Error "All parsing attempts failed"
+            | (method, content) :: rest ->
+                match tryParseJson<'T> content with
+                | Ok result ->
+                    if method <> "strict" then
+                        logFunc $"JsonSanitizer: SUCCESS with {method} method"
+
+                    Ok(result, method)
+                | Error msg ->
+                    logFunc $"JsonSanitizer: {method} method failed: {msg}"
+                    tryAttempts rest
+
+        tryAttempts attempts

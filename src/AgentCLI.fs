@@ -185,24 +185,29 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
 
         member _.ParseOutput(rawOutput: string) =
             try
-                // 入力検証: null・空・制御文字チェック
+                // FC-034: 入力検証強化・メトリクス収集
                 if String.IsNullOrWhiteSpace(rawOutput) then
                     raise (ArgumentException("Output is null or empty"))
 
+                let originalLength = rawOutput.Length
+
                 // JsonSanitizerを使用した制御文字・エスケープシーケンス完全除去
                 let sanitizedOutput = JsonSanitizer.sanitizeForJson rawOutput
+                let sanitizedLength = sanitizedOutput.Length
 
                 // JSON構造抽出（埋め込まれたJSONを検出・抽出）
                 let extractedJson = JsonSanitizer.extractJsonContent rawOutput
 
-                // JSON形式チェック（JsonSanitizerの事前検証を利用）
+                // FC-034: 強化されたJSON解析（フォールバック機能付き）
                 if config.OutputFormat = "json" && JsonSanitizer.isValidJsonCandidate rawOutput then
-                    // JsonSanitizerによる安全なJSON解析（抽出されたJSONを使用）
+                    // FC-034: 段階的フォールバック解析を試行
                     match
-                        JsonSanitizer.tryParseJsonWithLogging<JsonDocument> extractedJson (logDebug "CustomScriptCLI")
+                        JsonSanitizer.tryParseJsonWithFallback<JsonDocument> extractedJson (logDebug "CustomScriptCLI")
                     with
-                    | Result.Ok jsonDoc ->
+                    | Result.Ok(jsonDoc, method) ->
                         let root = jsonDoc.RootElement
+
+                        logDebug "CustomScriptCLI" $"JSON parsing succeeded with method: {method}"
 
                         { Status =
                             match root.TryGetProperty("status") with
@@ -219,20 +224,43 @@ type CustomScriptCLI(config: AgentIntegrationConfig) =
                             match root.TryGetProperty("content") with
                             | (true, contentProp) -> contentProp.GetString()
                             | _ -> sanitizedOutput
-                          Metadata = Map.empty.Add("format", "json")
+                          Metadata =
+                            Map.empty
+                                .Add("format", "json")
+                                .Add("parse_method", method)
+                                .Add("sanitized_length", sanitizedLength.ToString())
                           Timestamp = DateTime.Now
                           SourceAgent = config.Name
                           Capabilities = config.SupportedCapabilities }
                     | Result.Error errorMsg ->
-                        logError "CustomScriptCLI" $"JSON parse failed: {errorMsg}"
-                        // JSON解析失敗時はプレーンテキストとして処理
+                        // FC-034: より詳細なエラーログ・フォールバック処理強化
+                        logError "CustomScriptCLI" $"JSON parse failed after all fallback methods: {errorMsg}"
+
+                        logDebug
+                            "CustomScriptCLI"
+                            $"Original input length: {originalLength}, sanitized: {sanitizedLength}"
+
+                        // 制御文字残存チェック・警告
+                        if
+                            sanitizedOutput.ToCharArray()
+                            |> Array.exists (fun c -> int c < 32 && c <> '\t' && c <> '\n' && c <> '\r')
+                        then
+                            logWarning "CustomScriptCLI" "Control characters may still be present after sanitization"
+
+                        // JSON解析失敗時はプレーンテキストとして安全処理
                         { Status =
                             if sanitizedOutput.Contains("error") || sanitizedOutput.Contains("Error") then
                                 AgentStatus.Error
                             else
                                 AgentStatus.Success
                           Content = JsonSanitizer.sanitizeForPlainText sanitizedOutput
-                          Metadata = Map.empty.Add("format", "text").Add("json_parse_error", errorMsg)
+                          Metadata =
+                            Map.empty
+                                .Add("format", "text")
+                                .Add("json_parse_error", errorMsg)
+                                .Add("fallback_reason", "json_parse_failure")
+                                .Add("original_length", originalLength.ToString())
+                                .Add("sanitized_length", sanitizedLength.ToString())
                           Timestamp = DateTime.Now
                           SourceAgent = config.Name
                           Capabilities = config.SupportedCapabilities }

@@ -115,10 +115,15 @@ module SessionPersistenceManager =
             gzipStream.CopyTo(outputStream)
             let json = System.Text.Encoding.UTF8.GetString(outputStream.ToArray())
 
-            match JsonSanitizer.tryParseJson<string list> (json) with
-            | Result.Ok result -> result
+            // FC-034: 強化されたフォールバック解析
+            match JsonSanitizer.tryParseJsonWithFallback<string list> json (Logger.logDebug "SessionPersistence") with
+            | Result.Ok(result, method) ->
+                if method <> "strict" then
+                    Logger.logInfo "SessionPersistence" $"会話履歴解析成功（{method}方式）"
+
+                result
             | Result.Error errorMsg ->
-                Logger.logError "SessionPersistence" $"会話履歴JSON解析失敗: {errorMsg}"
+                Logger.logError "SessionPersistence" $"会話履歴JSON解析失敗（全フォールバック方式）: {errorMsg}"
                 []
         with ex ->
             Logger.logError "SessionPersistence" $"会話履歴展開失敗: {ex.Message}"

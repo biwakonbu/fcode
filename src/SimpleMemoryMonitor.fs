@@ -17,10 +17,10 @@ type SimpleMemoryConfig =
 
 /// メモリ制限定数
 [<Literal>]
-let private WARNING_THRESHOLD_MB = 400L
+let private WARNING_THRESHOLD_MB = 200L // FC-033: 200MBに下げて早期警告
 
 [<Literal>]
-let private MAX_MEMORY_MB = 500L
+let private MAX_MEMORY_MB = 500L // FC-033: 500MB維持（FC-033目標値）
 
 [<Literal>]
 let private CHECK_INTERVAL_MINUTES = 10

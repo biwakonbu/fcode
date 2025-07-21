@@ -22,11 +22,13 @@ type PerformanceDisplayData =
 type PerformanceMonitoringUI() =
     let mutable isMonitoring = false
     let mutable monitoringTimer: Timer option = None
-    let lockObj = obj()
+    let lockObj = obj ()
 
     /// パフォーマンス表示データ生成
     member private this.GenerateDisplayData(statistics: PerformanceStatistics) : PerformanceDisplayData =
-        let memoryStatus = $"{statistics.CurrentMemoryMB}MB ({this.FormatHealthStatus(statistics.HealthStatus)})"
+        let memoryStatus =
+            $"{statistics.CurrentMemoryMB}MB ({this.FormatHealthStatus(statistics.HealthStatus)})"
+
         let responseTime = $"{statistics.ResponseTimeMs:F1}ms"
         let healthIndicator = this.FormatHealthIndicator(statistics.HealthStatus)
         let optimizationSuggestions = this.GenerateOptimizationSuggestions(statistics)
@@ -64,10 +66,8 @@ type PerformanceMonitoringUI() =
         | Warning ->
             suggestions.Add("メモリ使用量が警告レベルです")
             suggestions.Add("定期的なGC実行を推奨します")
-        | Good ->
-            suggestions.Add("良好な状態です")
-        | Excellent ->
-            suggestions.Add("優良な状態です - 現在の設定を維持")
+        | Good -> suggestions.Add("良好な状態です")
+        | Excellent -> suggestions.Add("優良な状態です - 現在の設定を維持")
 
         if statistics.ResponseTimeMs > 500.0 then
             suggestions.Add($"レスポンス時間が遅延しています: {statistics.ResponseTimeMs:F1}ms")
@@ -90,8 +90,7 @@ type PerformanceMonitoringUI() =
                     isMonitoring <- true
                     Logger.logInfo "PerformanceMonitoringUI" $"リアルタイム監視開始: {intervalSeconds}秒間隔"
                     true
-                with
-                | ex ->
+                with ex ->
                     Logger.logError "PerformanceMonitoringUI" $"リアルタイム監視開始エラー: {ex.Message}"
                     false)
 
@@ -100,28 +99,28 @@ type PerformanceMonitoringUI() =
         try
             let statistics = globalPerformanceManager.Value.GetPerformanceStatistics()
             let displayData = this.GenerateDisplayData(statistics)
-            
+
             // UI更新処理（実際のUI更新は別途実装される）
             this.UpdatePerformanceUI(displayData)
-            
+
             // 自動最適化チェック
             match globalPerformanceManager.Value.ExecuteAutoOptimization() with
-            | Some result ->
-                Logger.logInfo "PerformanceMonitoringUI" $"自動最適化実行: {result.Message}"
+            | Some result -> Logger.logInfo "PerformanceMonitoringUI" $"自動最適化実行: {result.Message}"
             | None -> ()
 
-        with
-        | ex ->
+        with ex ->
             Logger.logError "PerformanceMonitoringUI" $"監視コールバックエラー: {ex.Message}"
 
     /// パフォーマンスUI更新（実装依存）
     member private this.UpdatePerformanceUI(displayData: PerformanceDisplayData) : unit =
         // ここでは基本的なログ出力のみ実行
         // 実際のUI統合は Program.fs や具体的なUIコンポーネントで実装される
-        Logger.logDebug "PerformanceMonitoringUI" $"パフォーマンス状況: {displayData.MemoryStatus} | レスポンス: {displayData.ResponseTime} | {displayData.HealthIndicator}"
-        
+        Logger.logDebug
+            "PerformanceMonitoringUI"
+            $"パフォーマンス状況: {displayData.MemoryStatus} | レスポンス: {displayData.ResponseTime} | {displayData.HealthIndicator}"
+
         if not (List.isEmpty displayData.OptimizationSuggestions) then
-            displayData.OptimizationSuggestions 
+            displayData.OptimizationSuggestions
             |> List.iter (fun suggestion -> Logger.logInfo "PerformanceMonitoringUI" $"提案: {suggestion}")
 
     /// リアルタイム監視停止
@@ -137,27 +136,26 @@ type PerformanceMonitoringUI() =
                         timer.Dispose()
                         monitoringTimer <- None
                     | None -> ()
-                    
+
                     isMonitoring <- false
                     Logger.logInfo "PerformanceMonitoringUI" "リアルタイム監視停止"
                     true
-                with
-                | ex ->
+                with ex ->
                     Logger.logError "PerformanceMonitoringUI" $"リアルタイム監視停止エラー: {ex.Message}"
                     false)
 
     /// 現在の監視状況取得
     member this.GetMonitoringStatus() : bool * PerformanceDisplayData option =
         try
-            let displayData = 
+            let displayData =
                 if isMonitoring then
                     let statistics = globalPerformanceManager.Value.GetPerformanceStatistics()
                     Some(this.GenerateDisplayData(statistics))
                 else
                     None
+
             (isMonitoring, displayData)
-        with
-        | ex ->
+        with ex ->
             Logger.logError "PerformanceMonitoringUI" $"監視状況取得エラー: {ex.Message}"
             (false, None)
 
@@ -166,21 +164,20 @@ type PerformanceMonitoringUI() =
         try
             let statistics = globalPerformanceManager.Value.GetPerformanceStatistics()
             let displayData = this.GenerateDisplayData(statistics)
-            
+
             Logger.logInfo "PerformanceMonitoringUI" "手動パフォーマンスチェック実行完了"
             displayData
-        with
-        | ex ->
+        with ex ->
             Logger.logError "PerformanceMonitoringUI" $"手動パフォーマンスチェックエラー: {ex.Message}"
+
             { MemoryStatus = "取得エラー"
               ResponseTime = "N/A"
               HealthIndicator = "🔴 ERROR"
-              OptimizationSuggestions = [ex.Message]
+              OptimizationSuggestions = [ ex.Message ]
               LastUpdated = DateTime.UtcNow }
 
     interface IDisposable with
-        member this.Dispose() =
-            this.StopRealtimeMonitoring() |> ignore
+        member this.Dispose() = this.StopRealtimeMonitoring() |> ignore
 
 // ===============================================
 // グローバルインスタンス
@@ -190,10 +187,13 @@ type PerformanceMonitoringUI() =
 let globalPerformanceMonitoringUI = lazy (new PerformanceMonitoringUI())
 
 /// 便利関数: リアルタイム監視開始
-let startPerformanceMonitoring intervalSeconds = globalPerformanceMonitoringUI.Value.StartRealtimeMonitoring(intervalSeconds)
+let startPerformanceMonitoring intervalSeconds =
+    globalPerformanceMonitoringUI.Value.StartRealtimeMonitoring(intervalSeconds)
 
 /// 便利関数: リアルタイム監視停止
-let stopPerformanceMonitoring () = globalPerformanceMonitoringUI.Value.StopRealtimeMonitoring()
+let stopPerformanceMonitoring () =
+    globalPerformanceMonitoringUI.Value.StopRealtimeMonitoring()
 
 /// 便利関数: 手動パフォーマンスチェック
-let executeManualPerformanceCheck () = globalPerformanceMonitoringUI.Value.ExecuteManualPerformanceCheck()
+let executeManualPerformanceCheck () =
+    globalPerformanceMonitoringUI.Value.ExecuteManualPerformanceCheck()

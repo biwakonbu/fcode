@@ -130,18 +130,16 @@ type SimpleMemoryMonitor(config: SimpleMemoryConfig) =
         try
             let currentProcess = Process.GetCurrentProcess()
             let currentMemory = this.GetCurrentMemoryMB()
-            
-            Map.ofList [
-                ("CurrentMemoryMB", box currentMemory)
-                ("WarningThresholdMB", box config.WarningThresholdMB)
-                ("MaxMemoryMB", box config.MaxMemoryMB)
-                ("ProcessorCount", box Environment.ProcessorCount)
-                ("Timestamp", box DateTime.UtcNow)
-                ("CheckIntervalMinutes", box config.CheckIntervalMinutes)
-                ("ThreadCount", box currentProcess.Threads.Count)
-            ]
-        with
-        | ex ->
+
+            Map.ofList
+                [ ("CurrentMemoryMB", box currentMemory)
+                  ("WarningThresholdMB", box config.WarningThresholdMB)
+                  ("MaxMemoryMB", box config.MaxMemoryMB)
+                  ("ProcessorCount", box Environment.ProcessorCount)
+                  ("Timestamp", box DateTime.UtcNow)
+                  ("CheckIntervalMinutes", box config.CheckIntervalMinutes)
+                  ("ThreadCount", box currentProcess.Threads.Count) ]
+        with ex ->
             logError "SimpleMemoryMonitor" $"パフォーマンス監視データ取得エラー: {ex.Message}"
             Map.empty
 

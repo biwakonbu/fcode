@@ -534,6 +534,7 @@ let main argv =
 
             // FC-037: Start performance monitoring
             let performanceMonitoringStarted = startPerformanceMonitoring 30 // 30秒間隔で監視
+
             if performanceMonitoringStarted then
                 logInfo "Application" "FC-037: リアルタイムパフォーマンス監視開始 (30秒間隔)"
             else
@@ -1763,7 +1764,8 @@ let main argv =
             // sessionManager is local scope - cleanup not needed here
 
             // FC-037: Stop performance monitoring
-            let performanceMonitoringStopped = stopPerformanceMonitoring()
+            let performanceMonitoringStopped = stopPerformanceMonitoring ()
+
             if performanceMonitoringStopped then
                 logInfo "Application" "FC-037: リアルタイムパフォーマンス監視停止"
             else

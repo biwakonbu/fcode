@@ -18,7 +18,7 @@ type PerformanceMonitoringUITests() =
 
     [<Test>]
     member this.``手動パフォーマンスチェック: 基本データ検証``() =
-        let displayData = executeManualPerformanceCheck()
+        let displayData = executeManualPerformanceCheck ()
 
         Assert.IsNotNull(displayData, "表示データが取得されるべき")
         Assert.IsNotEmpty(displayData.MemoryStatus, "メモリステータスが設定されているべき")
@@ -28,44 +28,40 @@ type PerformanceMonitoringUITests() =
 
     [<Test>]
     member this.``健全性インジケーター: 適切なフォーマット``() =
-        let displayData = executeManualPerformanceCheck()
+        let displayData = executeManualPerformanceCheck ()
 
         // 健全性インジケーターの形式チェック
-        let validIndicators = [
-            "🟢 EXCELLENT"
-            "🟡 GOOD" 
-            "🟠 WARNING"
-            "🔴 CRITICAL"
-            "🔴 ERROR" // エラー時
-        ]
+        let validIndicators =
+            [ "🟢 EXCELLENT"; "🟡 GOOD"; "🟠 WARNING"; "🔴 CRITICAL"; "🔴 ERROR" ] // エラー時
 
         Assert.IsTrue(List.contains displayData.HealthIndicator validIndicators, "健全性インジケーターは有効な形式であるべき")
 
     [<Test>]
     member this.``メモリステータス: データフォーマット検証``() =
-        let displayData = executeManualPerformanceCheck()
+        let displayData = executeManualPerformanceCheck ()
 
         // メモリステータスに "MB" が含まれていることを確認
         StringAssert.Contains("MB", displayData.MemoryStatus, "メモリステータスにMB単位が含まれるべき")
-        
+
         // 括弧内に健全性レベルが含まれていることを確認
         Assert.IsTrue(
-            displayData.MemoryStatus.Contains("優良") || 
-            displayData.MemoryStatus.Contains("良好") || 
-            displayData.MemoryStatus.Contains("警告") || 
-            displayData.MemoryStatus.Contains("緊急") ||
-            displayData.MemoryStatus.Contains("エラー"),
-            "メモリステータスに健全性レベルが含まれるべき")
+            displayData.MemoryStatus.Contains("優良")
+            || displayData.MemoryStatus.Contains("良好")
+            || displayData.MemoryStatus.Contains("警告")
+            || displayData.MemoryStatus.Contains("緊急")
+            || displayData.MemoryStatus.Contains("エラー"),
+            "メモリステータスに健全性レベルが含まれるべき"
+        )
 
     [<Test>]
     member this.``レスポンス時間: 数値フォーマット検証``() =
-        let displayData = executeManualPerformanceCheck()
+        let displayData = executeManualPerformanceCheck ()
 
         // レスポンス時間に "ms" が含まれていることを確認
         Assert.IsTrue(
-            displayData.ResponseTime.Contains("ms") || 
-            displayData.ResponseTime = "N/A",
-            "レスポンス時間にms単位が含まれているか、N/Aであるべき")
+            displayData.ResponseTime.Contains("ms") || displayData.ResponseTime = "N/A",
+            "レスポンス時間にms単位が含まれているか、N/Aであるべき"
+        )
 
     [<Test>]
     member this.``リアルタイム監視: 開始・停止機能``() =
@@ -120,45 +116,49 @@ type PerformanceMonitoringUITests() =
 
     [<Test>]
     member this.``最適化提案: 健全性レベル別チェック``() =
-        let displayData = executeManualPerformanceCheck()
+        let displayData = executeManualPerformanceCheck ()
 
         Assert.IsNotNull(displayData.OptimizationSuggestions, "最適化提案リストが設定されているべき")
         Assert.GreaterOrEqual(displayData.OptimizationSuggestions.Length, 1, "最低1つの提案があるべき")
 
         // 提案内容の基本検証
-        let hasValidSuggestion = 
-            displayData.OptimizationSuggestions 
-            |> List.exists (fun s -> 
-                s.Contains("優良") || s.Contains("良好") || s.Contains("警告") || 
-                s.Contains("緊急") || s.Contains("メモリ") || s.Contains("最適化"))
+        let hasValidSuggestion =
+            displayData.OptimizationSuggestions
+            |> List.exists (fun s ->
+                s.Contains("優良")
+                || s.Contains("良好")
+                || s.Contains("警告")
+                || s.Contains("緊急")
+                || s.Contains("メモリ")
+                || s.Contains("最適化"))
 
         Assert.IsTrue(hasValidSuggestion, "適切な最適化提案が含まれているべき")
 
     [<Test>]
     member this.``タイムスタンプ: 最新性確認``() =
-        let displayData1 = executeManualPerformanceCheck()
+        let displayData1 = executeManualPerformanceCheck ()
         Thread.Sleep(100) // 100ms待機
-        let displayData2 = executeManualPerformanceCheck()
+        let displayData2 = executeManualPerformanceCheck ()
 
         Assert.Greater(displayData2.LastUpdated, displayData1.LastUpdated, "後で取得したデータのタイムスタンプが新しいべき")
 
     [<Test>]
     member this.``グローバルインスタンス: 機能確認``() =
         // グローバル関数経由でのアクセステスト
-        let monitoring1Started = startPerformanceMonitoring(2) // 2秒間隔
-        let displayData = executeManualPerformanceCheck()
-        let monitoring1Stopped = stopPerformanceMonitoring()
+        let monitoring1Started = startPerformanceMonitoring (2) // 2秒間隔
+        let displayData = executeManualPerformanceCheck ()
+        let monitoring1Stopped = stopPerformanceMonitoring ()
 
         Assert.IsNotNull(displayData, "グローバル関数経由で表示データが取得できるべき")
-        Assert.DoesNotThrow(fun () -> 
+
+        Assert.DoesNotThrow(fun () ->
             monitoring1Started |> ignore
-            monitoring1Stopped |> ignore
-        )
+            monitoring1Stopped |> ignore)
 
     [<Test>]
     member this.``リソース管理: Disposable正常動作``() =
         let ui = new PerformanceMonitoringUI()
-        
+
         // 基本操作実行
         ui.StartRealtimeMonitoring(1) |> ignore
         let displayData = ui.ExecuteManualPerformanceCheck()

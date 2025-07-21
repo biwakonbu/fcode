@@ -18,7 +18,7 @@ type EnhancedPerformanceManagerTests() =
 
     [<Test>]
     member this.``パフォーマンス統計情報取得: 基本データ検証``() =
-        let statistics = getPerformanceStatistics()
+        let statistics = getPerformanceStatistics ()
 
         Assert.Greater(statistics.CurrentMemoryMB, 0L, "メモリ使用量は正の値であるべき")
         Assert.Greater(statistics.ProcessorCount, 0, "プロセッサ数は正の値であるべき")
@@ -28,12 +28,12 @@ type EnhancedPerformanceManagerTests() =
 
     [<Test>]
     member this.``健全性ステータス判定: メモリ使用量による分類``() =
-        let statistics = getPerformanceStatistics()
+        let statistics = getPerformanceStatistics ()
 
         // メモリ使用量に基づく健全性ステータス分類の確認
         match statistics.HealthStatus with
         | Excellent -> Assert.Less(statistics.CurrentMemoryMB, 100L, "Excellentステータス時のメモリ使用量")
-        | Good -> Assert.Less(statistics.CurrentMemoryMB, 200L, "Goodステータス時のメモリ使用量") 
+        | Good -> Assert.Less(statistics.CurrentMemoryMB, 200L, "Goodステータス時のメモリ使用量")
         | Warning -> Assert.GreaterOrEqual(statistics.CurrentMemoryMB, 200L, "Warningステータス時のメモリ使用量")
         | Critical -> Assert.GreaterOrEqual(statistics.CurrentMemoryMB, 500L, "Criticalステータス時のメモリ使用量")
 
@@ -52,8 +52,8 @@ type EnhancedPerformanceManagerTests() =
     [<Test>]
     member this.``監視付き操作実行: 正常系``() =
         use manager = new EnhancedPerformanceManager()
-        
-        let testOperation() = 
+
+        let testOperation () =
             Thread.Sleep(10) // 10ms待機
             "テスト操作完了"
 
@@ -64,26 +64,23 @@ type EnhancedPerformanceManagerTests() =
     [<Test>]
     member this.``監視付き操作実行: 例外処理``() =
         use manager = new EnhancedPerformanceManager()
-        
-        let testOperation() = 
-            failwith "テスト例外"
 
-        Assert.Throws<System.Exception>(fun () -> 
-            manager.ExecuteMonitoredOperation("テスト例外操作", testOperation) |> ignore
-        ) |> ignore
+        let testOperation () = failwith "テスト例外"
+
+        Assert.Throws<System.Exception>(fun () -> manager.ExecuteMonitoredOperation("テスト例外操作", testOperation) |> ignore)
+        |> ignore
 
     [<Test>]
     member this.``並行処理最適化実行: 基本動作確認``() =
         use manager = new EnhancedPerformanceManager()
-        
-        let testItems = [|1; 2; 3; 4; 5|]
+
+        let testItems = [| 1; 2; 3; 4; 5 |]
         let mutable processedCount = 0
-        let lockObj = obj()
-        
-        let processor item = 
+        let lockObj = obj ()
+
+        let processor item =
             async {
-                lock lockObj (fun () -> 
-                    processedCount <- processedCount + 1)
+                lock lockObj (fun () -> processedCount <- processedCount + 1)
                 do! Async.Sleep(10)
             }
 
@@ -95,18 +92,18 @@ type EnhancedPerformanceManagerTests() =
 
     [<Test>]
     member this.``包括的パフォーマンスレポート取得: データ完整性``() =
-        let reportTask = getComprehensivePerformanceReport()
+        let reportTask = getComprehensivePerformanceReport ()
         let report = Async.RunSynchronously(reportTask, 5000) // 5秒タイムアウト
 
         Assert.IsTrue(report.ContainsKey("Statistics"), "統計情報が含まれるべき")
-        Assert.IsTrue(report.ContainsKey("MemoryMetrics"), "メモリ指標が含まれるべき") 
+        Assert.IsTrue(report.ContainsKey("MemoryMetrics"), "メモリ指標が含まれるべき")
         Assert.IsTrue(report.ContainsKey("GeneratedAt"), "生成時刻が含まれるべき")
         Assert.IsTrue(report.ContainsKey("TotalOperations"), "総操作数が含まれるべき")
         Assert.IsTrue(report.ContainsKey("SystemInfo"), "システム情報が含まれるべき")
 
     [<Test>]
     member this.``自動最適化実行: 条件判定``() =
-        let result = executeAutoOptimization()
+        let result = executeAutoOptimization ()
 
         // 結果の検証（メモリ使用量により結果が変動）
         match result with
@@ -119,16 +116,16 @@ type EnhancedPerformanceManagerTests() =
 
     [<Test>]
     member this.``パフォーマンス指標取得: タイムスタンプ検証``() =
-        let statistics1 = getPerformanceStatistics()
+        let statistics1 = getPerformanceStatistics ()
         Thread.Sleep(100) // 100ms待機
-        let statistics2 = getPerformanceStatistics()
+        let statistics2 = getPerformanceStatistics ()
 
         Assert.Greater(statistics2.Timestamp, statistics1.Timestamp, "タイムスタンプは増加するべき")
 
     [<Test>]
     member this.``リソース管理: Disposable正常動作``() =
         let manager = new EnhancedPerformanceManager()
-        
+
         // 基本操作実行
         let statistics = manager.GetPerformanceStatistics()
         Assert.IsNotNull(statistics, "統計情報取得が正常に動作するべき")

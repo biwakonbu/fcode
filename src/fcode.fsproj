@@ -150,6 +150,10 @@
     <!-- <Compile Include="ExternalIntegration/CIPipelineAgent.fs" /> -->
     <!-- <Compile Include="ExternalIntegration/CloudProviderIntegration.fs" /> -->
     <!-- <Compile Include="ExternalIntegration/ExternalToolOrchestrator.fs" /> -->
+    <!-- Issue #156: FC-032 v2.0 Advanced Integration Implementation -->
+    <Compile Include="V2IntegrationCoordinator.fs" />
+    <Compile Include="V2IntegrationUI.fs" />
+    <Compile Include="V2IntegrationTestSupport.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

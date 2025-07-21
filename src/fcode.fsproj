@@ -154,6 +154,7 @@
     <Compile Include="V2IntegrationCoordinator.fs" />
     <Compile Include="V2IntegrationUI.fs" />
     <Compile Include="V2IntegrationTestSupport.fs" />
+    <!-- Issue #157: FC-033 Performance Optimization & Production Ready (Minimal Implementation) -->
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

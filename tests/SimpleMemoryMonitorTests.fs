@@ -89,7 +89,7 @@ type SimpleMemoryMonitorTests() =
     member this.``デフォルト設定: 実用的な値``() =
         let config = defaultMemoryConfig
 
-        Assert.AreEqual(400L, config.WarningThresholdMB, "警告閾値は400MBであるべき")
+        Assert.AreEqual(200L, config.WarningThresholdMB, "警告閾値は200MBであるべき（FC-033最適化）")
         Assert.AreEqual(500L, config.MaxMemoryMB, "最大メモリは500MBであるべき")
         Assert.AreEqual(10, config.CheckIntervalMinutes, "チェック間隔は10分であるべき")
 

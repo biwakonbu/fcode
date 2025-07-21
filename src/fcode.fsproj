@@ -112,6 +112,9 @@
     <Compile Include="InputValidation.fs" />
     <Compile Include="PerformanceOptimizer.fs" />
     <Compile Include="SimpleMemoryMonitor.fs" />
+    <!-- FC-037 Enhanced Performance Management -->
+    <Compile Include="Performance/EnhancedPerformanceManager.fs" />
+    <Compile Include="Performance/PerformanceMonitoringUI.fs" />
     <!-- FC-022 Specialist Agent Integration -->
     <Compile Include="AIModelProvider.fs" />
     <Compile Include="ISpecializedAgent.fs" />

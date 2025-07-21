@@ -69,6 +69,9 @@
     <Compile Include="SimpleSecurityTests.fs"/>
     <Compile Include="UISecurityManagerSimpleTests.fs"/>
     <Compile Include="SimpleMemoryMonitorTests.fs"/>
+    <!-- FC-037: Enhanced Performance Management Tests -->
+    <Compile Include="EnhancedPerformanceManagerTests.fs"/>
+    <Compile Include="PerformanceMonitoringUITests.fs"/>
     <Compile Include="ErrorHandlingTests.fs"/>
     <Compile Include="ConcurrencyTests.fs"/>
     <Compile Include="RealtimeCollaborationTests.fs"/>

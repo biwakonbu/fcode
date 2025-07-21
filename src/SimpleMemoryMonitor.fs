@@ -108,14 +108,42 @@ type SimpleMemoryMonitor(config: SimpleMemoryConfig) =
 
     /// メモリ状態レポート
     member public this.GetMemoryReport() : string =
-        let currentMemory = this.GetCurrentMemoryMB()
+        try
+            let currentMemory = this.GetCurrentMemoryMB()
 
-        let warningLevel =
-            if currentMemory >= config.MaxMemoryMB then "危険"
-            elif currentMemory >= config.WarningThresholdMB then "警告"
-            else "正常"
+            let warningLevel =
+                if currentMemory >= config.MaxMemoryMB then "危険"
+                elif currentMemory >= config.WarningThresholdMB then "警告"
+                else "正常"
 
-        $"メモリ状態: {currentMemory}MB ({warningLevel}) - 警告閾値: {config.WarningThresholdMB}MB, 上限: {config.MaxMemoryMB}MB"
+            $"メモリ状態: {currentMemory}MB ({warningLevel}) - 警告閾値: {config.WarningThresholdMB}MB, 上限: {config.MaxMemoryMB}MB"
+        with
+        | :? OutOfMemoryException as ex ->
+            logError "SimpleMemoryMonitor" $"メモリレポート取得エラー（OutOfMemory）: {ex.Message}"
+            $"メモリレポート取得エラー（OutOfMemory）: {ex.Message}"
+        | ex ->
+            logError "SimpleMemoryMonitor" $"メモリレポート取得エラー: {ex.Message}"
+            $"メモリレポート取得エラー: {ex.Message}"
+
+    /// パフォーマンス監視データ取得
+    member public this.GetPerformanceMetrics() : Map<string, obj> =
+        try
+            let currentProcess = Process.GetCurrentProcess()
+            let currentMemory = this.GetCurrentMemoryMB()
+            
+            Map.ofList [
+                ("CurrentMemoryMB", box currentMemory)
+                ("WarningThresholdMB", box config.WarningThresholdMB)
+                ("MaxMemoryMB", box config.MaxMemoryMB)
+                ("ProcessorCount", box Environment.ProcessorCount)
+                ("Timestamp", box DateTime.UtcNow)
+                ("CheckIntervalMinutes", box config.CheckIntervalMinutes)
+                ("ThreadCount", box currentProcess.Threads.Count)
+            ]
+        with
+        | ex ->
+            logError "SimpleMemoryMonitor" $"パフォーマンス監視データ取得エラー: {ex.Message}"
+            Map.empty
 
 // ===============================================
 // グローバルインスタンス

@@ -16,6 +16,9 @@ open FCode.RealtimeUIIntegration
 open FCode.FullWorkflowCoordinator
 open FCode.SimpleMemoryMonitor
 open FCode.ConfigurationManager
+// FC-037: Enhanced Performance Management
+open FCode.Performance.EnhancedPerformanceManager
+open FCode.Performance.PerformanceMonitoringUI
 open FCode.TaskAssignmentManager
 open FCode.VirtualTimeCoordinator
 open FCode.Collaboration.CollaborationTypes
@@ -528,6 +531,13 @@ let main argv =
 
             // No need to start supervisor - using direct Claude CLI integration
             logInfo "Application" "Using direct Claude CLI integration (no ProcessSupervisor required)"
+
+            // FC-037: Start performance monitoring
+            let performanceMonitoringStarted = startPerformanceMonitoring 30 // 30秒間隔で監視
+            if performanceMonitoringStarted then
+                logInfo "Application" "FC-037: リアルタイムパフォーマンス監視開始 (30秒間隔)"
+            else
+                logWarning "Application" "FC-037: リアルタイムパフォーマンス監視開始失敗"
 
             let top = Application.Top
             logDebug "Application" "Got Application.Top"
@@ -1751,6 +1761,13 @@ let main argv =
             // Cleanup
             logInfo "Application" "Cleaning up sessions"
             // sessionManager is local scope - cleanup not needed here
+
+            // FC-037: Stop performance monitoring
+            let performanceMonitoringStopped = stopPerformanceMonitoring()
+            if performanceMonitoringStopped then
+                logInfo "Application" "FC-037: リアルタイムパフォーマンス監視停止"
+            else
+                logWarning "Application" "FC-037: リアルタイムパフォーマンス監視停止失敗"
 
             Application.Shutdown()
             logInfo "Application" "Application shutdown completed"

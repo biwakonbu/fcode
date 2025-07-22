@@ -32,7 +32,6 @@ type AgentCollaborationDemonstratorIntegrationTests() =
         }
 
     [<Test>]
-    [<Category("Performance")>]
     member this.``PO指示デモ - パフォーマンス監視機能``() =
         async {
             // テスト実行

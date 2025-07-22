@@ -42,46 +42,17 @@ type AgentCollaborationDemonstrator() =
 
     /// デモ用エージェント状態作成
     let createDemoAgentStates () =
-        [ { AgentId = "dev1"
-            Status = Idle
-            Progress = 0.0
-            LastUpdate = DateTime.UtcNow
-            CurrentTask = None
-            WorkingDirectory = ""
-            ProcessId = None
-            ActiveTasks = [] }
-          { AgentId = "dev2"
-            Status = Idle
-            Progress = 0.0
-            LastUpdate = DateTime.UtcNow
-            CurrentTask = None
-            WorkingDirectory = ""
-            ProcessId = None
-            ActiveTasks = [] }
-          { AgentId = "qa1"
-            Status = Idle
-            Progress = 0.0
-            LastUpdate = DateTime.UtcNow
-            CurrentTask = None
-            WorkingDirectory = ""
-            ProcessId = None
-            ActiveTasks = [] }
-          { AgentId = "ux"
-            Status = Idle
-            Progress = 0.0
-            LastUpdate = DateTime.UtcNow
-            CurrentTask = None
-            WorkingDirectory = ""
-            ProcessId = None
-            ActiveTasks = [] }
-          { AgentId = "pm"
-            Status = Idle
-            Progress = 0.0
-            LastUpdate = DateTime.UtcNow
-            CurrentTask = None
-            WorkingDirectory = ""
-            ProcessId = None
-            ActiveTasks = [] } ]
+        let createAgentState agentId =
+            { AgentId = agentId
+              Status = Idle
+              Progress = 0.0
+              LastUpdate = DateTime.UtcNow
+              CurrentTask = None
+              WorkingDirectory = ""
+              ProcessId = None
+              ActiveTasks = [] }
+
+        [ "dev1"; "dev2"; "qa1"; "ux"; "pm" ] |> List.map createAgentState
 
     /// PO指示→実行完全フロー実証（簡素化版）
     member this.DemonstratePOWorkflow
@@ -276,11 +247,8 @@ type AgentCollaborationDemonstrator() =
                        OverallSuccess = successfulPOTasks = poInstructions.Length && scrumResult.Success |}
 
                 logInfo "AgentCollaborationDemo"
-                <| sprintf
-                    "=== 完全実証完了: PO指示 %d/%d成功, スクラム実行 %b ==="
-                    successfulPOTasks
-                    poInstructions.Length
-                    scrumResult.Success
+                <| sprintf "=== 完全実証完了: PO指示 %d/%d成功, " successfulPOTasks poInstructions.Length
+                   + sprintf "スクラム実行 %b ===" scrumResult.Success
 
                 return demoSummary
 

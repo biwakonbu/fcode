@@ -208,7 +208,8 @@ type CollaborationDemoTest() =
 
                 let validDuration =
                     scrumResult.Duration > TimeSpan.Zero
-                    && scrumResult.Duration < TimeSpan.FromMinutes(1) // 高速化デモなので短時間
+                    && scrumResult.Duration < TimeSpan.FromMinutes(1)
+                // 高速化デモなので短時間
 
                 // 複数回実行して安定性確認
                 let mutable multipleRunsSuccess = true

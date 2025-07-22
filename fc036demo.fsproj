@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyTitle>fc036demo</AssemblyTitle>
+    <AssemblyDescription>FC-036 Agent Collaboration Demo</AssemblyDescription>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Core Dependencies -->
+    <Compile Include="src/SecurityUtils.fs" />
+    <Compile Include="src/Logger.fs" />
+    <Compile Include="src/JsonSanitizer.fs" />
+    <Compile Include="src/FCodeError.fs" />
+    <!-- Collaboration Types -->
+    <Compile Include="src/Collaboration/CollaborationTypes.fs" />
+    <!-- Agent Collaboration Demo -->
+    <Compile Include="src/AgentCollaborationDemonstrator.fs" />
+    <Compile Include="src/CollaborationDemoTest.fs" />
+    <!-- Main Entry Point -->
+    <Compile Include="src/FC036DemoSimple.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="FSharp.SystemTextJson" Version="1.3.13" />
+  </ItemGroup>
+</Project>

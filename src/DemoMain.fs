@@ -7,8 +7,7 @@ open FCode.CollaborationDemoTest
 
 /// FC-036 デモ実行専用エントリーポイント
 /// プロジェクト統合前の独立検証用
-[<EntryPoint>]
-let main args =
+let runDemoMain args =
     try
         logInfo "DemoMain" "FC-036: エージェント協調機能動作実証開始"
 

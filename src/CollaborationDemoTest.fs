@@ -58,7 +58,7 @@ type CollaborationDemoTest() =
                             report.TasksCompleted
                             report.QualityScore
 
-                    | Error error ->
+                    | Result.Error error ->
                         results.Add(
                             {| Instruction = instruction
                                Success = false
@@ -131,18 +131,27 @@ type CollaborationDemoTest() =
 
                 // エージェント状態更新テスト
                 for agentId in testAgents do
-                    match facade.UpdateAgentState(agentId, Working, progress = 50.0) with
+                    match
+                        facade.UpdateAgentState(
+                            agentId,
+                            FCode.Collaboration.CollaborationTypes.Working,
+                            progress = 50.0
+                        )
+                    with
                     | Ok() ->
                         syncResults <- (agentId, true) :: syncResults
                         logInfo "CollaborationDemoTest" <| sprintf "エージェント %s 状態更新成功" agentId
-                    | Error e ->
+                    | Result.Error e ->
                         syncResults <- (agentId, false) :: syncResults
                         logError "CollaborationDemoTest" <| sprintf "エージェント %s 状態更新失敗: %A" agentId e
 
                 // 全エージェント状態確認
                 match facade.GetAllAgentStates() with
                 | Ok states ->
-                    let activeCount = states |> List.filter (fun s -> s.Status = Working) |> List.length
+                    let activeCount =
+                        states
+                        |> List.filter (fun s -> s.Status = FCode.Collaboration.CollaborationTypes.Working)
+                        |> List.length
 
                     logInfo "CollaborationDemoTest"
                     <| sprintf "アクティブエージェント数: %d/%d" activeCount testAgents.Length
@@ -172,7 +181,7 @@ type CollaborationDemoTest() =
                            TotalAgents = testAgents.Length
                            OverallSuccess = allSyncSuccess && successfulRequests > 0 |}
 
-                | Error e ->
+                | Result.Error e ->
                     logError "CollaborationDemoTest" <| sprintf "エージェント状態取得失敗: %A" e
 
                     return

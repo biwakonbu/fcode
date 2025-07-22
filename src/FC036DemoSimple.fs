@@ -27,7 +27,7 @@ module SimpleDemoRunner =
                     printfn "   所要時間: %A" report.Duration
                     printfn "   参加エージェント: %s" (String.Join(", ", report.AgentsInvolved))
                     return true
-                | Error error ->
+                | Result.Error error ->
                     printfn "❌ PO指示→完了フロー: 失敗 - %s" error
                     return false
 
@@ -122,9 +122,8 @@ module SimpleDemoRunner =
                 return false
         }
 
-/// FC-036専用シンプル実行エントリーポイント
-[<EntryPoint>]
-let main args =
+/// FC-036専用シンプル実行関数
+let runFC036Demo args =
     try
         match args with
         | [||] ->

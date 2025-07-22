@@ -34,7 +34,7 @@ type DemoIntegrationMain() =
             mainWindow.Height <- Dim.Fill()
 
             // カラースキーム適用
-            mainWindow.ColorScheme <- ColorScheme.Default
+            mainWindow.ColorScheme <- defaultScheme
 
             // ステータスラベル
             let statusLbl = new Label("準備中...")
@@ -82,7 +82,7 @@ type DemoIntegrationMain() =
             resultsView.Width <- Dim.Fill(2)
             resultsView.Height <- Dim.Fill(2)
             resultsView.ReadOnly <- true
-            resultsView.ColorScheme <- ColorScheme.Default
+            resultsView.ColorScheme <- defaultScheme
             resultsTextView <- Some resultsView
             mainWindow.Add(resultsView)
 
@@ -143,7 +143,7 @@ type DemoIntegrationMain() =
                         this.AppendResult(sprintf "   所要時間: %A" report.Duration)
                         this.AppendResult(sprintf "   参加エージェント: %s" (String.Join(", ", report.AgentsInvolved)))
                         this.UpdateStatus("PO指示→実行フロー実証完了")
-                    | Error error ->
+                    | Result.Error error ->
                         this.AppendResult(sprintf "❌ PO指示実行失敗: %s" error)
                         this.UpdateStatus("PO指示→実行フロー実証失敗")
                 | None -> this.AppendResult("❌ デモンストレーター未初期化")
@@ -304,7 +304,7 @@ module DemoRunner =
 
                     match result with
                     | Ok report -> printfn "✅ PO指示実行成功 - タスク数: %d, 品質: %.2f" report.TasksCompleted report.QualityScore
-                    | Error error -> printfn "❌ PO指示実行失敗: %s" error
+                    | Result.Error error -> printfn "❌ PO指示実行失敗: %s" error
 
                 | "scrum"
                 | "events" ->

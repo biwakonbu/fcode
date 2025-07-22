@@ -125,6 +125,9 @@
     <Compile Include="SC2BasicQualityTests.fs"/>
     <!-- Issue #147: v2.0-4 Performance Optimization Tests - Disabled until Performance modules are restored -->
     <!-- <Compile Include="PerformanceOptimizationTests.fs"/> -->
+    <!-- FC-035: リアルタイムUI機能完全性検証テスト（簡易版） -->
+    <Compile Include="FC035UIVerificationTestsSimple.fs"/>
+    <Compile Include="FC035EmacsKeyBindingTestsSimple.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>
 

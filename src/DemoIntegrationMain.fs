@@ -15,7 +15,8 @@ type DemoIntegrationMain() =
     let mutable disposed = false
     let mutable window: Window option = None
     let mutable demonstrator: AgentCollaborationDemonstrator option = None
-    // let mutable collaborationUI: AgentCollaborationUI option = None  // 一時的に無効化
+    // let mutable collaborationUI: AgentCollaborationUI option = None
+    // 一時的に無効化
 
     // デモ結果表示用
     let mutable resultsTextView: TextView option = None
@@ -101,7 +102,8 @@ type DemoIntegrationMain() =
     member this.UpdateStatus(message: string) =
         match statusLabel with
         | Some label ->
-            label.Text <- NStack.ustring.Make(sprintf "[%s] %s" (DateTime.Now.ToString("HH:mm:ss")) message)
+            let timestamp = DateTime.Now.ToString("HH:mm:ss")
+            label.Text <- NStack.ustring.Make(sprintf "[%s] %s" timestamp message)
             Application.MainLoop.Invoke(fun () -> ()) |> ignore
         | None -> ()
 
@@ -141,7 +143,8 @@ type DemoIntegrationMain() =
                         this.AppendResult(sprintf "   完了タスク数: %d" report.TasksCompleted)
                         this.AppendResult(sprintf "   品質スコア: %.2f" report.QualityScore)
                         this.AppendResult(sprintf "   所要時間: %A" report.Duration)
-                        this.AppendResult(sprintf "   参加エージェント: %s" (String.Join(", ", report.AgentsInvolved)))
+                        let agentsText = String.Join(", ", report.AgentsInvolved)
+                        this.AppendResult(sprintf "   参加エージェント: %s" agentsText)
                         this.UpdateStatus("PO指示→実行フロー実証完了")
                     | Result.Error error ->
                         this.AppendResult(sprintf "❌ PO指示実行失敗: %s" error)
@@ -168,7 +171,8 @@ type DemoIntegrationMain() =
                         this.AppendResult(sprintf "✅ スクラムイベント実行成功:")
                         this.AppendResult(sprintf "   スプリントID: %s" result.SprintId)
                         this.AppendResult(sprintf "   実行時間: %A" result.Duration)
-                        this.AppendResult(sprintf "   スタンドアップ会議: %d回実行" result.StandupMeetings.Length)
+                        let meetingCount = result.StandupMeetings.Length
+                        this.AppendResult(sprintf "   スタンドアップ会議: %d回実行" meetingCount)
 
                         result.StandupMeetings
                         |> List.iteri (fun i mtg -> this.AppendResult(sprintf "     %d. %s" (i + 1) mtg))
@@ -259,7 +263,9 @@ type DemoIntegrationMain() =
             if not disposed then
                 disposed <- true
                 demonstrator |> Option.iter (fun d -> (d :> IDisposable).Dispose())
-                // collaborationUI |> Option.iter (fun ui -> (ui :> IDisposable).Dispose())  // 一時的に無効化
+                // collaborationUI
+                // |> Option.iter (fun ui -> (ui :> IDisposable).Dispose())
+                // 一時的に無効化
                 window |> Option.iter (fun w -> w.Dispose())
                 logInfo "DemoIntegrationMain" "FC-036 デモ統合UI リソースクリーンアップ完了"
 
@@ -300,7 +306,8 @@ module DemoRunner =
                 match demoType.ToLower() with
                 | "po"
                 | "workflow" ->
-                    let! result = demonstrator.DemonstratePOWorkflow("自動デモ: PO指示処理テスト")
+                    let instruction = "自動デモ: PO指示処理テスト"
+                    let! result = demonstrator.DemonstratePOWorkflow(instruction)
 
                     match result with
                     | Ok report -> printfn "✅ PO指示実行成功 - タスク数: %d, 品質: %.2f" report.TasksCompleted report.QualityScore
@@ -311,7 +318,8 @@ module DemoRunner =
                     let! result = demonstrator.DemonstrateScrunEvents()
 
                     if result.Success then
-                        printfn "✅ スクラムイベント実行成功 - MTG数: %d" result.StandupMeetings.Length
+                        let meetingCount = result.StandupMeetings.Length
+                        printfn "✅ スクラムイベント実行成功 - MTG数: %d" meetingCount
                     else
                         printfn "❌ スクラムイベント実行失敗"
 

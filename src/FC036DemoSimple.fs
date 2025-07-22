@@ -25,7 +25,8 @@ module SimpleDemoRunner =
                     printfn "   タスク完了数: %d" report.TasksCompleted
                     printfn "   品質スコア: %.2f" report.QualityScore
                     printfn "   所要時間: %A" report.Duration
-                    printfn "   参加エージェント: %s" (String.Join(", ", report.AgentsInvolved))
+                    let agentsText = String.Join(", ", report.AgentsInvolved)
+                    printfn "   参加エージェント: %s" agentsText
                     return true
                 | Result.Error error ->
                     printfn "❌ PO指示→完了フロー: 失敗 - %s" error
@@ -101,12 +102,16 @@ module SimpleDemoRunner =
 
                 printfn ""
                 printfn "=== FC-036 受け入れテスト結果 ==="
-                printfn "📋 受け入れ基準1 (PO指示→実行フロー): %s" (if poResult then "✅ 合格" else "❌ 不合格")
+                let poStatusText = if poResult then "✅ 合格" else "❌ 不合格"
+                printfn "📋 受け入れ基準1 (PO指示→実行フロー): %s" poStatusText
                 printfn "📋 受け入れ基準2 (エージェント状態同期): ✅ 合格 (基盤実装完了)"
-                printfn "📋 受け入れ基準3 (18分スプリント): %s" (if scrumResult then "✅ 合格" else "❌ 不合格")
+                let scrumStatusText = if scrumResult then "✅ 合格" else "❌ 不合格"
+                printfn "📋 受け入れ基準3 (18分スプリント): %s" scrumStatusText
                 printfn ""
-                printfn "🎯 総合判定: %s" (if overallSuccess then "✅ 全受け入れ基準クリア!" else "❌ 改善が必要")
-                printfn "⏰ テスト完了時刻: %s" (DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"))
+                let overallStatusText = if overallSuccess then "✅ 全受け入れ基準クリア!" else "❌ 改善が必要"
+                printfn "🎯 総合判定: %s" overallStatusText
+                let completionTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                printfn "⏰ テスト完了時刻: %s" completionTime
 
                 if overallSuccess then
                     printfn ""

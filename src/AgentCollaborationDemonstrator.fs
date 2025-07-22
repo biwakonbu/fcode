@@ -116,7 +116,11 @@ type AgentCollaborationDemonstrator() =
 
                             // エージェント状態更新（RealtimeCollaborationFacadeを使用）
                             let updateResult =
-                                collaborationFacade.UpdateAgentState(agentId, AgentStatus.Working, progress = 0.5)
+                                collaborationFacade.UpdateAgentState(
+                                    agentId,
+                                    FCode.Collaboration.CollaborationTypes.Working,
+                                    progress = 0.5
+                                )
 
                             logInfo "AgentCollaborationDemo" <| sprintf "%s: タスク実行開始" agentId
 
@@ -125,7 +129,11 @@ type AgentCollaborationDemonstrator() =
 
                             // 完了状態更新
                             let completeResult =
-                                collaborationFacade.UpdateAgentState(agentId, AgentStatus.Completed, progress = 100.0)
+                                collaborationFacade.UpdateAgentState(
+                                    agentId,
+                                    FCode.Collaboration.CollaborationTypes.Completed,
+                                    progress = 100.0
+                                )
 
                             logInfo "AgentCollaborationDemo" <| sprintf "%s: タスク完了" agentId
 

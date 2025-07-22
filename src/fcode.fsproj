@@ -160,6 +160,10 @@
     <Compile Include="AgentCollaborationUI.fs" />
     <!-- FC-036: Agent Collaboration Demonstration -->
     <Compile Include="AgentCollaborationDemonstrator.fs" />
+    <Compile Include="CollaborationDemoTest.fs" />
+    <Compile Include="DemoIntegrationMain.fs" />
+    <Compile Include="FC036DemoSimple.fs" />
+    <Compile Include="DemoMain.fs" />
     <!-- Issue #134: SC-2-8 SQLite3 Task Storage Implementation -->
     <Compile Include="TaskStorageUI.fs" />
     <!-- Issue #145: v2.0-2 Advanced AI Collaboration Features -->
